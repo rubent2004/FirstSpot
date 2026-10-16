@@ -74,6 +74,7 @@ export interface PredefinedZoneRead {
   key: string;
   name: string;
   department: string;
+  country?: string;
   latitude: number;
   longitude: number;
   default_radius_meters: number;

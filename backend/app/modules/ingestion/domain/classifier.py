@@ -120,8 +120,8 @@ def parse_overpass_element(
     latitude, longitude = coords
 
     raw_name = (
-        tags.get("name")
-        or tags.get("name:es")
+        tags.get("name:es")
+        or tags.get("name")
         or tags.get("name:en")
         or tags.get("official_name")
         or tags.get("operator")

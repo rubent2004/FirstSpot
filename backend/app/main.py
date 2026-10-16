@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.modules.hazards.infrastructure.router import router as hazards_router
 from app.modules.places.infrastructure.router import router as places_router
 
 
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
         )
 
     application.include_router(places_router, prefix=settings.api_v1_prefix)
+    application.include_router(hazards_router, prefix=settings.api_v1_prefix)
 
     return application
 
