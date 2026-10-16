@@ -17,7 +17,37 @@ $$
 
 When `attention_status == "attended"`, the score is attenuated to `20%` (`0.2 * base_score`) so active emergency hotspots stand out on the heatmap.
 
-## Quickstart (Full Stack)
+## One-Command Quickstart (`just`)
+
+The repository includes a root [`justfile`](file:///home/ruben/Documentos/PROYECTOS/SARA_ROBOTICS/ESFE-CLASES/geo-prioridad-vulnerable/justfile) to manage the entire stack:
+
+```bash
+# List all available commands
+just --list
+
+# Start PostGIS + apply migrations + launch FastAPI (:8000) & Vue 3 (:5173)
+just up
+
+# Or launch the full stack in the background (.logs/)
+just up-bg
+
+# Seed or refresh a zone from Overpass API (defaults to sonsonate)
+just sync sonsonate
+
+# Regenerate OpenAPI 3.1 schema and TypeScript SDK
+just codegen
+
+# Run full verification suite (PostGIS + pytest + Vitest + vue-tsc/vite build)
+just test
+
+# Check container, database counts, and process status
+just status
+
+# Stop background services and PostGIS container
+just down
+```
+
+## Manual Step-by-Step Setup
 
 ### 1. Start Spatial Database (PostGIS)
 

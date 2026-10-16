@@ -7,3 +7,4 @@ dist/
 .DS_Store
 *.pyc
 pgdata/
+.logs/

@@ -246,6 +246,13 @@ Donde:
 - [x] **Fase 4 — Frontend Vue 3 + TypeScript + Cliente OpenAPI**: Inicializar el proyecto con Vite + Element Plus + Pinia + Leaflet, generar el cliente tipado desde OpenAPI y construir los componentes Container/Presentational del mapa de calor y la cola de prioridad.
 - [x] **Fase 5 — Verificación Integral con Datos de Sonsonate**: Levantar el stack completo, sincronizar los puntos reales de Sonsonate desde Overpass, verificar la respuesta del mapa de calor y probar el flujo completo de actualización de urgencia y estado de atención.
 
-## Próximo paso
+## Ejecución Rápida con `justfile`
 
-Revisar este documento de arquitectura ([PLAN_ARQUITECTURA.md](file:///home/ruben/Documentos/PROYECTOS/SARA_ROBOTICS/ESFE-CLASES/geo-prioridad-vulnerable/PLAN_ARQUITECTURA.md)) y confirmar para iniciar la **Fase 1 (Infraestructura Docker PostGIS + Backend FastAPI)**.
+El proyecto cuenta con un [`justfile`](file:///home/ruben/Documentos/PROYECTOS/SARA_ROBOTICS/ESFE-CLASES/geo-prioridad-vulnerable/justfile) en la raíz para levantar y verificar todo el ecosistema con un solo comando:
+
+- `just up`: Levanta PostgreSQL + PostGIS, ejecuta migraciones Alembic e inicia simultáneamente el backend FastAPI (`:8000`) y el frontend Vue 3 (`:5173`).
+- `just up-bg` / `just down`: Inicia o detiene el stack completo en segundo plano.
+- `just sync sonsonate`: Sincroniza los puntos vulnerables de Sonsonate en PostGIS.
+- `just codegen`: Exporta `backend/openapi.json` y regenera el cliente TypeScript en `frontend/src/api/generated/`.
+- `just test`: Ejecuta todas las pruebas de backend (`uv run pytest -v`), pruebas de frontend (`pnpm run test`) y compilación estricta (`pnpm run build`).
+- `just status`: Muestra el estado del contenedor PostGIS y el conteo de lugares priorizados por zona.
