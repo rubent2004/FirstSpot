@@ -1,13 +1,16 @@
 # Geo-Prioridad Vulnerable
 
-Geospatial prioritization platform for humanitarian response, civil protection, and healthcare institutions to identify, classify, and prioritize critical locations with vulnerable population concentrations in El Salvador (starting with **Sonsonate**).
+Plataforma geoespacial en desarrollo para apoyar la priorización de lugares sensibles y explorar la coordinación de emergencias en Sonsonate. La [propuesta de producto](PROPUESTA_PRODUCTO.md) describe una posible ampliación para integrar reportes de incidentes y verificación de rutas; esa necesidad local aún está pendiente de validación.
 
-## Architecture Overview
+## Arquitectura y estado actual
 
-- **Backend (`backend/`)**: FastAPI (Hexagonal + Screaming Architecture), SQLAlchemy 2.0 (`AsyncSession`), GeoAlchemy2, Shapely, Alembic, `httpx` Overpass QL client (`nwr` + `[timeout:60]` + mirror failover + offline seed fallback).
-- **Spatial Database (`docker-compose.yml`)**: PostgreSQL 16 + PostGIS 3.4 (`GEOGRAPHY(Point, 4326)` with `GIST` spatial index and `ST_DWithin` 500m cluster density calculation).
-- **Contract-First Integration**: FastAPI exports an **OpenAPI 3.1** specification (`backend/openapi.json`) consumed by the frontend code generator (`pnpm run generate:api`) to produce `frontend/src/api/generated/`.
-- **Frontend (`frontend/`)**: Vue 3 (`<script setup lang="ts">`) + TypeScript + Pinia + Element Plus + Leaflet (`leaflet.heat`) structured with Container/Presentational boundaries.
+- **Backend (`backend/`)**: FastAPI, SQLAlchemy asíncrono, GeoAlchemy2, Alembic y cliente de OpenStreetMap Overpass.
+- **Base de datos**: PostgreSQL + PostGIS para guardar lugares geográficos y consultar proximidad.
+- **Frontend (`frontend/`)**: Vue 3 + TypeScript + Pinia + Element Plus + Leaflet, integrado con el contrato OpenAPI.
+- **Implementado**: ingesta de lugares sensibles, persistencia espacial, puntuación inicial, API REST y tablero de mapa/cola de atención.
+- **Pendiente como ampliación**: reportes de incidentes, verificación de rutas por modo de desplazamiento, asignación de brigadas y alertas.
+
+La puntuación actual ordena lugares de referencia; no calcula por sí sola la prioridad operativa de un desastre.
 
 ## Multi-Criteria Priority Formula
 
