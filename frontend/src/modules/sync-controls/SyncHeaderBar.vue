@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import {
   ElButton,
   ElInputNumber,
   ElOption,
+  ElOptionGroup,
   ElSelect,
   ElSwitch,
   ElTooltip,
@@ -46,6 +48,21 @@ const emit = defineEmits<{
 const { locale, t, toggleLocale } = useI18n();
 const { isDark, toggleTheme } = useTheme();
 
+const groupedZones = computed(() => {
+  const map = new Map<string, PredefinedZoneRead[]>();
+  for (const zone of props.zones) {
+    const country = (zone as { country?: string }).country || "El Salvador";
+    if (!map.has(country)) {
+      map.set(country, []);
+    }
+    map.get(country)!.push(zone);
+  }
+  return Array.from(map.entries()).map(([country, zones]) => ({
+    country,
+    zones,
+  }));
+});
+
 function handleZoneChange(val: string): void {
   if (!val) return;
   emit("update:selectedZoneKey", val);
@@ -88,17 +105,24 @@ function handleKpiClick(
             size="small"
             class="zone-select"
             data-testid="zone-select"
+            filterable
             @update:model-value="handleZoneChange"
           >
             <template #prefix>
               <Icon0 name="compass" :size="12" />
             </template>
-            <ElOption
-              v-for="zone in props.zones"
-              :key="zone.key"
-              :label="`${zone.name} (${zone.department})`"
-              :value="zone.key"
-            />
+            <ElOptionGroup
+              v-for="group in groupedZones"
+              :key="group.country"
+              :label="group.country"
+            >
+              <ElOption
+                v-for="zone in group.zones"
+                :key="zone.key"
+                :label="`${zone.name} (${zone.department})`"
+                :value="zone.key"
+              />
+            </ElOptionGroup>
           </ElSelect>
         </div>
 
@@ -399,7 +423,7 @@ function handleKpiClick(
 }
 
 .zone-select {
-  width: 175px;
+  width: 210px;
 }
 
 .sync-btn {

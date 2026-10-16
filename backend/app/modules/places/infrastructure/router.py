@@ -35,7 +35,10 @@ class PredefinedZoneRead(BaseModel):
 
     key: str = Field(description="Unique identifier key of the predefined zone.")
     name: str = Field(description="Display name of the municipality or zone.")
-    department: str = Field(description="Department in El Salvador.")
+    department: str = Field(description="Department, province, or region.")
+    country: str = Field(
+        default="El Salvador", description="Country name in Latin America."
+    )
     latitude: float = Field(description="Center latitude (WGS84).")
     longitude: float = Field(description="Center longitude (WGS84).")
     default_radius_meters: int = Field(
@@ -248,6 +251,7 @@ async def list_predefined_zones() -> list[PredefinedZoneRead]:
             key=z.key,
             name=z.name,
             department=z.department,
+            country=z.country,
             latitude=z.latitude,
             longitude=z.longitude,
             default_radius_meters=z.default_radius_meters,
