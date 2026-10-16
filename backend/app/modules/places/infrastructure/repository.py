@@ -77,6 +77,7 @@ class PlaceRepository:
             select(func.count(neighbor.id))
             .where(
                 neighbor.id != VulnerablePlaceModel.id,
+                neighbor.zone_name == VulnerablePlaceModel.zone_name,
                 func.ST_DWithin(
                     VulnerablePlaceModel.location,
                     neighbor.location,

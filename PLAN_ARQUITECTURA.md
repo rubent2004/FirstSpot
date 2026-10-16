@@ -221,7 +221,7 @@ Donde:
 ### Flujo de generación de tipos (Contract-First / Codegen)
 
 1. FastAPI define `response_model` estrictos en Pydantic v2 con `operation_id` explícitos.
-2. El script `npm run generate:api` en el frontend ejecuta `@hey-api/openapi-ts` apuntando a `http://localhost:8000/openapi.json`.
+2. El script `pnpm run generate:api` en el frontend ejecuta `@hey-api/openapi-ts` apuntando a `http://localhost:8000/openapi.json`.
 3. Los stores de Pinia importan directamente las funciones y tipos autogenerados (`PlaceRead`, `PlaceTriageUpdate`, `SyncZoneRequest`), eliminando errores de serialización.
 
 ### Distribución visual del Dashboard (Element Plus + Leaflet)
@@ -243,8 +243,8 @@ Donde:
 - [x] **Fase 1 — Infraestructura y Base de Datos Espacial**: Crear `docker-compose.yml` con PostgreSQL 16 + PostGIS 3.4, configurar entorno Python en `backend/` y migración inicial con la tabla `vulnerable_places` e índice `GIST`.
 - [x] **Fase 2 — Motor de Ingesta Overpass y Dominio de Priorización**: Implementar el adaptador asíncrono de Overpass API (`nwr` + `[timeout:60]`), el clasificador de categorías de vulnerabilidad, el repositorio PostGIS con `UPSERT` idempotente y el cálculo de `priority_score` con densidad espacial `ST_DWithin`.
 - [x] **Fase 3 — API REST y Contrato OpenAPI**: Exponer los endpoints en FastAPI (`/zones`, `/places/sync`, `/places`, `/places/{id}`, `/places/heatmap`) con pruebas de integración y exportar el esquema OpenAPI 3.1.
-- [ ] **Fase 4 — Frontend Vue 3 + TypeScript + Cliente OpenAPI**: Inicializar el proyecto con Vite + Element Plus + Pinia + Leaflet, generar el cliente tipado desde OpenAPI y construir los componentes Container/Presentational del mapa de calor y la cola de prioridad.
-- [ ] **Fase 5 — Verificación Integral con Datos de Sonsonate**: Levantar el stack completo, sincronizar los puntos reales de Sonsonate desde Overpass, verificar la respuesta del mapa de calor y probar el flujo completo de actualización de urgencia y estado de atención.
+- [x] **Fase 4 — Frontend Vue 3 + TypeScript + Cliente OpenAPI**: Inicializar el proyecto con Vite + Element Plus + Pinia + Leaflet, generar el cliente tipado desde OpenAPI y construir los componentes Container/Presentational del mapa de calor y la cola de prioridad.
+- [x] **Fase 5 — Verificación Integral con Datos de Sonsonate**: Levantar el stack completo, sincronizar los puntos reales de Sonsonate desde Overpass, verificar la respuesta del mapa de calor y probar el flujo completo de actualización de urgencia y estado de atención.
 
 ## Próximo paso
 
