@@ -19,7 +19,7 @@ When `attention_status == "attended"`, the score is attenuated to `20%` (`0.2 * 
 
 ## One-Command Quickstart (`just`)
 
-The repository includes a root [`justfile`](file:///home/ruben/Documentos/PROYECTOS/SARA_ROBOTICS/ESFE-CLASES/geo-prioridad-vulnerable/justfile) to manage the entire stack:
+The repository includes a root [`justfile`](file:///home/ruben/Documentos/PROYECTOS/RALLY_LATAM/geo-prioridad-vulnerable/justfile) to manage the entire stack:
 
 ```bash
 # List all available commands

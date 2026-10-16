@@ -23,9 +23,10 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "center": {"lat": 13.7203, "lon": -89.7248},
         "tags": {
             "amenity": "hospital",
-            "name": "Sonsonate Regional National Hospital",
+            "name": "Hospital Nacional General Dr. Jorge Mazzini Villacorta",
+            "name:en": "Sonsonate Regional National Hospital",
             "emergency": "yes",
-            "operator": "Ministry of Health",
+            "operator": "Ministerio de Salud (MINSAL)",
         },
     },
     {
@@ -35,7 +36,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "lon": -89.7254,
         "tags": {
             "amenity": "clinic",
-            "name": "Sonsonate Community Health Clinic",
+            "name": "Unidad Comunitaria de Salud Familiar (UCSF) Sonsonate",
+            "name:en": "Sonsonate Community Health Clinic",
             "healthcare": "clinic",
         },
     },
@@ -48,7 +50,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
             "amenity": "social_facility",
             "social_facility": "nursing_home",
             "social_facility:for": "senior",
-            "name": "San Vicente Senior Care Shelter",
+            "name": "Hogar de Ancianos San Vicente de Paúl",
+            "name:en": "San Vicente Senior Care Shelter",
         },
     },
     {
@@ -58,7 +61,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "lon": -89.7261,
         "tags": {
             "amenity": "kindergarten",
-            "name": "Sonsonate Early Childhood Kindergarten",
+            "name": "Escuela de Educación Parvularia de Sonsonate",
+            "name:en": "Sonsonate Early Childhood Kindergarten",
         },
     },
     {
@@ -67,7 +71,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "center": {"lat": 13.7219, "lon": -89.7231},
         "tags": {
             "amenity": "school",
-            "name": "Thomas Jefferson Public School",
+            "name": "Complejo Educativo Thomas Jefferson",
+            "name:en": "Thomas Jefferson Public School",
         },
     },
     {
@@ -77,7 +82,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "lon": -89.7270,
         "tags": {
             "amenity": "community_centre",
-            "name": "El Angel Community Center",
+            "name": "Casa Comunal Barrio El Ángel",
+            "name:en": "El Angel Community Center",
         },
     },
     {
@@ -86,7 +92,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "center": {"lat": 13.7295, "lon": -89.7192},
         "tags": {
             "amenity": "university",
-            "name": "Sonsonate Regional University",
+            "name": "Universidad de Sonsonate (USO)",
+            "name:en": "Sonsonate Regional University",
         },
     },
     {
@@ -96,7 +103,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "lon": -89.7243,
         "tags": {
             "amenity": "pharmacy",
-            "name": "Sonsonate Central Pharmacy",
+            "name": "Farmacia Central de Sonsonate",
+            "name:en": "Sonsonate Central Pharmacy",
         },
     },
     {
@@ -105,7 +113,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "center": {"lat": 13.7175, "lon": -89.7220},
         "tags": {
             "amenity": "marketplace",
-            "name": "Sonsonate Central Marketplace",
+            "name": "Mega Plaza y Mercado Central de Sonsonate",
+            "name:en": "Sonsonate Central Marketplace",
         },
     },
     {
@@ -115,7 +124,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "tags": {
             "amenity": "place_of_worship",
             "religion": "christian",
-            "name": "Holy Trinity Cathedral of Sonsonate",
+            "name": "Catedral Santísima Trinidad de Sonsonate",
+            "name:en": "Holy Trinity Cathedral of Sonsonate",
         },
     },
     {
@@ -124,7 +134,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "center": {"lat": 13.7152, "lon": -89.7188},
         "tags": {
             "shop": "mall",
-            "name": "Metrocentro Sonsonate Mall",
+            "name": "Centro Comercial Metrocentro Sonsonate",
+            "name:en": "Metrocentro Sonsonate Mall",
         },
     },
     {
@@ -135,7 +146,8 @@ SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
         "tags": {
             "amenity": "social_facility",
             "social_facility": "shelter",
-            "name": "Sonsonate Municipal Civil Protection Shelter",
+            "name": "Albergue Municipal de Protección Civil Sonsonate",
+            "name:en": "Sonsonate Municipal Civil Protection Shelter",
         },
     },
 ]

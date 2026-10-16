@@ -98,6 +98,115 @@ export const URGENCY_LABELS: Record<number, string> = {
   5: "5 - Critical (1.6x)",
 };
 
+export type HazardType =
+  | "earthquake"
+  | "severe_storm"
+  | "volcano"
+  | "flood"
+  | "wildfire";
+
+export type HazardAlertLevel = "green" | "yellow" | "orange" | "red";
+
+export type HazardScenarioPreset =
+  | "none"
+  | "sonsonate_earthquake_m64"
+  | "pacific_tropical_storm"
+  | "izalco_volcanic_ash";
+
+export interface HazardEventRead {
+  id: string;
+  hazard_type: HazardType;
+  title: string;
+  source: string;
+  alert_level: HazardAlertLevel;
+  latitude: number;
+  longitude: number;
+  radius_km: number;
+  magnitude: number | null;
+  depth_km: number | null;
+  occurred_at: string;
+  url: string | null;
+  is_simulated: boolean;
+}
+
+export interface WeatherConditionRead {
+  temperature_c: number;
+  precipitation_mm: number;
+  rain_mm: number;
+  wind_speed_kmh: number;
+  wind_gusts_kmh: number;
+  weather_code: number;
+  weather_label: string;
+  alert_level: HazardAlertLevel;
+  source: string;
+  is_simulated: boolean;
+}
+
+export interface ActiveHazardsResponse {
+  zone_name: string;
+  latitude: number;
+  longitude: number;
+  scenario: HazardScenarioPreset;
+  overall_alert_level: HazardAlertLevel;
+  zone_hazard_bonus: number;
+  active_sources: string[];
+  weather: WeatherConditionRead;
+  events: HazardEventRead[];
+}
+
+export interface GeocodeResultRead {
+  display_name: string;
+  latitude: number;
+  longitude: number;
+  place_type: string;
+  importance: number;
+}
+
+export async function getActiveHazards(params?: {
+  zone_key?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  scenario?: HazardScenarioPreset;
+}): Promise<ActiveHazardsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.zone_key) qs.set("zone_key", params.zone_key);
+  if (params?.latitude !== undefined && params?.latitude !== null) {
+    qs.set("latitude", String(params.latitude));
+  }
+  if (params?.longitude !== undefined && params?.longitude !== null) {
+    qs.set("longitude", String(params.longitude));
+  }
+  if (params?.scenario) qs.set("scenario", params.scenario);
+
+  const baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "";
+  const url = `${baseUrl}/api/v1/hazards/active${qs.toString() ? `?${qs.toString()}` : ""}`;
+  const resp = await globalThis.fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status}`);
+  }
+  return (await resp.json()) as ActiveHazardsResponse;
+}
+
+export async function geocodeLocation(
+  query: string,
+  limit = 5,
+): Promise<GeocodeResultRead[]> {
+  const qs = new URLSearchParams({ q: query, limit: String(limit) });
+  const baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "";
+  const url = `${baseUrl}/api/v1/hazards/geocode?${qs.toString()}`;
+  const resp = await globalThis.fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (!resp.ok) {
+    throw new Error(`HTTP ${resp.status}`);
+  }
+  return (await resp.json()) as GeocodeResultRead[];
+}
+
 export const apiClient = {
   getHealthStatus,
   listPredefinedZones,
@@ -106,4 +215,6 @@ export const apiClient = {
   getHeatmapData,
   getPlaceById,
   updatePlaceTriage,
+  getActiveHazards,
+  geocodeLocation,
 };

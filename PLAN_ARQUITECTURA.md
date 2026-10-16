@@ -248,7 +248,7 @@ Donde:
 
 ## Ejecución Rápida con `justfile`
 
-El proyecto cuenta con un [`justfile`](file:///home/ruben/Documentos/PROYECTOS/SARA_ROBOTICS/ESFE-CLASES/geo-prioridad-vulnerable/justfile) en la raíz para levantar y verificar todo el ecosistema con un solo comando:
+El proyecto cuenta con un [`justfile`](file:///home/ruben/Documentos/PROYECTOS/RALLY_LATAM/geo-prioridad-vulnerable/justfile) en la raíz para levantar y verificar todo el ecosistema con un solo comando:
 
 - `just up`: Levanta PostgreSQL + PostGIS, ejecuta migraciones Alembic e inicia simultáneamente el backend FastAPI (`:8000`) y el frontend Vue 3 (`:5173`).
 - `just up-bg` / `just down`: Inicia o detiene el stack completo en segundo plano.
