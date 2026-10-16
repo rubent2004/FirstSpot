@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { ElButton, ElTag } from "element-plus";
+import {
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElTag,
+} from "element-plus";
 import {
   apiClient,
   type ActiveHazardsResponse,
@@ -253,12 +259,75 @@ function selectSuggestion(item: GeocodeResultRead): void {
     </div>
 
     <div class="telemetry-controls">
-      <div class="live-monitoring-badge">
+      <div v-if="props.scenario === 'none'" class="live-monitoring-badge">
         <span class="live-status-dot"></span>
         <span class="live-status-text">
           {{ locale === "es" ? "Monitoreo Oficial en Vivo" : "Official Live Feeds" }}
         </span>
       </div>
+
+      <div v-else class="active-drill-badge">
+        <span class="active-drill-dot"></span>
+        <span class="active-drill-text">
+          {{ locale === "es" ? "Simulacro Activo" : "Active Drill" }}
+        </span>
+        <button
+          type="button"
+          class="exit-drill-btn"
+          data-testid="exit-drill-btn"
+          :title="locale === 'es' ? 'Volver a monitoreo real' : 'Return to live monitoring'"
+          @click="emit('change-scenario', 'none')"
+        >
+          <Icon0 name="x" :size="11" />
+          <span>{{ locale === "es" ? "Finalizar" : "End" }}</span>
+        </button>
+      </div>
+
+      <ElDropdown
+        trigger="click"
+        @command="(cmd: string) => emit('change-scenario', cmd as HazardScenarioPreset)"
+      >
+        <button
+          type="button"
+          class="drill-toggle-btn"
+          data-testid="drill-toggle-btn"
+        >
+          <Icon0 name="activity" :size="12" />
+          <span>{{ locale === 'es' ? 'Simulacro' : 'Drill' }}</span>
+          <Icon0 name="chevron_down" :size="10" />
+        </button>
+        <template #dropdown>
+          <ElDropdownMenu class="drill-dropdown-menu">
+            <ElDropdownItem
+              v-if="props.scenario !== 'none'"
+              command="none"
+            >
+              <span class="drill-item-title text-emerald">
+                <Icon0 name="shield_alert" :size="12" />
+                {{ labels.scenarios.none }}
+              </span>
+            </ElDropdownItem>
+            <ElDropdownItem command="sonsonate_earthquake_m64">
+              <span class="drill-item-title">
+                <Icon0 name="siren" :size="12" class="text-red" />
+                {{ labels.scenarios.sonsonate_earthquake_m64 }}
+              </span>
+            </ElDropdownItem>
+            <ElDropdownItem command="pacific_tropical_storm">
+              <span class="drill-item-title">
+                <Icon0 name="triangle_alert" :size="12" class="text-blue" />
+                {{ labels.scenarios.pacific_tropical_storm }}
+              </span>
+            </ElDropdownItem>
+            <ElDropdownItem command="izalco_volcanic_ash">
+              <span class="drill-item-title">
+                <Icon0 name="flame" :size="12" class="text-amber" />
+                {{ labels.scenarios.izalco_volcanic_ash }}
+              </span>
+            </ElDropdownItem>
+          </ElDropdownMenu>
+        </template>
+      </ElDropdown>
 
       <div
         class="feed-freshness"
@@ -558,10 +627,91 @@ function selectSuggestion(item: GeocodeResultRead): void {
   background: var(--eoc-bg-hover);
 }
 
+.drill-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--eoc-bg-panel);
+  border: 1px solid var(--eoc-border);
+  color: var(--eoc-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drill-toggle-btn:hover {
+  color: var(--eoc-text-primary);
+  border-color: var(--eoc-accent);
+  background: var(--eoc-bg-hover);
+}
+
+.active-drill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--eoc-critical-bg);
+  border: 1px solid var(--eoc-critical-border);
+  color: var(--eoc-critical);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.active-drill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--eoc-critical);
+  animation: beacon-pulse 1.8s infinite;
+}
+
+.exit-drill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--eoc-bg-panel);
+  border: 1px solid var(--eoc-border);
+  color: var(--eoc-text-primary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 2px;
+  transition: all 0.15s ease;
+}
+
+.exit-drill-btn:hover {
+  background: var(--eoc-critical-border);
+  color: var(--eoc-critical);
+}
+
+.drill-item-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+}
+
 .text-sky {
   color: var(--eoc-accent);
 }
 .text-amber {
   color: var(--eoc-warning);
+}
+.text-red {
+  color: var(--eoc-critical);
+}
+.text-blue {
+  color: var(--eoc-info);
+}
+.text-emerald {
+  color: var(--eoc-success);
 }
 </style>
