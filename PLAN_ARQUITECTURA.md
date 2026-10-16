@@ -241,8 +241,8 @@ Donde:
 ## Plan de Implementación por Fases (Checklist)
 
 - [x] **Fase 1 — Infraestructura y Base de Datos Espacial**: Crear `docker-compose.yml` con PostgreSQL 16 + PostGIS 3.4, configurar entorno Python en `backend/` y migración inicial con la tabla `vulnerable_places` e índice `GIST`.
-- [ ] **Fase 2 — Motor de Ingesta Overpass y Dominio de Priorización**: Implementar el adaptador asíncrono de Overpass API (`nwr` + `[timeout:60]`), el clasificador de categorías de vulnerabilidad, el repositorio PostGIS con `UPSERT` idempotente y el cálculo de `priority_score` con densidad espacial `ST_DWithin`.
-- [ ] **Fase 3 — API REST y Contrato OpenAPI**: Exponer los endpoints en FastAPI (`/zones`, `/places/sync`, `/places`, `/places/{id}`, `/places/heatmap`) con pruebas de integración y exportar el esquema OpenAPI 3.1.
+- [x] **Fase 2 — Motor de Ingesta Overpass y Dominio de Priorización**: Implementar el adaptador asíncrono de Overpass API (`nwr` + `[timeout:60]`), el clasificador de categorías de vulnerabilidad, el repositorio PostGIS con `UPSERT` idempotente y el cálculo de `priority_score` con densidad espacial `ST_DWithin`.
+- [x] **Fase 3 — API REST y Contrato OpenAPI**: Exponer los endpoints en FastAPI (`/zones`, `/places/sync`, `/places`, `/places/{id}`, `/places/heatmap`) con pruebas de integración y exportar el esquema OpenAPI 3.1.
 - [ ] **Fase 4 — Frontend Vue 3 + TypeScript + Cliente OpenAPI**: Inicializar el proyecto con Vite + Element Plus + Pinia + Leaflet, generar el cliente tipado desde OpenAPI y construir los componentes Container/Presentational del mapa de calor y la cola de prioridad.
 - [ ] **Fase 5 — Verificación Integral con Datos de Sonsonate**: Levantar el stack completo, sincronizar los puntos reales de Sonsonate desde Overpass, verificar la respuesta del mapa de calor y probar el flujo completo de actualización de urgencia y estado de atención.
 

@@ -1,10 +1,14 @@
-"""FastAPI application bootstrap, CORS configuration, and health contract."""
+"""FastAPI application bootstrap, CORS configuration, routers, and OpenAPI contract."""
+
+import json
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.modules.places.infrastructure.router import router as places_router
 
 
 class HealthResponse(BaseModel):
@@ -61,7 +65,24 @@ def create_app() -> FastAPI:
             version="0.1.0",
         )
 
+    application.include_router(places_router, prefix=settings.api_v1_prefix)
+
     return application
 
 
 app = create_app()
+
+
+def export_openapi_schema(output_path: str | Path = "openapi.json") -> Path:
+    """Export the OpenAPI 3.1 schema JSON to disk for frontend client generation."""
+    target = Path(output_path)
+    target.write_text(
+        json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return target
+
+
+if __name__ == "__main__":
+    exported = export_openapi_schema()
+    print(f"Exported OpenAPI schema to {exported.resolve()}")
