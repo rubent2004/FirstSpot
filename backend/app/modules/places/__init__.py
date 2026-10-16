@@ -1,0 +1,1 @@
+"""Vulnerable places management module."""
