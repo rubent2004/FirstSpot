@@ -140,6 +140,15 @@ export function useMapMarkers(options: UseMapMarkersOptions) {
       t.value.categories[place.category as PlaceCategory] ?? place.category;
     const statusLabel =
       t.value.statuses[place.attention_status] ?? place.attention_status;
+    const nearbyCount = place.nearby_places_count ?? 0;
+    const nearbyLine =
+      nearbyCount > 0
+        ? ` • <span class="eoc-numeric">${nearbyCount}</span> ${
+            nearbyCount === 1
+              ? t.value.queue.nearbyOne
+              : t.value.queue.nearbyMany
+          }`
+        : "";
     const selectedBadge = isSelected
       ? `<span class="map-tip-badge">${renderIcon0SvgString("locate_fixed", 11, "var(--eoc-accent-text)")}${locale.value === "es" ? "LUGAR SELECCIONADO" : "SELECTED PLACE"}</span><br/>`
       : "";
@@ -149,7 +158,7 @@ export function useMapMarkers(options: UseMapMarkersOptions) {
         selectedBadge +
         `<strong class="map-tip-title">${escapeHtml(displayName)}</strong><br/>` +
         `<span class="map-tip-meta">${escapeHtml(categoryLabel)}</span> • ${t.value.map.tooltipScore}: <b class="eoc-numeric">${Math.round(place.priority_score)}</b><br/>` +
-        `${t.value.map.tooltipStatus}: <b>${escapeHtml(statusLabel)}</b> • ${t.value.map.tooltipCluster}: <b class="eoc-numeric">+${place.nearby_places_count}</b><br/>` +
+        `${t.value.map.tooltipStatus}: <b>${escapeHtml(statusLabel)}</b>${nearbyLine}<br/>` +
         `<em class="map-tip-hint">${t.value.map.tooltipClickHint}</em>` +
         `</div>`,
       {

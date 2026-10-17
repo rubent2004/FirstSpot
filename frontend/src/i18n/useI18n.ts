@@ -86,8 +86,13 @@ export interface I18nMessages {
     legendStatusTitle: string;
     tooltipScore: string;
     tooltipStatus: string;
-    tooltipCluster: string;
     tooltipClickHint: string;
+    /**
+     * Which of the two surfaces owns the map at the current zoom. Density and
+     * individual places are two encodings of one dataset, so one yields.
+     */
+    modeOverview: string;
+    modeDetail: string;
   };
   hazardCard: {
     alertTitle: string;
@@ -295,8 +300,9 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       legendStatusTitle: "Borde de Estado Operativo",
       tooltipScore: "Puntaje",
       tooltipStatus: "Estado",
-      tooltipCluster: "Clúster 500m",
       tooltipClickHint: "Clic para abrir triaje y despacho",
+      modeOverview: "Concentración · acerque para ver lugares",
+      modeDetail: "Lugares · aleje para ver la concentración",
     },
     hazardCard: {
       alertTitle: "Ficha de Emergencia y Desastre",
@@ -542,8 +548,9 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       legendStatusTitle: "Operational Status Ring",
       tooltipScore: "Score",
       tooltipStatus: "Status",
-      tooltipCluster: "500m Cluster",
       tooltipClickHint: "Click to open triage & dispatch",
+      modeOverview: "Concentration · zoom in for places",
+      modeDetail: "Places · zoom out for concentration",
     },
     hazardCard: {
       alertTitle: "Emergency & Hazard Assessment",

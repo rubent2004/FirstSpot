@@ -25,6 +25,9 @@ const SHARED_TILE_OPTIONS = {
 /** Sonsonate, the operational default zone, used before any zone is selected. */
 export const DEFAULT_MAP_CENTER: L.LatLngTuple = [13.7222, -89.7236];
 
+/** Zoom the map opens at, before any camera command runs. */
+export const DEFAULT_MAP_ZOOM = 14;
+
 /**
  * Basemap providers. The two Esri Canvas rasters are low-saturation at the
  * source, which is why the tiles are never touched with a CSS filter: a
@@ -116,6 +119,13 @@ export interface UseLeafletMapOptions {
 export function useLeafletMap(options: UseLeafletMapOptions) {
   const mapContainer = ref<HTMLElement | null>(null);
 
+  /**
+   * Current zoom, mirrored into a ref so layer decisions can be computed
+   * properties rather than imperative callbacks. Leaflet owns the value; this
+   * only follows it.
+   */
+  const zoom = ref<number>(DEFAULT_MAP_ZOOM);
+
   let mapInstance: L.Map | null = null;
   let tileLayerInstance: L.TileLayer | null = null;
   let tacticalRefLayerInstance: L.TileLayer | null = null;
@@ -185,7 +195,7 @@ export function useLeafletMap(options: UseLeafletMapOptions) {
 
     mapInstance = L.map(mapContainer.value, {
       center: [initialLat, initialLon],
-      zoom: 14,
+      zoom: DEFAULT_MAP_ZOOM,
       zoomControl: true,
       preferCanvas: canUseCanvasHeatmap(),
       zoomAnimation: true,
@@ -193,6 +203,11 @@ export function useLeafletMap(options: UseLeafletMapOptions) {
       markerZoomAnimation: true,
       wheelPxPerZoomLevel: 120,
       wheelDebounceTime: 40,
+    });
+
+    zoom.value = mapInstance.getZoom?.() ?? DEFAULT_MAP_ZOOM;
+    mapInstance.on("zoomend", () => {
+      zoom.value = mapInstance?.getZoom?.() ?? zoom.value;
     });
 
     applyTileLayer();
@@ -229,5 +244,6 @@ export function useLeafletMap(options: UseLeafletMapOptions) {
     getMap,
     flyTo,
     flyToBounds,
+    zoom,
   };
 }

@@ -36,6 +36,12 @@ export interface UseMarkerClusteringOptions {
   selectedPlace: () => PlaceRead | null;
   /** Operator toggle for the markers layer. */
   enabled: () => boolean;
+  /**
+   * True while the place layer yields the map to the density surface. Only the
+   * selected place is still drawn, because a selection must never disappear
+   * from under the operator who made it.
+   */
+  selectionOnly?: () => boolean;
   markers: MarkerRenderer;
 }
 
@@ -65,6 +71,12 @@ export function useMarkerClustering(options: UseMarkerClusteringOptions) {
     if (!options.markers.hasMarkerGroup() || !map) return;
     options.markers.clearMarkers();
     if (!options.enabled()) return;
+
+    if (options.selectionOnly?.()) {
+      const selected = options.selectedPlace();
+      if (selected) options.markers.renderSinglePlaceMarker(selected);
+      return;
+    }
 
     const zoom = map.getZoom ? map.getZoom() : 14;
     const bounds = map.getBounds
