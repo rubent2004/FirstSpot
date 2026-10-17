@@ -1,6 +1,6 @@
 """FastAPI REST adapters and Pydantic v2 OpenAPI 3.1 schemas for vulnerable places."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Any
 import uuid
 
@@ -9,6 +9,23 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
+from app.core.privacy import CENSUS_SUPPRESSION_POLICY
+from app.modules.census.domain.exposure import (
+    CENSUS_REFERENCE_PERIOD,
+    DEFAULT_EXPOSURE_RADIUS_METERS,
+    EXPOSURE_ESTIMATION_METHOD,
+    MAX_EXPOSURE_RADIUS_METERS,
+    METRIC_PROJECTION_NAME,
+    METRIC_PROJECTION_SRID,
+    SPATIAL_ASSIGNMENT_RULE,
+    UNIFORM_DENSITY_ASSUMPTION,
+    UNIFORM_DISTRICT_RATE_ASSUMPTION,
+    estimate_exposed_population,
+)
+from app.modules.census.domain.geo_codes import CENSUS_SOURCE_ATTRIBUTION
+from app.modules.census.infrastructure.exposure_repository import (
+    CensusExposureRepository,
+)
 from app.modules.ingestion.domain.classifier import parse_overpass_elements
 from app.modules.ingestion.domain.zones import PREDEFINED_ZONES, get_predefined_zone
 from app.modules.ingestion.infrastructure.overpass_client import (
@@ -27,6 +44,7 @@ from app.modules.places.infrastructure.activity_router import (
     PlaceActivityType,
     _write_activity,
 )
+from app.modules.places.infrastructure.models import VulnerablePlaceModel
 from app.modules.places.infrastructure.repository import (
     PlaceRepository,
     PlaceWithNeighbors,
@@ -118,6 +136,126 @@ class SyncPlacesResponse(BaseModel):
     )
 
 
+class PlaceExposureEstimateRead(BaseModel):
+    """Areal-weighted **estimate** of the resident population around a place.
+
+    None of these numbers is a count of people present. They estimate how many
+    residents the CPV 2024 census places inside ``radius_meters`` of this point,
+    and the census records where people live, not where they were when an event
+    happened. ``null`` means withheld under statistical secrecy or outside census
+    coverage; it never means zero.
+    """
+
+    radius_meters: int = Field(
+        description="Radius the estimates below were computed for, in metres."
+    )
+    estimated_exposed_population: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Estimated resident population within the radius, by areal weighting "
+            "of DEGURBA census units. An estimate, not a count of people present. "
+            "Null when withheld or outside census coverage."
+        ),
+    )
+    estimated_exposed_older_adults: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Estimated residents aged 65 and over within the radius, from the "
+            "district rate applied to the estimated exposed population."
+        ),
+    )
+    estimated_exposed_young_children: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Estimated residents under five within the radius, from the district "
+            "rate applied to the estimated exposed population."
+        ),
+    )
+    estimated_exposed_persons_with_disability: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Estimated residents reporting a disability within the radius, from "
+            "the district rate applied to the estimated exposed population."
+        ),
+    )
+    suppressed: bool = Field(
+        default=False,
+        description=(
+            "True when at least one figure was withheld under statistical "
+            "secrecy. A withheld total withholds every figure derived from it."
+        ),
+    )
+    suppression_reason: str | None = Field(
+        default=None,
+        description="Disclosure rule that withheld a figure, when one did.",
+    )
+    estimated_at: datetime | None = Field(
+        default=None,
+        description="When these cached estimates were last recomputed.",
+    )
+
+
+class PlaceExposureMethodologyRead(PlaceExposureEstimateRead):
+    """An on-demand exposure estimate together with its declared methodology.
+
+    The methodology travels with the number because the spatial assignment rule
+    changes exposed population by orders of magnitude, so a consumer that cannot
+    see the rule cannot interpret the figure.
+    """
+
+    estimation_method: str = Field(
+        description="Short label for how the figure was produced."
+    )
+    spatial_assignment_rule: str = Field(
+        description=(
+            "The declared spatial assignment rule, including the alternatives "
+            "that were rejected and why."
+        )
+    )
+    metric_projection_srid: int = Field(
+        description="EPSG code of the metric projection used for the area maths."
+    )
+    metric_projection_name: str = Field(
+        description="Human-readable name of that metric projection."
+    )
+    uniform_density_assumption: str = Field(
+        description="Assumption the exposed-population figure rests on."
+    )
+    uniform_district_rate_assumption: str = Field(
+        description="Assumption the vulnerable sub-population figures rest on."
+    )
+    reference_period: str = Field(
+        description="Why a census figure is not a statement about presence."
+    )
+    contributing_unit_count: int = Field(
+        ge=0,
+        description="Number of census population units that contributed.",
+    )
+    census_unit_id: int | None = Field(
+        default=None,
+        description=(
+            "Cached census population unit containing the place itself, or null "
+            "when the place lies outside census coverage."
+        ),
+    )
+    source: str = Field(description="Mandatory attribution for every census figure.")
+    disclaimer: str = Field(
+        description="Plain-language statement that this is an estimate."
+    )
+
+
+EXPOSURE_DISCLAIMER = (
+    "Estimated exposed resident population, not a count of people present and "
+    "not a casualty figure. Derived by areal weighting of CPV 2024 census units "
+    "under the stated assumptions."
+)
+"""One sentence a consumer cannot misread as a headcount."""
+
+
 class PlaceRead(BaseModel):
     """Complete representation of a prioritized vulnerable place."""
 
@@ -135,7 +273,28 @@ class PlaceRead(BaseModel):
     osm_tags: dict[str, Any]
     attention_status: AttentionStatus
     urgency_level: int = Field(ge=1, le=5)
-    estimated_vulnerable_count: int = Field(ge=0)
+    estimated_vulnerable_count: int = Field(
+        ge=0,
+        description=(
+            "Vulnerable individuals recorded by a responding institution at this "
+            "location. Institution-entered, unrelated to the census estimate in "
+            "'population_exposure'."
+        ),
+    )
+    census_unit_id: int | None = Field(
+        default=None,
+        description=(
+            "Cached DEGURBA census population unit containing this place, or null "
+            "when the place lies outside CPV 2024 coverage."
+        ),
+    )
+    population_exposure: PlaceExposureEstimateRead | None = Field(
+        default=None,
+        description=(
+            "Cached areal-weighted estimate of the resident population around "
+            "this place. Null when no estimate has been computed yet."
+        ),
+    )
     institution_notes: str | None = None
     category_weight: int
     nearby_places_count: int = Field(
@@ -236,6 +395,32 @@ def get_geospatial_provider() -> GeospatialProviderPort:
     return OverpassHttpClient()
 
 
+def _to_cached_exposure(
+    model: VulnerablePlaceModel,
+) -> PlaceExposureEstimateRead | None:
+    """Read the cached exposure estimate off a place, or None if never computed."""
+    if model.exposure_radius_meters is None:
+        return None
+    withheld = (
+        model.estimated_exposed_population is None
+        or model.estimated_exposed_older_adults is None
+        or model.estimated_exposed_young_children is None
+        or model.estimated_exposed_persons_with_disability is None
+    )
+    return PlaceExposureEstimateRead(
+        radius_meters=model.exposure_radius_meters,
+        estimated_exposed_population=model.estimated_exposed_population,
+        estimated_exposed_older_adults=model.estimated_exposed_older_adults,
+        estimated_exposed_young_children=model.estimated_exposed_young_children,
+        estimated_exposed_persons_with_disability=(
+            model.estimated_exposed_persons_with_disability
+        ),
+        suppressed=withheld,
+        suppression_reason=CENSUS_SUPPRESSION_POLICY.label if withheld else None,
+        estimated_at=model.exposure_estimated_at,
+    )
+
+
 def _to_place_read(item: PlaceWithNeighbors) -> PlaceRead:
     """Map repository PlaceWithNeighbors record to PlaceRead schema."""
     m = item.model
@@ -253,6 +438,8 @@ def _to_place_read(item: PlaceWithNeighbors) -> PlaceRead:
         attention_status=AttentionStatus(m.attention_status),
         urgency_level=m.urgency_level,
         estimated_vulnerable_count=m.estimated_vulnerable_count,
+        census_unit_id=m.census_unit_id,
+        population_exposure=_to_cached_exposure(m),
         institution_notes=m.institution_notes,
         category_weight=m.category_weight,
         nearby_places_count=item.nearby_places_count,
@@ -504,6 +691,84 @@ async def get_place_by_id(
             detail=f"Vulnerable place {place_id} not found",
         )
     return _to_place_read(item)
+
+
+@router.get(
+    "/places/{place_id}/population-exposure",
+    response_model=PlaceExposureMethodologyRead,
+    operation_id="getPlacePopulationExposure",
+    summary="Estimate the resident population exposed around a place",
+)
+async def get_place_population_exposure(
+    place_id: uuid.UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    radius_meters: Annotated[
+        int,
+        Query(
+            ge=50,
+            le=MAX_EXPOSURE_RADIUS_METERS,
+            description=(
+                "Radius in metres. The place location is a GEOGRAPHY point, so "
+                "the buffer is metres on the ground, not degrees."
+            ),
+        ),
+    ] = DEFAULT_EXPOSURE_RADIUS_METERS,
+) -> PlaceExposureMethodologyRead:
+    """Estimate, for an arbitrary radius, the resident population around a place.
+
+    The figure is an **estimate of exposure**, produced by areal weighting of
+    CPV 2024 DEGURBA units: each overlapping unit contributes its population in
+    proportion to the share of its own area inside the buffer. It is not a count
+    of people present, and it is not a casualty figure. The declared spatial
+    assignment rule and both standing assumptions are returned with it, because
+    the figure cannot be interpreted without them.
+
+    The cached estimate on ``GET /places`` uses the default radius; this endpoint
+    recomputes for the radius asked for, which costs roughly 40 ms.
+    """
+    repo = PlaceRepository(session)
+    item = await repo.get_place_by_id(place_id)
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vulnerable place {place_id} not found",
+        )
+
+    census = CensusExposureRepository(session)
+    overlaps = await census.overlaps_for_point(
+        longitude=item.model.longitude,
+        latitude=item.model.latitude,
+        radius_meters=radius_meters,
+    )
+    estimate = estimate_exposed_population(
+        overlaps=overlaps,
+        rates_by_district=await census.vulnerable_rates(),
+        radius_meters=radius_meters,
+    )
+
+    return PlaceExposureMethodologyRead(
+        radius_meters=estimate.radius_meters,
+        estimated_exposed_population=estimate.estimated_exposed_population,
+        estimated_exposed_older_adults=estimate.estimated_exposed_older_adults,
+        estimated_exposed_young_children=estimate.estimated_exposed_young_children,
+        estimated_exposed_persons_with_disability=(
+            estimate.estimated_exposed_persons_with_disability
+        ),
+        suppressed=estimate.suppressed,
+        suppression_reason=estimate.suppression_reason,
+        estimated_at=datetime.now(timezone.utc),
+        estimation_method=EXPOSURE_ESTIMATION_METHOD,
+        spatial_assignment_rule=SPATIAL_ASSIGNMENT_RULE,
+        metric_projection_srid=METRIC_PROJECTION_SRID,
+        metric_projection_name=METRIC_PROJECTION_NAME,
+        uniform_density_assumption=UNIFORM_DENSITY_ASSUMPTION,
+        uniform_district_rate_assumption=UNIFORM_DISTRICT_RATE_ASSUMPTION,
+        reference_period=CENSUS_REFERENCE_PERIOD,
+        contributing_unit_count=estimate.contributing_unit_count,
+        census_unit_id=item.model.census_unit_id,
+        source=CENSUS_SOURCE_ATTRIBUTION,
+        disclaimer=EXPOSURE_DISCLAIMER,
+    )
 
 
 @router.patch(

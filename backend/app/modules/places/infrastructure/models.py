@@ -61,6 +61,44 @@ class VulnerablePlaceModel(Base):
     estimated_vulnerable_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0"),
     )
+    census_unit_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("census_population_unit.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    """Cached DEGURBA population unit containing this place.
+
+    Resolved once with ``ST_Intersects`` and stored, never recomputed per query.
+    NULL means the place lies outside CPV 2024 census coverage; it is never
+    snapped to the nearest unit.
+    """
+    exposure_radius_meters: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    """Radius the cached exposure estimates below were computed for."""
+    estimated_exposed_population: Mapped[int | None] = mapped_column(
+        Integer, nullable=True,
+    )
+    """Areal-weighted **estimate** of residents inside ``exposure_radius_meters``.
+
+    This is not a count of people present: the CPV 2024 records where people
+    live, not where they were when an event happened. NULL means withheld under
+    statistical secrecy or outside census coverage, never zero.
+    """
+    estimated_exposed_older_adults: Mapped[int | None] = mapped_column(
+        Integer, nullable=True,
+    )
+    """Estimate of exposed residents aged 65 and over, from district rates."""
+    estimated_exposed_young_children: Mapped[int | None] = mapped_column(
+        Integer, nullable=True,
+    )
+    """Estimate of exposed residents under five, from district rates."""
+    estimated_exposed_persons_with_disability: Mapped[int | None] = mapped_column(
+        Integer, nullable=True,
+    )
+    """Estimate of exposed residents reporting a disability, from district rates."""
+    exposure_estimated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
+    """When the cached exposure estimates were last recomputed."""
     institution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     category_weight: Mapped[int] = mapped_column(Integer, nullable=False)
     priority_score: Mapped[float] = mapped_column(
@@ -80,9 +118,34 @@ class VulnerablePlaceModel(Base):
         UniqueConstraint("osm_type", "osm_id", name="uq_osm_element"),
         Index("idx_vulnerable_places_priority", priority_score.desc()),
         Index("idx_vulnerable_places_zone_category", "zone_name", "category"),
+        Index("idx_vulnerable_places_census_unit", "census_unit_id"),
         CheckConstraint("urgency_level BETWEEN 1 AND 5", name="ck_urgency_level_range"),
         CheckConstraint(
             "estimated_vulnerable_count >= 0", name="ck_vulnerable_count_non_negative",
+        ),
+        CheckConstraint(
+            "exposure_radius_meters IS NULL OR exposure_radius_meters > 0",
+            name="ck_exposure_radius_positive",
+        ),
+        CheckConstraint(
+            "estimated_exposed_population IS NULL "
+            "OR estimated_exposed_population >= 0",
+            name="ck_exposed_population_non_negative",
+        ),
+        CheckConstraint(
+            "estimated_exposed_older_adults IS NULL "
+            "OR estimated_exposed_older_adults >= 0",
+            name="ck_exposed_older_adults_non_negative",
+        ),
+        CheckConstraint(
+            "estimated_exposed_young_children IS NULL "
+            "OR estimated_exposed_young_children >= 0",
+            name="ck_exposed_young_children_non_negative",
+        ),
+        CheckConstraint(
+            "estimated_exposed_persons_with_disability IS NULL "
+            "OR estimated_exposed_persons_with_disability >= 0",
+            name="ck_exposed_disability_non_negative",
         ),
     )
 

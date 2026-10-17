@@ -519,6 +519,64 @@
         }
       }
     },
+    "/api/v1/places/{place_id}/population-exposure": {
+      "get": {
+        "tags": [
+          "places"
+        ],
+        "summary": "Estimate the resident population exposed around a place",
+        "description": "Estimate, for an arbitrary radius, the resident population around a place.\n\nThe figure is an **estimate of exposure**, produced by areal weighting of\nCPV 2024 DEGURBA units: each overlapping unit contributes its population in\nproportion to the share of its own area inside the buffer. It is not a count\nof people present, and it is not a casualty figure. The declared spatial\nassignment rule and both standing assumptions are returned with it, because\nthe figure cannot be interpreted without them.\n\nThe cached estimate on ``GET /places`` uses the default radius; this endpoint\nrecomputes for the radius asked for, which costs roughly 40 ms.",
+        "operationId": "getPlacePopulationExposure",
+        "parameters": [
+          {
+            "name": "place_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Place Id"
+            }
+          },
+          {
+            "name": "radius_meters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20000,
+              "minimum": 50,
+              "description": "Radius in metres. The place location is a GEOGRAPHY point, so the buffer is metres on the ground, not degrees.",
+              "default": 500,
+              "title": "Radius Meters"
+            },
+            "description": "Radius in metres. The place location is a GEOGRAPHY point, so the buffer is metres on the ground, not degrees."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceExposureMethodologyRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/places/{place_id}/activities": {
       "get": {
         "tags": [
@@ -1575,6 +1633,275 @@
         "title": "PlaceCategory",
         "description": "Supported vulnerable place categories derived from OpenStreetMap taxonomy."
       },
+      "PlaceExposureEstimateRead": {
+        "properties": {
+          "radius_meters": {
+            "type": "integer",
+            "title": "Radius Meters",
+            "description": "Radius the estimates below were computed for, in metres."
+          },
+          "estimated_exposed_population": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Population",
+            "description": "Estimated resident population within the radius, by areal weighting of DEGURBA census units. An estimate, not a count of people present. Null when withheld or outside census coverage."
+          },
+          "estimated_exposed_older_adults": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Older Adults",
+            "description": "Estimated residents aged 65 and over within the radius, from the district rate applied to the estimated exposed population."
+          },
+          "estimated_exposed_young_children": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Young Children",
+            "description": "Estimated residents under five within the radius, from the district rate applied to the estimated exposed population."
+          },
+          "estimated_exposed_persons_with_disability": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Persons With Disability",
+            "description": "Estimated residents reporting a disability within the radius, from the district rate applied to the estimated exposed population."
+          },
+          "suppressed": {
+            "type": "boolean",
+            "title": "Suppressed",
+            "description": "True when at least one figure was withheld under statistical secrecy. A withheld total withholds every figure derived from it.",
+            "default": false
+          },
+          "suppression_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppression Reason",
+            "description": "Disclosure rule that withheld a figure, when one did."
+          },
+          "estimated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated At",
+            "description": "When these cached estimates were last recomputed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "radius_meters"
+        ],
+        "title": "PlaceExposureEstimateRead",
+        "description": "Areal-weighted **estimate** of the resident population around a place.\n\nNone of these numbers is a count of people present. They estimate how many\nresidents the CPV 2024 census places inside ``radius_meters`` of this point,\nand the census records where people live, not where they were when an event\nhappened. ``null`` means withheld under statistical secrecy or outside census\ncoverage; it never means zero."
+      },
+      "PlaceExposureMethodologyRead": {
+        "properties": {
+          "radius_meters": {
+            "type": "integer",
+            "title": "Radius Meters",
+            "description": "Radius the estimates below were computed for, in metres."
+          },
+          "estimated_exposed_population": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Population",
+            "description": "Estimated resident population within the radius, by areal weighting of DEGURBA census units. An estimate, not a count of people present. Null when withheld or outside census coverage."
+          },
+          "estimated_exposed_older_adults": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Older Adults",
+            "description": "Estimated residents aged 65 and over within the radius, from the district rate applied to the estimated exposed population."
+          },
+          "estimated_exposed_young_children": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Young Children",
+            "description": "Estimated residents under five within the radius, from the district rate applied to the estimated exposed population."
+          },
+          "estimated_exposed_persons_with_disability": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Persons With Disability",
+            "description": "Estimated residents reporting a disability within the radius, from the district rate applied to the estimated exposed population."
+          },
+          "suppressed": {
+            "type": "boolean",
+            "title": "Suppressed",
+            "description": "True when at least one figure was withheld under statistical secrecy. A withheld total withholds every figure derived from it.",
+            "default": false
+          },
+          "suppression_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppression Reason",
+            "description": "Disclosure rule that withheld a figure, when one did."
+          },
+          "estimated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated At",
+            "description": "When these cached estimates were last recomputed."
+          },
+          "estimation_method": {
+            "type": "string",
+            "title": "Estimation Method",
+            "description": "Short label for how the figure was produced."
+          },
+          "spatial_assignment_rule": {
+            "type": "string",
+            "title": "Spatial Assignment Rule",
+            "description": "The declared spatial assignment rule, including the alternatives that were rejected and why."
+          },
+          "metric_projection_srid": {
+            "type": "integer",
+            "title": "Metric Projection Srid",
+            "description": "EPSG code of the metric projection used for the area maths."
+          },
+          "metric_projection_name": {
+            "type": "string",
+            "title": "Metric Projection Name",
+            "description": "Human-readable name of that metric projection."
+          },
+          "uniform_density_assumption": {
+            "type": "string",
+            "title": "Uniform Density Assumption",
+            "description": "Assumption the exposed-population figure rests on."
+          },
+          "uniform_district_rate_assumption": {
+            "type": "string",
+            "title": "Uniform District Rate Assumption",
+            "description": "Assumption the vulnerable sub-population figures rest on."
+          },
+          "reference_period": {
+            "type": "string",
+            "title": "Reference Period",
+            "description": "Why a census figure is not a statement about presence."
+          },
+          "contributing_unit_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Contributing Unit Count",
+            "description": "Number of census population units that contributed."
+          },
+          "census_unit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Census Unit Id",
+            "description": "Cached census population unit containing the place itself, or null when the place lies outside census coverage."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Mandatory attribution for every census figure."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "Plain-language statement that this is an estimate."
+          }
+        },
+        "type": "object",
+        "required": [
+          "radius_meters",
+          "estimation_method",
+          "spatial_assignment_rule",
+          "metric_projection_srid",
+          "metric_projection_name",
+          "uniform_density_assumption",
+          "uniform_district_rate_assumption",
+          "reference_period",
+          "contributing_unit_count",
+          "source",
+          "disclaimer"
+        ],
+        "title": "PlaceExposureMethodologyRead",
+        "description": "An on-demand exposure estimate together with its declared methodology.\n\nThe methodology travels with the number because the spatial assignment rule\nchanges exposed population by orders of magnitude, so a consumer that cannot\nsee the rule cannot interpret the figure."
+      },
       "PlaceRead": {
         "properties": {
           "id": {
@@ -1629,7 +1956,31 @@
           "estimated_vulnerable_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Estimated Vulnerable Count"
+            "title": "Estimated Vulnerable Count",
+            "description": "Vulnerable individuals recorded by a responding institution at this location. Institution-entered, unrelated to the census estimate in 'population_exposure'."
+          },
+          "census_unit_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Census Unit Id",
+            "description": "Cached DEGURBA census population unit containing this place, or null when the place lies outside CPV 2024 coverage."
+          },
+          "population_exposure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceExposureEstimateRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cached areal-weighted estimate of the resident population around this place. Null when no estimate has been computed yet."
           },
           "institution_notes": {
             "anyOf": [

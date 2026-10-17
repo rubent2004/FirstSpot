@@ -508,6 +508,7 @@ class TestFastAPIEndpointsAndOpenAPIContract:
                 "getHeatmapData",
                 "getInstitutionAccount",
                 "getPlaceById",
+                "getPlacePopulationExposure",
                 "joinInstitution",
                 "listPlaceActivities",
                 "listPredefinedZones",

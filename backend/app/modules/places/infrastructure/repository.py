@@ -19,6 +19,9 @@ from app.modules.places.domain.entities import (
     VulnerablePlace,
     calculate_priority_score,
 )
+from app.modules.places.infrastructure.census_attachment import (
+    PlaceCensusAttachmentRepository,
+)
 from app.modules.places.infrastructure.models import VulnerablePlaceModel
 
 UPSERT_BATCH_SIZE = 400
@@ -149,8 +152,26 @@ class PlaceRepository:
         await self.session.flush()
         self.session.expire_all()
         await self.recalculate_priority_scores(zone_name=zone_name)
+        await self._resolve_census_attachment(zone_name=zone_name)
         await self.session.commit()
         return total_upserted
+
+    async def _resolve_census_attachment(self, zone_name: str | None) -> None:
+        """Resolve the census unit and exposure estimate for the places just synced.
+
+        Runs inside the sync transaction so a newly inserted place is never
+        visible without its attachment, and is scoped to the synced zone. Both
+        passes are idempotent, so re-syncing an unchanged zone rewrites nothing.
+
+        An un-ingested census corpus needs no special case: the tables exist by
+        migration, so the passes simply find no overlap and leave every estimate
+        unknown rather than asserting zero.
+        """
+        attachment = PlaceCensusAttachmentRepository(self.session)
+        await attachment.attach_places_to_census_units(
+            zone_name=zone_name, commit=False
+        )
+        await attachment.refresh_exposure_estimates(zone_name=zone_name, commit=False)
 
     async def recalculate_priority_scores(
         self,

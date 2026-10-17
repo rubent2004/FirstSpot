@@ -135,6 +135,16 @@ class CensusPopulationUnitModel(Base):
             name="uq_census_population_unit_grain",
         ),
         Index("idx_census_population_unit_geom", "geom", postgresql_using="gist"),
+        # Exposure estimation tests containment in geometry space rather than
+        # geography space: measured over 1,481 places, the exact geography
+        # ST_Intersects took 24.2 s, geometry space without this index 50.9 s,
+        # and geometry space with it 0.72 s. Both spaces agree for El Salvador,
+        # which crosses no meridian discontinuity.
+        Index(
+            "idx_census_population_unit_geom_geometry",
+            text("(geom::geometry)"),
+            postgresql_using="gist",
+        ),
         Index("idx_census_population_unit_district", "district_code"),
         Index("idx_census_population_unit_level", "dug_level"),
         CheckConstraint("dug_level IN (1, 2)", name="ck_census_population_unit_level"),
