@@ -1,0 +1,108 @@
+/*
+ * Print layout for the report and the map sheet.
+ *
+ * The sheet is teleported to <body> and wears .theme-light, so it carries the
+ * light tokens on screen and on paper whatever theme the console is in. While
+ * a sheet is open, body[data-print-sheet] is set and printing hides the app.
+ */
+
+.print-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  overflow: auto;
+  background: var(--eoc-bg-canvas);
+  color: var(--eoc-text-primary);
+  font-family: var(--eoc-font-sans);
+  font-size: var(--eoc-fs-body);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.print-sheet .sheet-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--eoc-gap-x);
+  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  background: var(--eoc-bg-header);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
+}
+
+.print-sheet .sheet-page {
+  max-width: 210mm;
+  margin: var(--eoc-pad-panel) auto;
+  padding: 12mm;
+  box-sizing: border-box;
+  background: var(--eoc-bg-panel);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+}
+
+.print-sheet--map .sheet-page {
+  max-width: 297mm;
+}
+
+@page report-page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@page map-page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
+@media print {
+  body[data-print-sheet] {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  body[data-print-sheet] #app {
+    display: none !important;
+  }
+
+  .print-sheet {
+    position: static;
+    overflow: visible;
+    background: Canvas;
+  }
+
+  .print-sheet .no-print {
+    display: none !important;
+  }
+
+  .print-sheet .sheet-page {
+    max-width: none;
+    margin: 0;
+    padding: 0 0 12mm;
+    border: 0;
+  }
+
+  .print-sheet--report {
+    page: report-page;
+  }
+
+  .print-sheet--map {
+    page: map-page;
+  }
+
+  .print-sheet thead {
+    display: table-header-group;
+  }
+
+  .print-sheet tr,
+  .print-sheet .keep-together {
+    break-inside: avoid;
+  }
+
+  /* Mode and attribution repeat on every printed page */
+  .print-sheet .sheet-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}

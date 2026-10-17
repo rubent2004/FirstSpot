@@ -1,21 +1,58 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useCommunityTriageStore } from "../../stores/useCommunityTriageStore";
 import { useI18n } from "../../i18n/useI18n";
+import ExportMenu from "./ExportMenu.vue";
 import DistrictDetail from "./DistrictDetail.vue";
 import DistrictRankList from "./DistrictRankList.vue";
 import HonestyNotice from "./HonestyNotice.vue";
+import PrintSheet, { type SheetVariant } from "./PrintSheet.vue";
+import { buildReportModel, type ReportModel } from "./exportModel";
+import { downloadRankingXlsx } from "./exportXlsx";
 import TriageModeBar from "./TriageModeBar.vue";
 import { resolveMode } from "./triageModel";
 
 const store = useCommunityTriageStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 onMounted(() => {
   if (!store.index && !store.isLoading) void store.initialize();
 });
 
 const mode = computed(() => resolveMode(store.index?.mode, store.requestedEventId));
+const sheet = ref<{ variant: SheetVariant; model: ReportModel } | null>(null);
+const isExporting = ref(false);
+const exportError = ref<string | null>(null);
+
+/**
+ * Exports read only what is already loaded: no request is made here, so they
+ * work offline. Each one stamps its own generation time.
+ */
+function currentModel(): ReportModel | null {
+  return store.index
+    ? buildReportModel(store.index, t.value.community, locale.value)
+    : null;
+}
+
+function openSheet(variant: SheetVariant): void {
+  const model = currentModel();
+  if (model) sheet.value = { variant, model };
+}
+
+async function exportExcel(): Promise<void> {
+  const model = currentModel();
+  if (!model) return;
+  isExporting.value = true;
+  exportError.value = null;
+  try {
+    await downloadRankingXlsx(model, t.value.community, locale.value);
+  } catch {
+    exportError.value = t.value.community.exports.excelFailed;
+  } finally {
+    isExporting.value = false;
+  }
+}
+
 const showExposed = computed(() => mode.value === "event");
 </script>
 
@@ -37,6 +74,15 @@ const showExposed = computed(() => mode.value === "event");
 
     <HonestyNotice :district-count="store.districts.length" />
 
+    <ExportMenu
+      :disabled="!store.index"
+      :is-busy="isExporting"
+      :error="exportError"
+      @excel="exportExcel"
+      @report="openSheet('report')"
+      @map="openSheet('map')"
+    />
+
     <DistrictDetail
       v-if="store.selectedDistrict"
       :district="store.selectedDistrict"
@@ -56,6 +102,13 @@ const showExposed = computed(() => mode.value === "event");
       :show-exposed="showExposed"
       @select="store.selectDistrict"
       @retry="store.loadIndex"
+    />
+
+    <PrintSheet
+      v-if="sheet"
+      :model="sheet.model"
+      :variant="sheet.variant"
+      @close="sheet = null"
     />
   </section>
 </template>
