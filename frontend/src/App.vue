@@ -4,6 +4,8 @@ import { ElAlert, ElConfigProvider } from "element-plus";
 import HazardTelemetryStrip from "./modules/sync-controls/HazardTelemetryStrip.vue";
 import VulnerabilityHeatmapCanvas from "./modules/map-viewer/VulnerabilityHeatmapCanvas.vue";
 import PriorityQueuePanel from "./modules/priority-queue/PriorityQueuePanel.vue";
+import CommunityTriagePanel from "./modules/community-triage/CommunityTriagePanel.vue";
+import ViewTabs, { type WorkspaceView } from "./modules/community-triage/ViewTabs.vue";
 import PlaceTriageDrawer from "./modules/priority-queue/PlaceTriageDrawer.vue";
 import GeoRibbon from "./components/GeoRibbon.vue";
 import InstitutionAccessDialog from "./modules/institutions/InstitutionAccessDialog.vue";
@@ -18,13 +20,15 @@ import type {
 } from "./api/client";
 
 const store = usePrioritizationStore();
-const { elementLocale, locale, toggleLocale } = useI18n();
+const { elementLocale, locale, t, toggleLocale } = useI18n();
 const { isDark, toggleTheme } = useTheme();
 const HAZARD_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 const showHeatmapLayer = ref(true);
 const showMarkersLayer = ref(true);
 const showHazardsLayer = ref(true);
 const showInstitutionAccess = ref(false);
+/** Territory is the primary unit; places are the drill-down detail. */
+const workspaceView = ref<WorkspaceView>("territories");
 const tacticalBasemap = ref(isDark.value);
 const geocodeTarget = ref<{ lat: number; lon: number; label: string } | null>(
   null,
@@ -217,13 +221,18 @@ function handleFitMap(): void {
           />
         </div>
 
-        <aside class="workspace-queue-col" :aria-label="locale === 'es' ? 'Lugares priorizados' : 'Prioritized places'">
-          <PriorityQueuePanel
-            :places="store.places"
-            :selected-place="store.selectedPlace"
-            :is-loading="store.isLoading"
-            @select-place="handleSelectPlace"
-          />
+        <aside class="workspace-queue-col" :aria-label="t.community.tabs.label">
+          <ViewTabs v-model="workspaceView" />
+          <div class="queue-body">
+            <CommunityTriagePanel v-if="workspaceView === 'territories'" />
+            <PriorityQueuePanel
+              v-else
+              :places="store.places"
+              :selected-place="store.selectedPlace"
+              :is-loading="store.isLoading"
+              @select-place="handleSelectPlace"
+            />
+          </div>
         </aside>
       </main>
 
@@ -288,7 +297,8 @@ function handleFitMap(): void {
 }
 
 .workspace-map-col { grid-area: map; }
-.workspace-queue-col { grid-area: queue; }
+.workspace-queue-col { grid-area: queue; display: flex; flex-direction: column; }
+.queue-body { flex: 1; min-height: 0; }
 .workspace-map-col :deep(.map-panel-wrapper) { min-height: 0; }
 
 .geo-statusbar {

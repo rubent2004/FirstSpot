@@ -12,6 +12,11 @@ import {
   placeLocatingHint,
   stripOsmIdentifier,
 } from "../utils/placeName";
+import {
+  COMMUNITY_EN,
+  COMMUNITY_ES,
+  type CommunityMessages,
+} from "./communityMessages";
 
 export type AppLocale = "es" | "en";
 
@@ -239,6 +244,7 @@ export interface I18nMessages {
   unnamedPlaces: Record<PlaceCategory, string>;
   /** Used when the category itself is unrecognised. */
   unnamedPlaceFallback: string;
+  community: CommunityMessages;
 }
 
 export const MESSAGES: Record<AppLocale, I18nMessages> = {
@@ -486,6 +492,7 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       place_of_worship: "Templo sin nombre",
     },
     unnamedPlaceFallback: "Lugar sin nombre",
+    community: COMMUNITY_ES,
   },
   en: {
     header: {
@@ -730,6 +737,7 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       place_of_worship: "Unnamed place of worship",
     },
     unnamedPlaceFallback: "Unnamed place",
+    community: COMMUNITY_EN,
   },
 };
 

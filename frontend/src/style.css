@@ -75,6 +75,15 @@ html.dark {
   --eoc-info-bg: rgba(44, 194, 174, 0.14);
   --eoc-info-border: rgba(44, 194, 174, 0.34);
 
+  /* DGPC alert classes. Verde/amarilla/roja reuse the severity tokens; naranja
+     needs its own hue to stay apart from both neighbours. Semantic only. */
+  --eoc-alert-roja: var(--eoc-critical);
+  --eoc-alert-naranja: #e98a3e;
+  --eoc-alert-naranja-bg: rgba(233, 138, 62, 0.14);
+  --eoc-alert-naranja-border: rgba(233, 138, 62, 0.34);
+  --eoc-alert-amarilla: var(--eoc-warning);
+  --eoc-alert-verde: var(--eoc-success);
+
   /* Elevation — borders carry it; shadows only float */
   --eoc-shadow-color: rgba(0, 0, 0, 0.43);
   --eoc-card-shadow: none;
@@ -166,6 +175,14 @@ html:not(.dark),
   --eoc-info: #0e9384;
   --eoc-info-bg: #e3f5f2;
   --eoc-info-border: #b3e0da;
+
+  /* DGPC alert classes (see the dark block) */
+  --eoc-alert-roja: var(--eoc-critical);
+  --eoc-alert-naranja: #c25a0c;
+  --eoc-alert-naranja-bg: #fdeede;
+  --eoc-alert-naranja-border: #f3cfae;
+  --eoc-alert-amarilla: var(--eoc-warning);
+  --eoc-alert-verde: var(--eoc-success);
 
   /* Elevation */
   --eoc-shadow-color: rgba(23, 31, 42, 0.11);
@@ -303,6 +320,28 @@ table td.eoc-numeric {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--eoc-text-label);
+}
+
+/* DGPC alert class carriers: a component sets --class-* from one class name */
+.eoc-class-roja {
+  --class-color: var(--eoc-alert-roja);
+  --class-bg: var(--eoc-critical-bg);
+  --class-border: var(--eoc-critical-border);
+}
+.eoc-class-naranja {
+  --class-color: var(--eoc-alert-naranja);
+  --class-bg: var(--eoc-alert-naranja-bg);
+  --class-border: var(--eoc-alert-naranja-border);
+}
+.eoc-class-amarilla {
+  --class-color: var(--eoc-alert-amarilla);
+  --class-bg: var(--eoc-warning-bg);
+  --class-border: var(--eoc-warning-border);
+}
+.eoc-class-verde {
+  --class-color: var(--eoc-alert-verde);
+  --class-bg: var(--eoc-success-bg);
+  --class-border: var(--eoc-success-border);
 }
 
 /* Liveness beacon. Opacity only: a glowing ring would be a decorative shadow */

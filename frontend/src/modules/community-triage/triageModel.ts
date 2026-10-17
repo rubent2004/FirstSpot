@@ -84,3 +84,17 @@ export function formatPagerRange(range: PagerRange, locale: "es" | "en"): string
   if (range.upper === range.lower) return fmt(range.lower);
   return `${fmt(range.lower)}–${fmt(range.upper)}`;
 }
+
+export type TriageMode = "baseline" | "event";
+
+/**
+ * The mode to display: the loaded response's own, falling back to the request
+ * only before anything has loaded.
+ */
+export function resolveMode(
+  responseMode: string | undefined,
+  requestedEventId: string | null,
+): TriageMode {
+  const mode = responseMode ?? (requestedEventId ? "event" : "baseline");
+  return mode === "event" ? "event" : "baseline";
+}
