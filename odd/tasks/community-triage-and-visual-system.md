@@ -619,11 +619,27 @@ inversion cannot be absorbed silently.
   prioritization module's existing raw-`text()` read paths. Registering them in
   `alembic/env.py` needs that file in scope; `alembic check` is clean either way
   because `include_object` skips reflected tables absent from the metadata.
-- [ ] **C3** Hazard & exposure dimension: USGS ShakeMap client, zonal statistics,
-  fixed-bound normalization.
-- [ ] **C4** Index composition endpoint + Sphere resource translation.
+- [x] **C3** Hazard & exposure dimension. **Commit `e884cb9`.** USGS ShakeMap
+  client, zonal statistics, fixed bounds MMI 4->0 / 10->10. 511 tests pass.
+- [x] **C4** Composed index + Sphere translation. **Commit `e884cb9`.**
+  Validated on the real 2001-02-13 M6.6 event: top 10 all in La Paz, Cuscatlan
+  and Usulutan around the epicentre. Baseline (V x LCC) and event modes are
+  explicit in every response; mixing them raises an error.
+
+  **Methodological deviation to defend:** top-level composition is the plain
+  geometric mean, NOT INFORM's [1,10] rescale. Tested on the real event, the
+  rescale ranked Lislique (never shaken, H&E=0) second and put 40 districts in
+  red versus 6. The rescaled score is still published as
+  `inform_rescaled_score`; no ranking reads it.
+
+  **Known limits:** a percentile-floor zero means "ranked best of 262", not "no
+  risk" (Antiguo Cuscatlan LCC=0 so PRIO=0 in any event); ShakeMap contours
+  understate peak MMI by up to 0.5; earthquake only (flood/GDACS is a declared
+  gap); never casualty counts.
 - [ ] **C5** Frontend community triage view: ranked district list, DGPC color
   classes, drill-down to places, uncertainty labeling.
+- [ ] **C6** Exports: Excel (district ranking + Sphere needs), PDF report and a
+  printable map of priority districts. Client-side, no server round trip.
 
 ### Phase D — Voluntary location
 
