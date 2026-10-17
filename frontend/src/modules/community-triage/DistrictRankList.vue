@@ -337,6 +337,10 @@ defineExpose({
 .level .count {
   color: var(--eoc-text-secondary);
 }
+/* On the selected (accent) segment the grey count read at 1.35:1; take the label's colour */
+.levels :deep(.el-segmented__item.is-selected) .count {
+  color: inherit;
+}
 .scope-label {
   font-size: var(--eoc-fs-micro);
   font-weight: var(--eoc-fw-semibold);
