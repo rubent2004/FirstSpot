@@ -1,0 +1,102 @@
+{
+ "type": "Feature",
+ "properties": {
+  "mag": 6.6,
+  "place": "5 km S of Cojutepeque, El Salvador",
+  "time": 982074125820,
+  "updated": 1651259237625,
+  "tz": null,
+  "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000a9jv",
+  "felt": null,
+  "cdi": null,
+  "mmi": 7.504,
+  "alert": null,
+  "status": "reviewed",
+  "tsunami": 0,
+  "sig": 670,
+  "net": "us",
+  "code": "p000a9jv",
+  "ids": ",choy20010213142205,gcmtc021301b,usp000a9jv,gcmt20010213142205,duputel021301b,atlas20010213142207,iscgem1780618,",
+  "sources": ",choy,gcmt,us,gcmt,duputel,atlas,iscgem,",
+  "types": ",focal-mechanism,ground-failure,impact-text,moment-tensor,origin,phase-data,shakemap,trump-shakemap,",
+  "nst": 273,
+  "dmin": null,
+  "rms": 1.44,
+  "gap": null,
+  "magType": "mwc",
+  "type": "earthquake",
+  "title": "M 6.6 - 5 km S of Cojutepeque, El Salvador",
+  "products": {
+   "shakemap": [
+    {
+     "type": "shakemap",
+     "id": "urn:usgs-product:atlas:shakemap:usp000a9jv:1594170340990",
+     "code": "usp000a9jv",
+     "source": "atlas",
+     "updateTime": 1594170340990,
+     "properties": {
+      "depth": "10.0",
+      "event-description": "ShakeMap Atlas v4",
+      "event-type": "ACTUAL",
+      "eventsource": "us",
+      "eventsourcecode": "p000a9jv",
+      "eventtime": "2001-02-13T14:22:05.000Z",
+      "gmice": "WGRW12",
+      "latitude": "13.6710",
+      "longitude": "-88.9380",
+      "magnitude": "6.6",
+      "map-status": "automatic",
+      "maximum-latitude": "16.3",
+      "maximum-longitude": "-85.917",
+      "maxmmi": "7.504",
+      "maxmmi-grid": "7.504",
+      "maxpga": "0.343",
+      "maxpga-grid": "0.343",
+      "maxpgv": "3.839",
+      "maxpgv-grid": "3.839",
+      "maxpsa03": "1.558",
+      "maxpsa03-grid": "1.558",
+      "maxpsa10": "0.891",
+      "maxpsa10-grid": "0.891",
+      "maxpsa30": "0.288",
+      "maxpsa30-grid": "0.288",
+      "minimum-latitude": "10.9",
+      "minimum-longitude": "-91.867",
+      "original-signature": "MCwCFGkpAa3kdJTvRPUxpwRQ8GdhnfTjAhR+RhRg0FoLyinUXQHueAhaVxBJ5g==",
+      "original-signature-version": "v1",
+      "pdl-client-version": "Version 2.4.0 2020-05-11",
+      "process-timestamp": "2020-06-03T23:01:08Z",
+      "review-status": "automatic",
+      "shakemap-code-version": "4.0.2+335.gcbad862",
+      "version": "1"
+     },
+     "contents": {
+      "download/cont_mi.json": {
+       "contentType": "application/json",
+       "lastModified": 1591225331000,
+       "length": 51710,
+       "url": "https://earthquake.usgs.gov/product/shakemap/usp000a9jv/atlas/1594170340990/download/cont_mi.json",
+       "sha256": "nQFx3p23TPlKymT9wRxBOJvz6Ywte3BEQ4xrWLEmFQg="
+      },
+      "download/grid.xml": {
+       "contentType": "application/xml",
+       "lastModified": 1591225324000,
+       "length": 27259383,
+       "url": "https://earthquake.usgs.gov/product/shakemap/usp000a9jv/atlas/1594170340990/download/grid.xml",
+       "sha256": "0lifeJDT9Tq5d1K5Ol7vdJahn8SCzou/wM6GeliZH3c="
+      }
+     }
+    }
+   ]
+  }
+ },
+ "geometry": {
+  "type": "Point",
+  "coordinates": [
+   -88.938,
+   13.671,
+   10
+  ]
+ },
+ "id": "usp000a9jv"
+}

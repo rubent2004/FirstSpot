@@ -1176,6 +1176,242 @@
           }
         }
       }
+    },
+    "/api/v1/prioritization/index/districts": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Rank every district by the composed PRIO-SV index (baseline or event)",
+        "description": "Composed PRIO-SV ranking. The response always declares its mode.\n\nBaseline answers \"where would a disaster hurt most\"; event answers \"who to\nattend first\" for one ShakeMap grid. Sphere minimum requirements are\nattached to naranja and roja districts in event mode. No figure is a\ncasualty count, and the ranking is of territories, not people.",
+        "operationId": "listDistrictPrioIndex",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "USGS event id (e.g. usp000a9jv). Omit for BASELINE mode (V x LCC, no event). Supply it for EVENT mode (H&E x V x LCC) against that event's ShakeMap.",
+              "title": "Event Id"
+            },
+            "description": "USGS event id (e.g. usp000a9jv). Omit for BASELINE mode (V x LCC, no event). Supply it for EVENT mode (H&E x V x LCC) against that event's ShakeMap."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrioIndexRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/index/districts/{district_code}": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Retrieve every dimension behind one district's composed PRIO score",
+        "description": "One district with its dimension scores, zero attribution and Sphere figure.",
+        "operationId": "getDistrictPrioIndexAudit",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 6,
+              "title": "District Code"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "USGS event id (e.g. usp000a9jv). Omit for BASELINE mode (V x LCC, no event). Supply it for EVENT mode (H&E x V x LCC) against that event's ShakeMap.",
+              "title": "Event Id"
+            },
+            "description": "USGS event id (e.g. usp000a9jv). Omit for BASELINE mode (V x LCC, no event). Supply it for EVENT mode (H&E x V x LCC) against that event's ShakeMap."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrioIndexAuditRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/hazard-exposure/districts": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Rank districts by the Hazard & Exposure dimension for one earthquake",
+        "description": "H&E alone: fixed-bound MMI intensity and exposed population (MMI >= VI).",
+        "operationId": "listDistrictHazardExposure",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "USGS event id with a ShakeMap.",
+              "title": "Event Id"
+            },
+            "description": "USGS event id with a ShakeMap."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HazardRankingRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/hazard-exposure/events": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "List USGS earthquakes around El Salvador and whether each has a ShakeMap",
+        "description": "Catalogue of candidate events. Flood (GDACS) is a declared gap, not absent.",
+        "operationId": "listHazardExposureEvents",
+        "parameters": [
+          {
+            "name": "min_magnitude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 10,
+              "minimum": 0,
+              "default": 4.0,
+              "title": "Min Magnitude"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO date, e.g. 2001-01-01.",
+              "title": "Start Time"
+            },
+            "description": "ISO date, e.g. 2001-01-01."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCatalogueRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1213,6 +1449,40 @@
           "verification_status"
         ],
         "title": "ActivityOrganizationRead"
+      },
+      "AlertClassRead": {
+        "properties": {
+          "alert_class": {
+            "type": "string",
+            "title": "Alert Class",
+            "description": "DGPC alert level: verde, amarilla, naranja, roja."
+          },
+          "floor": {
+            "type": "number",
+            "title": "Floor"
+          },
+          "ceiling": {
+            "type": "number",
+            "title": "Ceiling"
+          },
+          "inform_class": {
+            "type": "string",
+            "title": "Inform Class"
+          },
+          "meaning": {
+            "type": "string",
+            "title": "Meaning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "alert_class",
+          "floor",
+          "ceiling",
+          "inform_class",
+          "meaning"
+        ],
+        "title": "AlertClassRead"
       },
       "AttentionStatus": {
         "type": "string",
@@ -1714,6 +1984,54 @@
         "title": "DashboardKPIsRead",
         "description": "Aggregated operational KPIs for the dashboard header and analytics."
       },
+      "DimensionRead": {
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "title": "Dimension"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dimension",
+          "score",
+          "rank"
+        ],
+        "title": "DimensionRead"
+      },
       "DistrictCopingAuditRead": {
         "properties": {
           "district_code": {
@@ -2026,6 +2344,263 @@
         "title": "DistrictCopingRead",
         "description": "One district's LCC score, as it appears in the ranked list."
       },
+      "DistrictHazardRead": {
+        "properties": {
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "shaken": {
+            "type": "boolean",
+            "title": "Shaken"
+          },
+          "max_mmi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Mmi"
+          },
+          "mean_mmi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Mmi"
+          },
+          "estimated_exposed_population": {
+            "type": "integer",
+            "title": "Estimated Exposed Population"
+          },
+          "themes": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Themes"
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/HazardVariableRead"
+            },
+            "type": "array",
+            "title": "Variables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "shaken",
+          "max_mmi",
+          "mean_mmi",
+          "estimated_exposed_population",
+          "themes",
+          "variables"
+        ],
+        "title": "DistrictHazardRead"
+      },
+      "DistrictPrioRead": {
+        "properties": {
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "Composed PRIO, 0-10, plain geometric mean."
+          },
+          "inform_rescaled_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inform Rescaled Score",
+            "description": "Audit only; read by no ranking, class or Sphere figure."
+          },
+          "alert_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Class"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/DimensionRead"
+            },
+            "type": "array",
+            "title": "Dimensions"
+          },
+          "zeroed_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Zeroed By"
+          },
+          "zero_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zero Reason"
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld"
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason"
+          },
+          "max_mmi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Mmi"
+          },
+          "estimated_exposed_population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Population",
+            "description": "Estimated EXPOSED residents at MMI VI or above. Never a casualty count."
+          },
+          "sphere": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SphereRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "inform_rescaled_score",
+          "alert_class",
+          "dimensions",
+          "zeroed_by",
+          "zero_reason",
+          "withheld",
+          "withheld_reason",
+          "max_mmi",
+          "estimated_exposed_population"
+        ],
+        "title": "DistrictPrioRead"
+      },
       "DistrictVulnerabilityAuditRead": {
         "properties": {
           "district_code": {
@@ -2332,6 +2907,280 @@
         "title": "DistrictVulnerabilityRead",
         "description": "One district's V score, as it appears in the ranked list."
       },
+      "EventCatalogueRead": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EventSummaryRead"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "pager_alert_bands": {
+            "items": {
+              "$ref": "#/components/schemas/PagerRead"
+            },
+            "type": "array",
+            "title": "Pager Alert Bands"
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events",
+          "pager_alert_bands",
+          "declared_gaps",
+          "source"
+        ],
+        "title": "EventCatalogueRead"
+      },
+      "EventRead": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "magnitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Magnitude"
+          },
+          "place": {
+            "type": "string",
+            "title": "Place"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "depth_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Km"
+          },
+          "occurred_at": {
+            "type": "string",
+            "title": "Occurred At"
+          },
+          "shakemap_grid_processed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shakemap Grid Processed At",
+            "description": "ShakeMap is revised: every figure is valid only for this grid time."
+          },
+          "shakemap_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shakemap Version"
+          },
+          "shakemap_declared_max_mmi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shakemap Declared Max Mmi"
+          },
+          "contour_max_mmi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contour Max Mmi"
+          },
+          "contour_interval": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contour Interval"
+          },
+          "pager": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PagerRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "PAGER alert level with its range, or null when the event has none."
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "magnitude",
+          "place",
+          "latitude",
+          "longitude",
+          "depth_km",
+          "occurred_at",
+          "shakemap_grid_processed_at",
+          "shakemap_version",
+          "shakemap_declared_max_mmi",
+          "contour_max_mmi",
+          "contour_interval",
+          "pager"
+        ],
+        "title": "EventRead"
+      },
+      "EventSummaryRead": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "magnitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Magnitude"
+          },
+          "place": {
+            "type": "string",
+            "title": "Place"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "depth_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth Km"
+          },
+          "occurred_at": {
+            "type": "string",
+            "title": "Occurred At"
+          },
+          "has_shakemap": {
+            "type": "boolean",
+            "title": "Has Shakemap"
+          },
+          "has_pager": {
+            "type": "boolean",
+            "title": "Has Pager"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "magnitude",
+          "place",
+          "latitude",
+          "longitude",
+          "depth_km",
+          "occurred_at",
+          "has_shakemap",
+          "has_pager",
+          "url"
+        ],
+        "title": "EventSummaryRead"
+      },
+      "GapRead": {
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "title": "Dimension"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "consequence": {
+            "type": "string",
+            "title": "Consequence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dimension",
+          "subject",
+          "reason",
+          "consequence"
+        ],
+        "title": "GapRead"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2344,6 +3193,208 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HazardRankingRead": {
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventRead"
+          },
+          "districts": {
+            "items": {
+              "$ref": "#/components/schemas/DistrictHazardRead"
+            },
+            "type": "array",
+            "title": "Districts"
+          },
+          "scored_unit_count": {
+            "type": "integer",
+            "title": "Scored Unit Count"
+          },
+          "shaken_unit_count": {
+            "type": "integer",
+            "title": "Shaken Unit Count"
+          },
+          "exposed_unit_count": {
+            "type": "integer",
+            "title": "Exposed Unit Count"
+          },
+          "total_exposed_population": {
+            "type": "integer",
+            "title": "Total Exposed Population"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "fixed_bounds_rationale": {
+            "type": "string",
+            "title": "Fixed Bounds Rationale"
+          },
+          "contour_discretisation_rule": {
+            "type": "string",
+            "title": "Contour Discretisation Rule"
+          },
+          "uniform_density_assumption": {
+            "type": "string",
+            "title": "Uniform Density Assumption"
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation"
+          },
+          "uses_percentile_normalisation": {
+            "type": "boolean",
+            "title": "Uses Percentile Normalisation"
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps"
+          },
+          "casualty_reporting_prohibition": {
+            "type": "string",
+            "title": "Casualty Reporting Prohibition"
+          },
+          "shakemap_revision_warning": {
+            "type": "string",
+            "title": "Shakemap Revision Warning"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event",
+          "districts",
+          "scored_unit_count",
+          "shaken_unit_count",
+          "exposed_unit_count",
+          "total_exposed_population",
+          "method",
+          "fixed_bounds_rationale",
+          "contour_discretisation_rule",
+          "uniform_density_assumption",
+          "interpretation",
+          "uses_percentile_normalisation",
+          "declared_gaps",
+          "casualty_reporting_prohibition",
+          "shakemap_revision_warning",
+          "source",
+          "computed_at"
+        ],
+        "title": "HazardRankingRead"
+      },
+      "HazardVariableRead": {
+        "properties": {
+          "variable": {
+            "type": "string",
+            "title": "Variable"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme"
+          },
+          "in_index": {
+            "type": "boolean",
+            "title": "In Index"
+          },
+          "measure": {
+            "type": "string",
+            "title": "Measure"
+          },
+          "fixed_floor": {
+            "type": "number",
+            "title": "Fixed Floor"
+          },
+          "fixed_ceiling": {
+            "type": "number",
+            "title": "Fixed Ceiling"
+          },
+          "bound_source": {
+            "type": "string",
+            "title": "Bound Source"
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate"
+          },
+          "universe": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Universe"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusion Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "variable",
+          "label",
+          "theme",
+          "in_index",
+          "measure",
+          "fixed_floor",
+          "fixed_ceiling",
+          "bound_source"
+        ],
+        "title": "HazardVariableRead"
       },
       "HealthResponse": {
         "properties": {
@@ -2750,6 +3801,50 @@
           "account"
         ],
         "title": "LoginResponse"
+      },
+      "PagerRead": {
+        "properties": {
+          "level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "band_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band Label"
+          },
+          "response_implication": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Implication"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level",
+          "band_label",
+          "response_implication"
+        ],
+        "title": "PagerRead"
       },
       "PlaceActivityCreate": {
         "properties": {
@@ -3803,6 +4898,502 @@
         ],
         "title": "PredefinedZoneRead",
         "description": "Schema representing a predefined geographic zone in El Salvador."
+      },
+      "PrioIndexAuditRead": {
+        "properties": {
+          "district_code": {
+            "type": "string",
+            "title": "District Code"
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "Composed PRIO, 0-10, plain geometric mean."
+          },
+          "inform_rescaled_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inform Rescaled Score",
+            "description": "Audit only; read by no ranking, class or Sphere figure."
+          },
+          "alert_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Class"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/DimensionRead"
+            },
+            "type": "array",
+            "title": "Dimensions"
+          },
+          "zeroed_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Zeroed By"
+          },
+          "zero_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zero Reason"
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld"
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason"
+          },
+          "max_mmi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Mmi"
+          },
+          "estimated_exposed_population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Exposed Population",
+            "description": "Estimated EXPOSED residents at MMI VI or above. Never a casualty count."
+          },
+          "sphere": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SphereRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "mode_meaning": {
+            "type": "string",
+            "title": "Mode Meaning"
+          },
+          "dimension_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dimension Keys"
+          },
+          "event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/PrioMethodologyRead"
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps"
+          },
+          "ecological_fallacy": {
+            "type": "string",
+            "title": "Ecological Fallacy"
+          },
+          "modifiable_areal_unit_problem": {
+            "type": "string",
+            "title": "Modifiable Areal Unit Problem"
+          },
+          "casualty_reporting_prohibition": {
+            "type": "string",
+            "title": "Casualty Reporting Prohibition"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "inform_rescaled_score",
+          "alert_class",
+          "dimensions",
+          "zeroed_by",
+          "zero_reason",
+          "withheld",
+          "withheld_reason",
+          "max_mmi",
+          "estimated_exposed_population",
+          "mode",
+          "mode_meaning",
+          "dimension_keys",
+          "event",
+          "methodology",
+          "declared_gaps",
+          "ecological_fallacy",
+          "modifiable_areal_unit_problem",
+          "casualty_reporting_prohibition",
+          "computed_at"
+        ],
+        "title": "PrioIndexAuditRead"
+      },
+      "PrioIndexRead": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "'baseline' (V x LCC) or 'event' (H&E x V x LCC)."
+          },
+          "mode_meaning": {
+            "type": "string",
+            "title": "Mode Meaning"
+          },
+          "dimension_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dimension Keys"
+          },
+          "event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "districts": {
+            "items": {
+              "$ref": "#/components/schemas/DistrictPrioRead"
+            },
+            "type": "array",
+            "title": "Districts"
+          },
+          "class_distribution": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Class Distribution"
+          },
+          "alert_classes": {
+            "items": {
+              "$ref": "#/components/schemas/AlertClassRead"
+            },
+            "type": "array",
+            "title": "Alert Classes"
+          },
+          "total_exposed_population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Exposed Population"
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/PrioMethodologyRead"
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps"
+          },
+          "ecological_fallacy": {
+            "type": "string",
+            "title": "Ecological Fallacy"
+          },
+          "modifiable_areal_unit_problem": {
+            "type": "string",
+            "title": "Modifiable Areal Unit Problem"
+          },
+          "casualty_reporting_prohibition": {
+            "type": "string",
+            "title": "Casualty Reporting Prohibition"
+          },
+          "shakemap_revision_warning": {
+            "type": "string",
+            "title": "Shakemap Revision Warning"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "mode_meaning",
+          "dimension_keys",
+          "event",
+          "districts",
+          "class_distribution",
+          "alert_classes",
+          "total_exposed_population",
+          "methodology",
+          "declared_gaps",
+          "ecological_fallacy",
+          "modifiable_areal_unit_problem",
+          "casualty_reporting_prohibition",
+          "shakemap_revision_warning",
+          "source",
+          "computed_at"
+        ],
+        "title": "PrioIndexRead"
+      },
+      "PrioMethodologyRead": {
+        "properties": {
+          "composition_rule": {
+            "type": "string",
+            "title": "Composition Rule"
+          },
+          "rescaled_composition_exclusion": {
+            "type": "string",
+            "title": "Rescaled Composition Exclusion"
+          },
+          "percentile_floor_zero_meaning": {
+            "type": "string",
+            "title": "Percentile Floor Zero Meaning"
+          },
+          "hazard_zero_meaning": {
+            "type": "string",
+            "title": "Hazard Zero Meaning"
+          },
+          "dgpc_class_source": {
+            "type": "string",
+            "title": "Dgpc Class Source"
+          },
+          "triage_colour_analogy": {
+            "type": "string",
+            "title": "Triage Colour Analogy"
+          },
+          "class_distribution_caveat": {
+            "type": "string",
+            "title": "Class Distribution Caveat"
+          },
+          "declared_scale": {
+            "type": "string",
+            "title": "Declared Scale"
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation"
+          },
+          "uses_principal_components": {
+            "type": "boolean",
+            "title": "Uses Principal Components",
+            "default": false
+          },
+          "scored_unit_count": {
+            "type": "integer",
+            "title": "Scored Unit Count"
+          },
+          "withheld_unit_count": {
+            "type": "integer",
+            "title": "Withheld Unit Count"
+          },
+          "zeroed_by_hazard_count": {
+            "type": "integer",
+            "title": "Zeroed By Hazard Count"
+          },
+          "zeroed_by_percentile_floor_count": {
+            "type": "integer",
+            "title": "Zeroed By Percentile Floor Count"
+          },
+          "suppression_threshold": {
+            "type": "integer",
+            "title": "Suppression Threshold"
+          },
+          "suppression_reference": {
+            "type": "string",
+            "title": "Suppression Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "composition_rule",
+          "rescaled_composition_exclusion",
+          "percentile_floor_zero_meaning",
+          "hazard_zero_meaning",
+          "dgpc_class_source",
+          "triage_colour_analogy",
+          "class_distribution_caveat",
+          "declared_scale",
+          "interpretation",
+          "scored_unit_count",
+          "withheld_unit_count",
+          "zeroed_by_hazard_count",
+          "zeroed_by_percentile_floor_count",
+          "suppression_threshold",
+          "suppression_reference"
+        ],
+        "title": "PrioMethodologyRead"
+      },
+      "SphereRead": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Always 'Sphere minimum requirement'."
+          },
+          "exposed_population": {
+            "type": "integer",
+            "title": "Exposed Population"
+          },
+          "water_litres_per_day": {
+            "type": "integer",
+            "title": "Water Litres Per Day"
+          },
+          "water_litres_per_day_extreme_heat": {
+            "type": "integer",
+            "title": "Water Litres Per Day Extreme Heat"
+          },
+          "water_taps_minimum": {
+            "type": "integer",
+            "title": "Water Taps Minimum"
+          },
+          "water_point_maximum_distance_metres": {
+            "type": "integer",
+            "title": "Water Point Maximum Distance Metres"
+          },
+          "food_kcal_per_day": {
+            "type": "integer",
+            "title": "Food Kcal Per Day"
+          },
+          "shelter_area_m2": {
+            "type": "number",
+            "title": "Shelter Area M2"
+          },
+          "shelter_basis": {
+            "type": "string",
+            "title": "Shelter Basis"
+          },
+          "population_basis": {
+            "type": "string",
+            "title": "Population Basis"
+          },
+          "caveat": {
+            "type": "string",
+            "title": "Caveat"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "exposed_population",
+          "water_litres_per_day",
+          "water_litres_per_day_extreme_heat",
+          "water_taps_minimum",
+          "water_point_maximum_distance_metres",
+          "food_kcal_per_day",
+          "shelter_area_m2",
+          "shelter_basis",
+          "population_basis",
+          "caveat",
+          "source"
+        ],
+        "title": "SphereRead"
       },
       "SyncPlacesResponse": {
         "properties": {

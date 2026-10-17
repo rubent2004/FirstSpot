@@ -1,0 +1,141 @@
+{
+ "type": "FeatureCollection",
+ "metadata": {
+  "generated": 1792217901000,
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=1990-01-01&minmagnitude=5.5&minlatitude=12.8&maxlatitude=14.6&minlongitude=-90.2&maxlongitude=-87.6&orderby=magnitude",
+  "title": "USGS Earthquakes",
+  "status": 200,
+  "api": "2.8.1",
+  "count": 3
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 7.7,
+    "place": "28 km SSW of Puerto El Triunfo, El Salvador",
+    "time": 979407212380,
+    "updated": 1651259073753,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000a7m5",
+    "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=usp000a7m5&format=geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": 7.596,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 912,
+    "net": "us",
+    "code": "p000a7m5",
+    "ids": ",usp000a7m5,choy20010113173332,gcmtc011301c,gcmt20010113173332,duputel011301c,atlas20010113173331,iscgem1763440,",
+    "sources": ",us,choy,gcmt,gcmt,duputel,atlas,iscgem,",
+    "types": ",finite-fault,focal-mechanism,general-text,ground-failure,impact-text,moment-tensor,origin,phase-data,shakemap,trump-shakemap,",
+    "nst": 427,
+    "dmin": null,
+    "rms": 1.13,
+    "gap": null,
+    "magType": "mwc",
+    "type": "earthquake",
+    "title": "M 7.7 - 28 km SSW of Puerto El Triunfo, El Salvador"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -88.66,
+     13.049,
+     60
+    ]
+   },
+   "id": "usp000a7m5"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 6.6,
+    "place": "32 km S of La Libertad, El Salvador",
+    "time": 1559207012337,
+    "updated": 1766429687868,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us70003t2n",
+    "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us70003t2n&format=geojson",
+    "felt": 301,
+    "cdi": 7.2,
+    "mmi": 6.174,
+    "alert": "yellow",
+    "status": "reviewed",
+    "tsunami": 1,
+    "sig": 887,
+    "net": "us",
+    "code": "70003t2n",
+    "ids": ",at00psb7tv,pt19150000,us70003t2n,iscgem620129901,",
+    "sources": ",at,pt,us,iscgem,",
+    "types": ",dyfi,ground-failure,impact-link,impact-text,losspager,moment-tensor,origin,phase-data,shakemap,",
+    "nst": null,
+    "dmin": 1.193,
+    "rms": 0.83,
+    "gap": 22,
+    "magType": "mww",
+    "type": "earthquake",
+    "title": "M 6.6 - 32 km S of La Libertad, El Salvador"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -89.3056,
+     13.1994,
+     57.92
+    ]
+   },
+   "id": "us70003t2n"
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "mag": 6.6,
+    "place": "5 km S of Cojutepeque, El Salvador",
+    "time": 982074125820,
+    "updated": 1651259237625,
+    "tz": null,
+    "url": "https://earthquake.usgs.gov/earthquakes/eventpage/usp000a9jv",
+    "detail": "https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=usp000a9jv&format=geojson",
+    "felt": null,
+    "cdi": null,
+    "mmi": 7.504,
+    "alert": null,
+    "status": "reviewed",
+    "tsunami": 0,
+    "sig": 670,
+    "net": "us",
+    "code": "p000a9jv",
+    "ids": ",choy20010213142205,gcmtc021301b,usp000a9jv,gcmt20010213142205,duputel021301b,atlas20010213142207,iscgem1780618,",
+    "sources": ",choy,gcmt,us,gcmt,duputel,atlas,iscgem,",
+    "types": ",focal-mechanism,ground-failure,impact-text,moment-tensor,origin,phase-data,shakemap,trump-shakemap,",
+    "nst": 273,
+    "dmin": null,
+    "rms": 1.44,
+    "gap": null,
+    "magType": "mwc",
+    "type": "earthquake",
+    "title": "M 6.6 - 5 km S of Cojutepeque, El Salvador"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -88.938,
+     13.671,
+     10
+    ]
+   },
+   "id": "usp000a9jv"
+  }
+ ],
+ "bbox": [
+  -90.132,
+  12.8,
+  10,
+  -87.634,
+  14.46,
+  274.2
+ ]
+}

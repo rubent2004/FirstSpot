@@ -1,0 +1,127 @@
+{
+ "type": "Feature",
+ "properties": {
+  "mag": 6.6,
+  "place": "32 km S of La Libertad, El Salvador",
+  "time": 1559207012337,
+  "updated": 1766429687868,
+  "tz": null,
+  "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us70003t2n",
+  "felt": 301,
+  "cdi": 7.2,
+  "mmi": 6.174,
+  "alert": "yellow",
+  "status": "reviewed",
+  "tsunami": 1,
+  "sig": 887,
+  "net": "us",
+  "code": "70003t2n",
+  "ids": ",at00psb7tv,pt19150000,us70003t2n,iscgem620129901,",
+  "sources": ",at,pt,us,iscgem,",
+  "types": ",dyfi,ground-failure,impact-link,impact-text,losspager,moment-tensor,origin,phase-data,shakemap,",
+  "nst": null,
+  "dmin": 1.193,
+  "rms": 0.83,
+  "gap": 22,
+  "magType": "mww",
+  "type": "earthquake",
+  "title": "M 6.6 - 32 km S of La Libertad, El Salvador",
+  "products": {
+   "shakemap": [
+    {
+     "type": "shakemap",
+     "id": "urn:usgs-product:atlas:shakemap:us70003t2n:1594402896265",
+     "code": "us70003t2n",
+     "source": "atlas",
+     "updateTime": 1594402896265,
+     "properties": {
+      "depth": "57.9",
+      "event-description": "ShakeMap Atlas v4",
+      "event-type": "ACTUAL",
+      "eventsource": "us",
+      "eventsourcecode": "70003t2n",
+      "eventtime": "2019-05-30T09:03:32.000Z",
+      "gmice": "WGRW12",
+      "latitude": "13.1994",
+      "longitude": "-89.3056",
+      "magnitude": "6.6",
+      "map-status": "automatic",
+      "maximum-latitude": "14.867",
+      "maximum-longitude": "-87.567",
+      "maxmmi": "6.174",
+      "maxmmi-grid": "6.332",
+      "maxpga": "0.157",
+      "maxpga-grid": "0.183",
+      "maxpgv": "2.66",
+      "maxpgv-grid": "2.681",
+      "maxpsa03": "0.346",
+      "maxpsa03-grid": "0.35",
+      "maxpsa10": "0.171",
+      "maxpsa10-grid": "0.175",
+      "maxpsa30": "0.03",
+      "maxpsa30-grid": "0.03",
+      "minimum-latitude": "11.517",
+      "minimum-longitude": "-91.0",
+      "original-signature": "MCwCFFpdJSJj2mM+qGzsm2zmCKhmUERsAhR6XVyD3ioHyM+Uiqo5TANgReNDyg==",
+      "original-signature-version": "v1",
+      "pdl-client-version": "Version 2.4.0 2020-05-11",
+      "process-timestamp": "2020-06-06T01:12:27Z",
+      "review-status": "automatic",
+      "shakemap-code-version": "4.0.2+335.gcbad862.dirty",
+      "version": "1"
+     },
+     "contents": {
+      "download/cont_mi.json": {
+       "contentType": "application/json",
+       "lastModified": 1593390387000,
+       "length": 16850,
+       "url": "https://earthquake.usgs.gov/product/shakemap/us70003t2n/atlas/1594402896265/download/cont_mi.json",
+       "sha256": "9M8UvkGfFlxIKTTZ7/kMzumgDQsn5H5W2niZ+UoFUxo="
+      },
+      "download/grid.xml": {
+       "contentType": "application/xml",
+       "lastModified": 1593390387000,
+       "length": 9370781,
+       "url": "https://earthquake.usgs.gov/product/shakemap/us70003t2n/atlas/1594402896265/download/grid.xml",
+       "sha256": "vlaj62t3SoR5v1Qp1FrhvBjKGlEW8RP7MEWQ9M9vmDw="
+      }
+     }
+    }
+   ],
+   "losspager": [
+    {
+     "type": "losspager",
+     "id": "urn:usgs-product:us:losspager:us70003t2n:1562758530291",
+     "code": "us70003t2n",
+     "source": "us",
+     "updateTime": 1562758530291,
+     "properties": {
+      "alertlevel": "yellow",
+      "depth": "44.0",
+      "eventsource": "us",
+      "eventsourcecode": "70003t2n",
+      "eventtime": "2019-05-30T15:03:31.000Z",
+      "latitude": "13.1703",
+      "longitude": "-89.3546",
+      "magnitude": "6.6",
+      "maxmmi": "6",
+      "original-signature": "MCwCFB4ZnwesQDXCn3bxSscthvgn0r0IAhR+8Gwnuwr1+rBV16vPfxuqQ5XalA==",
+      "original-signature-version": "v1",
+      "pdl-client-version": "Version 1.14.1 2018-04-26",
+      "review-status": "automatic"
+     },
+     "contents": {}
+    }
+   ]
+  }
+ },
+ "geometry": {
+  "type": "Point",
+  "coordinates": [
+   -89.3056,
+   13.1994,
+   57.92
+  ]
+ },
+ "id": "us70003t2n"
+}
