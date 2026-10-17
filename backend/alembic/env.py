@@ -18,6 +18,12 @@ from app.modules.institutions.infrastructure.models import (  # noqa: F401
     InstitutionModel,
     InstitutionUserModel,
 )
+from app.modules.census.infrastructure.models import (  # noqa: F401
+    CensusAdminUnitModel,
+    CensusIndicatorModel,
+    CensusPopulationUnitModel,
+    CensusSegmentModel,
+)
 
 config = context.config
 
@@ -28,13 +34,40 @@ config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = Base.metadata
 
+# Schemas owned by PostGIS extensions rather than by this project.
+EXTENSION_SCHEMAS = frozenset({"tiger", "tiger_data", "topology"})
+
+
+def include_object(object_, name, type_, reflected, compare_to) -> bool:
+    """Keep autogenerate from touching objects this project does not own.
+
+    The PostGIS TIGER geocoder and topology extensions create dozens of tables
+    that are reflected from the database but absent from ``Base.metadata``.
+    Without this filter, ``alembic revision --autogenerate`` emits DROP
+    statements for every one of them, which would uninstall the extensions.
+
+    Anything reflected from the database that our metadata does not declare is
+    therefore skipped, along with any index or constraint hanging off it.
+    """
+    if getattr(object_, "schema", None) in EXTENSION_SCHEMAS:
+        return False
+
+    if reflected:
+        if type_ == "table" and name not in target_metadata.tables:
+            return False
+        parent = getattr(object_, "table", None)
+        if parent is not None and parent.name not in target_metadata.tables:
+            return False
+
+    return alembic_helpers.include_object(object_, name, type_, reflected, compare_to)
+
 
 def do_run_migrations(connection: Connection) -> None:
     """Configure Alembic context with GeoAlchemy2 support and run migrations."""
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        include_object=alembic_helpers.include_object,
+        include_object=include_object,
         process_revision_directives=alembic_helpers.writer,
         render_item=alembic_helpers.render_item,
     )
@@ -51,7 +84,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_object=alembic_helpers.include_object,
+        include_object=include_object,
         process_revision_directives=alembic_helpers.writer,
         render_item=alembic_helpers.render_item,
     )
