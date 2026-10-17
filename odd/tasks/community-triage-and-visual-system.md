@@ -778,3 +778,35 @@ Then **C1-C4** for the PRIO-SV index itself. A4 is in progress on this branch.
   `6dc3957` but unexplained. Confirm whether it is the intended target of the
   visual work or an abandoned experiment, before investing further in
   `frontend/`.
+
+## UI/UX evidence (fetched 2026-10-17)
+
+Design rules for the console derive from these. Items not listed as verified
+must not be cited publicly.
+
+- **RustGIS** (local, `crates/ui-egui/src`): zero explanatory paragraphs by
+  default (help lives in tooltips, `ribbon.rs`); one left pane, right pane
+  closed until requested, at most one right pane (`lib.rs:363-372`,
+  `panes.rs:34`); no legend on the map, legend behind a per-layer chevron
+  (`panes.rs:800-808`); one-line empty states with at most two actions
+  (`panes.rs:349-381`); collapsible ribbon, command search as escape hatch.
+- **Verified citations:** Endsley 1995, DOI 10.1518/001872095779049543
+  ("direct presentation of higher level SA needs"); Shneiderman 1996,
+  DOI 10.1109/VL.1996.545307; Hick 1952, DOI 10.1080/17470215208416600;
+  Hyman 1953, DOI 10.1037/h0056940; Cowan 2001, DOI 10.1017/S0140525X01003922
+  (about 4 chunks); NN/g progressive disclosure (Nielsen 2006) and data tables
+  (Laubheimer 2022); WCAG 2.2 SC 1.3.1, 1.4.1, 1.4.3, 1.4.10, 1.4.11, 2.4.11,
+  2.5.8; Sendelbach & Funk 2013, DOI 10.1097/NCI.0b013e3182a903f9;
+  ISO 22324 (2015, replaced by 2022): red = act now, yellow = prepare,
+  green = safe, grey = no information available.
+- **Do not cite as stated:** "grey background, colour only for abnormal" is
+  ASM Consortium / Hollifield practice, not ISA-101 text. Choice overload is
+  conditional (Scheibehenne et al. 2010, DOI 10.1086/651235, mean effect near
+  zero).
+- **Export pattern** (Felt, Power BI, Metabase, ArcGIS Experience Builder
+  compact mode): an export entry point on the element itself; a small option
+  set (format, filtered/all, formatted/raw); advanced options folded at most
+  one level deep.
+- **List-map linkage** (ArcGIS Dashboards actions): list selection pans/flashes
+  the map; map extent can filter the list. Blocked here until the API exposes
+  district geometry.
