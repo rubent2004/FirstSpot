@@ -10,7 +10,8 @@
     "test": "vitest run",
     "generate:api": "node scripts/generate-openapi.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:typecheck": "tsc -p e2e/tsconfig.json"
+    "test:e2e:typecheck": "tsc -p e2e/tsconfig.json",
+    "record:tour": "playwright test -c playwright.record.config.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
