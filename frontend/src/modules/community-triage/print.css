@@ -41,9 +41,22 @@
 }
 
 @media print {
+  /* The console pins html and body to the viewport with overflow hidden; on
+     paper that clips the sheet to its first page. Let the document grow. */
+  html:has(body[data-print-sheet]),
+  body[data-print-sheet] {
+    height: auto;
+    overflow: visible;
+  }
+
   body[data-print-sheet] {
     background: Canvas;
     color: CanvasText;
+  }
+
+  /* Toasts ("print view ready") are screen feedback, not part of the document */
+  body[data-print-sheet] .el-message {
+    display: none !important;
   }
 
   body[data-print-sheet] #app {
