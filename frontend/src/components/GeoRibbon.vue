@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
         <div class="geo-toolgroup geo-zone-group">
           <button class="geo-big-tool primary-tool" :disabled="props.isSyncing" @click="emit('sync-zone')"><span class="geo-tool-icon"><Refresh /></span><span>{{ props.isSyncing ? (props.locale === "es" ? "Sincronizando" : "Syncing") : (props.locale === "es" ? "Sincronizar" : "Sync places") }}</span></button>
           <div class="geo-tool-stack">
-            <label>{{ props.locale === "es" ? "ZONA DE TRABAJO" : "WORKING AREA" }}</label>
+            <label class="eoc-label">{{ props.locale === "es" ? "ZONA DE TRABAJO" : "WORKING AREA" }}</label>
             <ElSelect :model-value="props.selectedZoneKey" filterable size="small" class="geo-zone-select" @update:model-value="emit('change-zone', String($event))">
               <ElOption v-for="zone in props.zones" :key="zone.key" :label="`${zone.name} · ${zone.department}`" :value="zone.key" />
             </ElSelect>
@@ -328,61 +328,61 @@ onBeforeUnmount(() => {
               />
               <span>{{ props.locale === "es" ? "Radio personalizado" : "Custom radius" }}</span>
               <button class="geo-radius-summary" type="button" @click="openRadiusSettings">
-                <strong>{{ radiusLabel }}</strong>
+                <strong class="eoc-numeric">{{ radiusLabel }}</strong>
                 <span>{{ props.locale === "es" ? "Editar" : "Edit" }}</span>
               </button>
             </div>
           </div>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Área de trabajo" : "Workspace" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Área de trabajo" : "Workspace" }}</span>
         </div>
         <div class="geo-toolgroup">
           <button class="geo-big-tool" @click="emit('center-map')"><span class="geo-tool-icon teal-icon"><Aim /></span><span>{{ props.locale === "es" ? "Centrar zona" : "Center zone" }}</span></button>
-          <div class="geo-tool-stack compact-stack"><button class="geo-small-tool" @click="emit('fit-map')"><ZoomIn />{{ props.locale === "es" ? "Ajustar datos" : "Fit data" }}</button><span class="geo-scale-readout">{{ props.locale === "es" ? "Cobertura" : "Coverage" }} · {{ radiusLabel }}</span></div>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Navegación" : "Navigate" }}</span>
+          <div class="geo-tool-stack compact-stack"><button class="geo-small-tool" @click="emit('fit-map')"><ZoomIn />{{ props.locale === "es" ? "Ajustar datos" : "Fit data" }}</button><span class="geo-scale-readout eoc-numeric">{{ props.locale === "es" ? "Cobertura" : "Coverage" }} · {{ radiusLabel }}</span></div>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Navegación" : "Navigate" }}</span>
         </div>
         <div class="geo-toolgroup">
           <button class="geo-big-tool" @click="emit('refresh-hazards')"><span class="geo-tool-icon orange-icon"><Warning /></span><span>{{ props.locale === "es" ? "Amenazas" : "Hazards" }}</span></button>
           <div class="geo-tool-stack compact-stack"><button class="geo-small-tool" :disabled="!hasActiveFilters" @click="emit('reset-filters')"><DataAnalysis />{{ props.locale === "es" ? "Restablecer filtros" : "Reset filters" }}</button><span class="geo-scale-readout">{{ props.locale === "es" ? "Datos priorizados" : "Prioritized places" }}</span></div>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Operaciones" : "Operations" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Operaciones" : "Operations" }}</span>
         </div>
       </template>
       <template v-else-if="activeTab === 1">
         <div class="geo-toolgroup geo-filter-search">
-          <label class="geo-filter-label">{{ props.locale === "es" ? "BUSCAR LUGAR" : "SEARCH PLACE" }}</label>
+          <label class="geo-filter-label eoc-label">{{ props.locale === "es" ? "BUSCAR LUGAR" : "SEARCH PLACE" }}</label>
           <ElInput v-model="props.filters.search" clearable size="small" data-testid="ribbon-filter-search" :placeholder="t.queue.searchPlaceholder" :aria-label="t.queue.searchPlaceholder" @input="handlePlaceSearchInput">
             <template #prefix><Search /></template>
           </ElInput>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Búsqueda" : "Search" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Búsqueda" : "Search" }}</span>
         </div>
         <div class="geo-toolgroup geo-filter-selects">
-          <label class="geo-filter-label">{{ props.locale === "es" ? "EJE DE VULNERABILIDAD" : "VULNERABILITY AXIS" }}</label>
+          <label class="geo-filter-label eoc-label">{{ props.locale === "es" ? "EJE DE VULNERABILIDAD" : "VULNERABILITY AXIS" }}</label>
           <ElSelect v-model="props.filters.vulnerabilityGroup" clearable size="small" :placeholder="t.queue.allGroups" :aria-label="t.queue.allGroups" @change="emit('filter-change')">
             <ElOption v-for="(label, groupKey) in t.groups" :key="groupKey" :label="label" :value="groupKey" />
           </ElSelect>
           <ElSelect v-model="props.filters.category" clearable size="small" :placeholder="t.queue.allCategories" :aria-label="t.queue.allCategories" @change="emit('filter-change')">
             <ElOption v-for="(label, categoryKey) in t.categories" :key="categoryKey" :label="label" :value="categoryKey" />
           </ElSelect>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Tipo de lugar" : "Place type" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Tipo de lugar" : "Place type" }}</span>
         </div>
         <div class="geo-toolgroup geo-filter-status">
-          <label class="geo-filter-label">{{ props.locale === "es" ? "ESTADO DE ATENCIÓN" : "ATTENTION STATUS" }}</label>
+          <label class="geo-filter-label eoc-label">{{ props.locale === "es" ? "ESTADO DE ATENCIÓN" : "ATTENTION STATUS" }}</label>
           <ElRadioGroup v-model="props.filters.attentionStatus" size="small" :aria-label="t.queue.statusAll" @change="emit('filter-change')">
             <ElRadioButton value="">{{ t.queue.statusAll }}</ElRadioButton>
             <ElRadioButton value="pending">{{ t.queue.statusPending }}</ElRadioButton>
             <ElRadioButton value="in_progress">{{ t.queue.statusInProgress }}</ElRadioButton>
             <ElRadioButton value="attended">{{ t.queue.statusAttended }}</ElRadioButton>
           </ElRadioGroup>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Despacho" : "Dispatch" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Despacho" : "Dispatch" }}</span>
         </div>
         <div class="geo-toolgroup geo-filter-heatmap">
-          <label class="geo-filter-label">{{ props.locale === "es" ? "CAPA DE CALOR" : "HEATMAP" }}</label>
+          <label class="geo-filter-label eoc-label">{{ props.locale === "es" ? "CAPA DE CALOR" : "HEATMAP" }}</label>
           <div class="geo-radius-control"><ElSwitch v-model="props.filters.includeAttendedInHeatmap" size="small" @change="emit('filter-change')" /><span>{{ t.queue.showAttendedHeatmap }}</span></div>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Visualización" : "Display" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Visualización" : "Display" }}</span>
         </div>
         <div class="geo-toolgroup geo-filter-actions">
           <button class="geo-big-tool" type="button" :disabled="!hasActiveFilters" @click="emit('reset-filters')"><span class="geo-tool-icon teal-icon"><Filter /></span><span>{{ props.locale === "es" ? "Limpiar filtros" : "Clear filters" }}</span></button>
           <button class="geo-big-tool" type="button" :disabled="props.isSyncing" @click="emit('sync-zone')"><span class="geo-tool-icon"><Refresh /></span><span>{{ props.isSyncing ? (props.locale === "es" ? "Sincronizando" : "Syncing") : (props.locale === "es" ? "Sincronizar lugares" : "Sync places") }}</span></button>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Acciones de datos" : "Data actions" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Acciones de datos" : "Data actions" }}</span>
         </div>
       </template>
       <template v-else-if="activeTab === 2">
@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
           <button class="geo-big-tool layer-tool" :class="{ 'is-active': props.showHazardsLayer }" type="button" :aria-pressed="props.showHazardsLayer" @click="emit('update:show-hazards-layer', !props.showHazardsLayer)">
             <span class="geo-tool-icon orange-icon"><Warning /></span><span>{{ props.locale === "es" ? "Amenazas" : "Hazards" }}</span>
           </button>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Capas visibles" : "Visible layers" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Capas visibles" : "Visible layers" }}</span>
         </div>
         <div class="geo-toolgroup">
           <button class="geo-big-tool layer-tool" :class="{ 'is-active': !props.tacticalBasemap }" type="button" :aria-pressed="!props.tacticalBasemap" @click="emit('update:tactical-basemap', false)">
@@ -405,15 +405,15 @@ onBeforeUnmount(() => {
           <button class="geo-big-tool layer-tool" :class="{ 'is-active': props.tacticalBasemap }" type="button" :aria-pressed="props.tacticalBasemap" @click="emit('update:tactical-basemap', true)">
             <span class="geo-tool-icon"><MapLocation /></span><span>{{ props.locale === "es" ? "Mapa táctico" : "Tactical map" }}</span>
           </button>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Mapa base" : "Basemap" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Mapa base" : "Basemap" }}</span>
         </div>
         <div class="geo-toolgroup">
           <button class="geo-big-tool" type="button" @click="emit('fit-map')"><span class="geo-tool-icon teal-icon"><ZoomIn /></span><span>{{ props.locale === "es" ? "Ajustar a lugares" : "Fit to places" }}</span></button>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Extensión" : "Extent" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Extensión" : "Extent" }}</span>
         </div>
       </template>
       <template v-else-if="activeTab === 3">
-        <div class="geo-toolgroup"><button class="geo-big-tool" @click="emit('refresh-hazards')"><span class="geo-tool-icon orange-icon"><Warning /></span><span>{{ props.locale === "es" ? "Actualizar amenazas" : "Refresh hazards" }}</span></button><div class="geo-tool-stack compact-stack"><span class="geo-scale-readout">USGS · Open-Meteo · NASA EONET</span></div><span class="geo-group-caption">{{ props.locale === "es" ? "Monitoreo en vivo" : "Live monitoring" }}</span></div>
+        <div class="geo-toolgroup"><button class="geo-big-tool" @click="emit('refresh-hazards')"><span class="geo-tool-icon orange-icon"><Warning /></span><span>{{ props.locale === "es" ? "Actualizar amenazas" : "Refresh hazards" }}</span></button><div class="geo-tool-stack compact-stack"><span class="geo-scale-readout">USGS · Open-Meteo · NASA EONET</span></div><span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Monitoreo en vivo" : "Live monitoring" }}</span></div>
         <div class="geo-toolgroup geo-radius-editor">
           <div class="geo-radius-editor-heading">
             <span class="geo-tool-icon teal-icon"><Aim /></span>
@@ -459,19 +459,19 @@ onBeforeUnmount(() => {
               v-for="preset in radiusPresets"
               :key="preset.meters"
               type="button"
-              class="geo-radius-preset"
+              class="geo-radius-preset eoc-numeric"
               :class="{ 'is-selected': props.radiusMeters === preset.meters }"
               :aria-pressed="props.radiusMeters === preset.meters"
               @click="emit('update:radius-meters', preset.meters)"
             >{{ preset.label }}</button>
           </div>
-          <span class="geo-group-caption">{{ props.locale === "es" ? "Análisis espacial" : "Spatial analysis" }}</span>
+          <span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Análisis espacial" : "Spatial analysis" }}</span>
         </div>
       </template>
       <template v-else>
-        <div class="geo-toolgroup"><button class="geo-big-tool" @click="emit('toggle-theme')"><span class="geo-tool-icon"><component :is="props.isDark ? Sunny : Moon" /></span><span>{{ props.isDark ? (props.locale === "es" ? "Modo claro" : "Light mode") : (props.locale === "es" ? "Modo oscuro" : "Dark mode") }}</span></button><span class="geo-group-caption">{{ props.locale === "es" ? "Apariencia" : "Appearance" }}</span></div>
-        <div class="geo-toolgroup"><button class="geo-big-tool" @click="emit('toggle-locale')"><span class="geo-tool-icon teal-icon"><Setting /></span><span>{{ props.locale === "es" ? "English" : "Español" }}</span></button><span class="geo-group-caption">{{ props.locale === "es" ? "Idioma" : "Language" }}</span></div>
-        <div class="geo-toolgroup"><span class="geo-scale-readout">{{ props.locale === "es" ? "FirstSpot · Centro de Operaciones" : "FirstSpot · Operations Center" }}</span><span class="geo-group-caption">{{ props.locale === "es" ? "Acerca del proyecto" : "About" }}</span></div>
+        <div class="geo-toolgroup"><button class="geo-big-tool" @click="emit('toggle-theme')"><span class="geo-tool-icon"><component :is="props.isDark ? Sunny : Moon" /></span><span>{{ props.isDark ? (props.locale === "es" ? "Modo claro" : "Light mode") : (props.locale === "es" ? "Modo oscuro" : "Dark mode") }}</span></button><span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Apariencia" : "Appearance" }}</span></div>
+        <div class="geo-toolgroup"><button class="geo-big-tool" @click="emit('toggle-locale')"><span class="geo-tool-icon teal-icon"><Setting /></span><span>{{ props.locale === "es" ? "English" : "Español" }}</span></button><span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Idioma" : "Language" }}</span></div>
+        <div class="geo-toolgroup"><span class="geo-scale-readout">{{ props.locale === "es" ? "FirstSpot · Centro de Operaciones" : "FirstSpot · Operations Center" }}</span><span class="geo-group-caption eoc-label">{{ props.locale === "es" ? "Acerca del proyecto" : "About" }}</span></div>
       </template>
     </div>
     <slot name="workspace-status" />
@@ -492,7 +492,7 @@ onBeforeUnmount(() => {
             />
             <button type="button" class="command-close" @click="closeCommandPalette()">Esc</button>
           </div>
-          <p class="command-hint">{{ props.locale === "es" ? "Acciones rápidas" : "Quick actions" }}</p>
+          <p class="command-hint eoc-label">{{ props.locale === "es" ? "Acciones rápidas" : "Quick actions" }}</p>
           <div id="geo-command-list" class="command-list" role="listbox" :aria-label="commandLabel">
             <button
               v-for="(command, index) in filteredCommands"
@@ -528,122 +528,74 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* ==========================================================================
-   GeoRibbon Architectural Theme:
-   Refined neutral cool gray for GIS/CAD desktop ergonomics (reduces eye
-   strain and establishes clear hierarchy with the map canvas), with dark
-   slate graphite for dark mode and signal lime accents.
+   GeoRibbon — matte emergency-operations chrome.
+
+   Every surface, border, radius and size comes from the FirstSpot tokens in
+   style.css, which already carry both themes, so this file needs no local
+   palette and no dark-mode block. Flat fills only; the 1px border is the
+   elevation. Group captions sit below their controls, ArcGIS-style.
    ========================================================================== */
 
 .geo-ribbon {
-  --ribbon-bg: #eceff3;
-  --ribbon-titlebar: #e5e9ef;
-  --ribbon-tabrow: #dfe4eb;
-  --ribbon-toolrow: #f4f6f9;
-  --ribbon-telemetry: #e8ecf1;
-  --ribbon-border: #cbd3de;
-  --ribbon-border-subtle: #d8dfe8;
-  --ribbon-surface-card: #ffffff;
-  --ribbon-text-primary: #1e293b;
-  --ribbon-text-secondary: #475569;
-  --ribbon-text-muted: #64748b;
-  --ribbon-hover: #d7e0ea;
-  --ribbon-hover-tool: #e5eaf1;
-  --ribbon-tab-active-bg: #f4f6f9;
-  --ribbon-accent: #3d6d08;
-  --ribbon-accent-glow: rgba(77, 133, 11, 0.12);
-  --ribbon-focus: #5c9716;
-
   flex: none;
-  background: var(--ribbon-bg);
-  color: var(--ribbon-text-primary);
-  border-bottom: 1px solid var(--ribbon-border);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
-  font: 12px "Segoe UI", system-ui, sans-serif;
+  background: var(--eoc-bg-panel);
+  color: var(--eoc-text-primary);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
+  font-family: var(--eoc-font-sans);
+  font-size: var(--eoc-fs-body);
   z-index: 10;
-}
-
-.dark .geo-ribbon {
-  --ribbon-bg: #1e2229;
-  --ribbon-titlebar: #181b22;
-  --ribbon-tabrow: #15181f;
-  --ribbon-toolrow: #222731;
-  --ribbon-telemetry: #181b22;
-  --ribbon-border: #2d3440;
-  --ribbon-border-subtle: #282f3a;
-  --ribbon-surface-card: #191d24;
-  --ribbon-text-primary: #f1f5f9;
-  --ribbon-text-secondary: #cbd5e1;
-  --ribbon-text-muted: #8897a8;
-  --ribbon-hover: #262c37;
-  --ribbon-hover-tool: #2b3341;
-  --ribbon-tab-active-bg: #222731;
-  --ribbon-accent: #88d623;
-  --ribbon-accent-glow: rgba(136, 214, 35, 0.16);
-  --ribbon-focus: #88d623;
-
-  background: var(--ribbon-bg);
-  color: var(--ribbon-text-primary);
-  border-bottom-color: var(--ribbon-border);
 }
 
 /* --- Titlebar --- */
 .geo-titlebar {
-  height: 48px;
+  height: var(--eoc-header-h);
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 0 14px;
-  background: var(--ribbon-titlebar);
-  border-bottom: 1px solid var(--ribbon-border);
+  gap: var(--eoc-gap-x);
+  padding: 0 var(--eoc-pad-panel);
+  background: var(--eoc-bg-header);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .geo-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--eoc-gap-x);
   white-space: nowrap;
 }
 
 .geo-brand strong {
-  font-size: 15px;
-  font-weight: 760;
-  letter-spacing: -0.025em;
-  color: var(--ribbon-text-primary);
-}
-
-.dark .geo-brand strong {
-  color: #f8fafc;
+  font-size: var(--eoc-fs-title);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-text-primary);
 }
 
 .geo-mark {
   display: block;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
 }
 
+/* The product tag is a brand mark, the one place signal lime is allowed */
 .geo-product-tag {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  font-weight: 800;
-  background: #1e1e1e;
-  color: #a9e94b;
-  border: 1px solid #1e1e1e;
-  padding: 3px 6px;
-  border-radius: 3px;
-}
-
-.dark .geo-product-tag {
-  background: #12151a;
-  border-color: #2d3440;
+  font-size: var(--eoc-fs-micro);
+  letter-spacing: 0.09em;
+  font-weight: var(--eoc-fw-semibold);
+  line-height: 1;
+  background: var(--eoc-brand-ink);
+  color: var(--eoc-brand-lime);
+  border: var(--eoc-border-width) solid var(--eoc-brand-ink);
+  padding: 3px 5px;
+  border-radius: var(--eoc-radius-control);
 }
 
 .geo-quick-access {
   display: flex;
-  gap: 3px;
-  padding-left: 8px;
-  border-left: 1px solid var(--ribbon-border);
+  gap: 2px;
+  padding-left: var(--eoc-gap-x);
+  border-left: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .geo-quick,
@@ -651,59 +603,60 @@ onBeforeUnmount(() => {
 .geo-locale {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 27px;
-  border-radius: 4px;
-  color: var(--ribbon-text-secondary);
+  width: var(--eoc-icon-btn);
+  height: var(--eoc-control-h);
+  border-radius: var(--eoc-radius-control);
+  color: var(--eoc-icon);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color var(--eoc-transition),
+    color var(--eoc-transition);
 }
 
 .geo-quick:hover,
 .geo-icon-btn:hover,
 .geo-locale:hover {
-  background: var(--ribbon-hover);
-  color: var(--ribbon-text-primary);
+  background: var(--eoc-bg-hover);
+  color: var(--eoc-text-primary);
 }
 
 .geo-quick :deep(svg),
 .geo-icon-btn :deep(svg) {
-  width: 15px;
+  width: 14px;
 }
 
 .geo-project-title {
   flex: 1;
   text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ribbon-text-primary);
+  font-size: var(--eoc-fs-body);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-text-primary);
   white-space: nowrap;
 }
 
 .geo-project-title span {
-  font-weight: 500;
-  color: var(--ribbon-text-muted);
+  font-weight: var(--eoc-fw-regular);
+  color: var(--eoc-text-muted);
 }
 
 .geo-search {
-  height: 28px;
+  height: var(--eoc-control-h);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  background: var(--ribbon-surface-card);
-  border: 1px solid var(--ribbon-border);
-  border-radius: 4px;
-  color: var(--ribbon-text-secondary);
-  font-size: 11px;
+  gap: var(--eoc-gap-x);
+  padding: 0 var(--eoc-gap-x);
+  background: var(--eoc-bg-sunken);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-body);
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .geo-search:hover {
-  border-color: var(--ribbon-accent);
-  color: var(--ribbon-text-primary);
+  border-color: var(--eoc-accent);
+  color: var(--eoc-text-primary);
 }
 
 .geo-search :deep(svg) {
@@ -711,46 +664,44 @@ onBeforeUnmount(() => {
 }
 
 .geo-search kbd {
-  font: 10px ui-monospace, monospace;
-  background: var(--ribbon-hover);
-  border: 1px solid var(--ribbon-border);
-  padding: 2px 4px;
-  border-radius: 3px;
-  color: var(--ribbon-text-secondary);
+  font-family: var(--eoc-font-mono);
+  font-size: var(--eoc-fs-micro);
+  background: var(--eoc-bg-hover);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: 1px 4px;
+  border-radius: var(--eoc-radius-control);
+  color: var(--eoc-text-secondary);
 }
 
 .geo-locale {
-  font-size: 10px;
-  font-weight: 800;
-  width: 31px;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  width: 30px;
 }
 
 .geo-account {
-  height: 28px;
+  height: var(--eoc-control-h);
   max-width: 190px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 4px;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-text-secondary);
+  gap: var(--eoc-gap-x);
+  padding: var(--eoc-pad-button);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-card);
+  color: var(--eoc-text-secondary);
   font: inherit;
-  font-size: 10px;
-  font-weight: 650;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .geo-account:hover {
-  border-color: var(--ribbon-accent);
-  color: var(--ribbon-text-primary);
-  background: var(--ribbon-hover);
-}
-
-.dark .geo-account:hover {
-  color: var(--ribbon-accent);
+  border-color: var(--eoc-accent);
+  color: var(--eoc-text-primary);
+  background: var(--eoc-bg-hover);
 }
 
 .geo-account :deep(svg) {
@@ -765,31 +716,32 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+/* Verification state is semantic: amber pending, green verified */
 .geo-account i {
   width: 6px;
   height: 6px;
   flex: none;
-  border-radius: 50%;
-  background: #df9a29;
+  border-radius: var(--eoc-radius-pill);
+  background: var(--eoc-warning);
 }
 
 .geo-account i.verified {
-  background: #1b9a69;
+  background: var(--eoc-success);
 }
 
 .ribbon-expand-toggle[aria-expanded="false"] {
-  background: var(--ribbon-hover);
-  color: var(--ribbon-text-primary);
+  background: var(--eoc-bg-hover);
+  color: var(--eoc-text-primary);
 }
 
 /* --- Tab row --- */
 .geo-tabrow {
-  height: 32px;
+  height: var(--eoc-tabstrip-h);
   display: flex;
   align-items: stretch;
-  padding: 0 9px;
-  background: var(--ribbon-tabrow);
-  border-bottom: 1px solid var(--ribbon-border);
+  padding: 0 var(--eoc-gap-x);
+  background: var(--eoc-bg-statusbar);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .geo-tab-list {
@@ -801,26 +753,22 @@ onBeforeUnmount(() => {
 .geo-project-tab {
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  font-size: 11px;
-  font-weight: 700;
-  background: #1e1e1e;
-  color: #fff;
-  border-bottom: 2px solid #88d623;
-  gap: 6px;
-  margin: 3px 8px 3px 0;
-  border-radius: 3px;
+  padding: 0 10px;
+  font-size: var(--eoc-fs-body);
+  font-weight: var(--eoc-fw-semibold);
+  background: var(--eoc-bg-sunken);
+  color: var(--eoc-text-primary);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-bottom: 2px solid var(--eoc-accent);
+  gap: 5px;
+  margin: 4px var(--eoc-gap-x) 4px 0;
+  border-radius: var(--eoc-radius-control);
   cursor: pointer;
 }
 
-.dark .geo-project-tab {
-  background: #111419;
-  border-bottom: 2px solid #88d623;
-}
-
 .geo-project-tab :deep(svg) {
-  width: 14px;
-  color: #a9e94b;
+  width: 13px;
+  color: var(--eoc-accent);
 }
 
 .project-caret {
@@ -831,41 +779,38 @@ onBeforeUnmount(() => {
 .menu-shortcut {
   margin-left: 12px;
   padding: 1px 4px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 3px;
-  color: var(--ribbon-text-muted);
-  font: 10px ui-monospace, monospace;
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  color: var(--eoc-text-muted);
+  font-family: var(--eoc-font-mono);
+  font-size: var(--eoc-fs-micro);
 }
 
 .geo-tab {
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ribbon-text-secondary);
-  border-bottom: 3px solid transparent;
+  padding: 0 12px;
+  font-size: var(--eoc-fs-body);
+  font-weight: var(--eoc-fw-regular);
+  color: var(--eoc-text-secondary);
+  border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color var(--eoc-transition),
+    color var(--eoc-transition);
 }
 
 .geo-tab:hover {
-  background: var(--ribbon-hover);
-  color: var(--ribbon-text-primary);
+  background: var(--eoc-bg-hover);
+  color: var(--eoc-text-primary);
 }
 
+/* Active tab carries the operational accent, never the brand lime */
 .geo-tab.selected,
 .geo-tab[aria-pressed="true"] {
-  color: var(--ribbon-accent);
-  border-bottom-color: var(--ribbon-accent);
-  background: var(--ribbon-tab-active-bg);
-  font-weight: 700;
-}
-
-.dark .geo-tab.selected,
-.dark .geo-tab[aria-pressed="true"] {
-  color: #a9e94b;
-  border-bottom-color: #88d623;
+  color: var(--eoc-text-primary);
+  border-bottom-color: var(--eoc-accent);
+  background: var(--eoc-bg-panel);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .geo-tab-spacer {
@@ -875,54 +820,52 @@ onBeforeUnmount(() => {
 .geo-project-state {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 11px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ribbon-text-secondary);
+  gap: 5px;
+  padding: 0 var(--eoc-pad-panel);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-text-secondary);
 }
 
 .geo-project-state i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--eoc-radius-pill);
+  background: var(--eoc-success);
 }
 
 .geo-project-state.is-updating i {
-  background: #d97706;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+  background: var(--eoc-warning);
 }
 
 .geo-project-state.has-error {
-  color: #dc2626;
+  color: var(--eoc-critical);
 }
 
 .geo-project-state.has-error i {
-  background: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+  background: var(--eoc-critical);
 }
 
 /* --- Toolrow --- */
 .geo-toolrow {
-  height: 94px;
+  height: 86px;
   display: flex;
   align-items: stretch;
-  padding: 6px 10px 4px;
-  background: var(--ribbon-toolrow);
-  border-bottom: 1px solid var(--ribbon-border);
+  padding: 5px var(--eoc-pad-panel) 3px;
+  background: var(--eoc-bg-panel);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
   overflow-x: auto;
   scrollbar-width: thin;
 }
 
+/* Each group is a column of controls with its caption pinned underneath */
 .geo-toolgroup {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 15px 13px;
-  border-right: 1px solid var(--ribbon-border-subtle);
+  gap: var(--eoc-gap-x);
+  padding: 0 12px 14px;
+  border-right: var(--eoc-border-width) solid var(--eoc-border-subtle);
   min-width: max-content;
 }
 
@@ -937,13 +880,10 @@ onBeforeUnmount(() => {
 .geo-group-caption {
   position: absolute;
   bottom: 0;
-  left: 15px;
-  right: 15px;
+  left: 12px;
+  right: 12px;
   text-align: center;
-  color: var(--ribbon-text-muted);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 12px;
+  line-height: 13px;
 }
 
 .geo-toolgroup:first-child .geo-group-caption {
@@ -952,33 +892,34 @@ onBeforeUnmount(() => {
 
 .geo-tool-stack label,
 .geo-filter-label {
-  font-size: 9px;
-  letter-spacing: 0.07em;
-  color: var(--ribbon-text-muted);
-  font-weight: 800;
+  font-size: var(--eoc-fs-micro);
+  letter-spacing: 0.09em;
+  color: var(--eoc-text-label);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .geo-big-tool {
-  height: 65px;
-  min-width: 62px;
-  padding: 4px 8px;
+  height: 56px;
+  min-width: 60px;
+  padding: 3px var(--eoc-gap-x);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  border-radius: 4px;
-  color: var(--ribbon-text-primary);
-  font-size: 10px;
-  font-weight: 600;
+  gap: 4px;
+  border-radius: var(--eoc-radius-button);
+  color: var(--eoc-text-primary);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color var(--eoc-transition),
+    color var(--eoc-transition);
 }
 
 .geo-big-tool:hover {
-  background: var(--ribbon-hover-tool);
-  color: var(--ribbon-text-primary);
+  background: var(--eoc-bg-hover);
+  color: var(--eoc-text-primary);
 }
 
 .geo-big-tool:disabled {
@@ -987,28 +928,29 @@ onBeforeUnmount(() => {
 }
 
 .geo-big-tool.primary-tool,
-.geo-tool-icon,
 .geo-tool-icon.teal-icon {
-  color: var(--ribbon-accent);
+  color: var(--eoc-accent);
 }
 
 .geo-big-tool.primary-tool:hover {
-  background: var(--ribbon-hover-tool);
+  background: var(--eoc-bg-hover);
 }
 
 .geo-tool-icon {
   display: grid;
   place-items: center;
+  color: var(--eoc-icon);
 }
 
 .geo-tool-icon :deep(svg) {
-  width: 23px;
-  height: 23px;
+  width: 20px;
+  height: 20px;
   stroke-width: 1.8;
 }
 
+/* Hazard tools are warning-coded because the data they open is a hazard */
 .geo-tool-icon.orange-icon {
-  color: #e17816;
+  color: var(--eoc-warning);
 }
 
 .geo-tool-stack {
@@ -1031,22 +973,13 @@ onBeforeUnmount(() => {
 }
 
 .geo-radius-control {
-  height: 22px;
+  height: var(--eoc-control-h);
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--ribbon-text-secondary);
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.geo-radius-input {
-  width: 59px;
-  height: 21px;
-  padding: 0 4px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 3px;
-  font: 10px ui-monospace, monospace;
+  gap: var(--eoc-gap-x);
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-regular);
 }
 
 .compact-stack {
@@ -1054,46 +987,47 @@ onBeforeUnmount(() => {
 }
 
 .geo-small-tool {
-  height: 28px;
+  height: var(--eoc-control-h);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 4px;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-text-primary);
-  font-size: 10px;
-  font-weight: 600;
+  gap: 5px;
+  padding: var(--eoc-pad-button);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-button);
+  background: var(--eoc-bg-card);
+  color: var(--eoc-text-primary);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .geo-small-tool:hover {
-  border-color: var(--ribbon-accent);
-  background: var(--ribbon-hover);
-  color: var(--ribbon-text-primary);
+  border-color: var(--eoc-accent);
+  background: var(--eoc-bg-hover);
+  color: var(--eoc-text-primary);
 }
 
 .geo-small-tool :deep(svg) {
-  width: 14px;
+  width: 13px;
 }
 
 .geo-scale-readout {
-  color: var(--ribbon-text-secondary);
-  font-size: 10px;
-  font-weight: 500;
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-regular);
 }
 
 .geo-home-radius {
-  gap: 6px;
+  gap: var(--eoc-gap-x);
   white-space: nowrap;
 }
 
 .geo-home-radius > span {
-  font-size: 10px;
-  color: var(--ribbon-text-secondary);
+  font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-secondary);
 }
 
 .geo-radius-summary {
@@ -1101,28 +1035,25 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 5px;
   margin-left: auto;
-  padding: 3px 6px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 4px;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-text-secondary);
-  font-size: 10px;
+  padding: var(--eoc-pad-button);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-card);
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.geo-radius-summary strong {
-  font-variant-numeric: tabular-nums;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition);
 }
 
 .geo-radius-summary span {
-  color: var(--ribbon-accent);
-  font-weight: 650;
+  color: var(--eoc-accent-text);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .geo-radius-summary:hover {
-  border-color: var(--ribbon-accent);
-  background: var(--ribbon-hover);
+  border-color: var(--eoc-accent);
+  background: var(--eoc-bg-hover);
 }
 
 /* --- Radius Editor (Tab 3) --- */
@@ -1134,15 +1065,15 @@ onBeforeUnmount(() => {
   align-items: stretch;
   justify-content: flex-start;
   gap: 2px;
-  padding-left: 13px;
-  padding-right: 13px;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .geo-radius-editor-heading {
-  height: 21px;
+  height: var(--eoc-control-h);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
 }
 
 .geo-radius-editor-heading > .geo-tool-icon :deep(svg) {
@@ -1160,23 +1091,24 @@ onBeforeUnmount(() => {
 
 .geo-radius-heading-copy strong {
   flex: none;
-  color: var(--ribbon-text-primary);
-  font-size: 11px;
+  color: var(--eoc-text-primary);
+  font-size: var(--eoc-fs-body);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .geo-radius-heading-copy small {
   overflow: hidden;
-  color: var(--ribbon-text-muted);
-  font-size: 9px;
+  color: var(--eoc-text-muted);
+  font-size: var(--eoc-fs-micro);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .geo-radius-value-row {
-  height: 23px;
+  height: var(--eoc-control-h);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--eoc-pad-panel);
 }
 
 .geo-radius-value-row :deep(.el-slider) {
@@ -1185,20 +1117,21 @@ onBeforeUnmount(() => {
 }
 
 .geo-radius-value-row :deep(.el-slider__runway) {
-  height: 4px;
+  height: 3px;
   margin: 9px 0;
-  background: var(--ribbon-border);
+  background: var(--eoc-border-strong);
 }
 
 .geo-radius-value-row :deep(.el-slider__bar) {
-  height: 4px;
-  background: var(--ribbon-accent);
+  height: 3px;
+  background: var(--eoc-accent);
 }
 
 .geo-radius-value-row :deep(.el-slider__button) {
-  width: 13px;
-  height: 13px;
-  border: 2px solid var(--ribbon-accent);
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--eoc-accent);
+  background: var(--eoc-bg-panel);
 }
 
 .geo-radius-number {
@@ -1208,89 +1141,84 @@ onBeforeUnmount(() => {
 }
 
 .geo-radius-number :deep(.el-input-number) {
-  width: 83px;
+  width: 80px;
 }
 
 .geo-radius-number :deep(.el-input__wrapper) {
-  min-height: 24px;
-  padding-left: 7px;
+  min-height: var(--eoc-control-h);
+  padding-left: var(--eoc-gap-x);
   padding-right: 24px;
-  background: var(--ribbon-surface-card);
-  box-shadow: 0 0 0 1px var(--ribbon-border) inset;
+  background: var(--eoc-bg-sunken);
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border);
 }
 
 .geo-radius-number :deep(.el-input__inner) {
   text-align: center;
-  font-size: 11px;
+  font-size: var(--eoc-fs-body);
   font-variant-numeric: tabular-nums;
-  color: var(--ribbon-text-primary);
+  color: var(--eoc-text-primary);
 }
 
 .geo-radius-number > span {
-  color: var(--ribbon-text-secondary);
-  font-size: 10px;
-  font-weight: 700;
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .geo-radius-presets {
-  height: 18px;
+  height: var(--eoc-control-h);
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .geo-radius-preset {
-  min-width: 39px;
-  height: 17px;
-  padding: 0 6px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 3px;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-text-secondary);
-  font-size: 9px;
+  min-width: 38px;
+  height: 18px;
+  padding: 0 var(--eoc-gap-x);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-card);
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .geo-radius-preset:hover {
-  border-color: var(--ribbon-accent);
-  background: var(--ribbon-hover);
+  border-color: var(--eoc-border-strong);
+  background: var(--eoc-bg-hover);
 }
 
 .geo-radius-preset.is-selected {
-  border-color: var(--ribbon-accent);
-  background: var(--ribbon-accent-glow);
-  color: var(--ribbon-accent);
-  font-weight: 750;
-}
-
-.dark .geo-radius-preset.is-selected {
-  background: #1b3523;
-  border-color: #88d623;
-  color: #a9e94b;
+  border-color: var(--eoc-accent);
+  background: var(--eoc-bg-selected);
+  color: var(--eoc-text-primary);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 /* --- Filter & Layer Controls --- */
 .geo-layer-tools {
-  gap: 5px;
+  gap: 4px;
 }
 
 .geo-layer-tools .layer-tool {
-  min-width: 76px;
-  padding: 4px 7px;
-  border: 1px solid transparent;
+  min-width: 74px;
+  padding: 3px var(--eoc-gap-x);
+  border: var(--eoc-border-width) solid transparent;
 }
 
 .geo-layer-tools .layer-tool.is-active {
-  border-color: var(--ribbon-accent);
-  background: var(--ribbon-hover);
-  color: var(--ribbon-accent);
+  border-color: var(--eoc-accent);
+  background: var(--eoc-bg-selected);
+  color: var(--eoc-text-primary);
 }
 
 .geo-layer-tools .layer-tool.is-active .geo-tool-icon {
-  color: var(--ribbon-accent);
+  color: var(--eoc-accent);
 }
 
 .geo-filter-search,
@@ -1311,31 +1239,31 @@ onBeforeUnmount(() => {
 }
 
 .geo-filter-search .geo-filter-label {
-  height: 11px;
-  line-height: 11px;
+  height: 13px;
+  line-height: 13px;
 }
 
-.geo-filter-search :deep(.el-input) {
-  height: 29px;
+.geo-filter-search :deep(.el-input),
+.geo-filter-search :deep(.el-input__wrapper) {
+  height: var(--eoc-control-h);
+  min-height: var(--eoc-control-h);
 }
 
 .geo-filter-search :deep(.el-input__wrapper) {
-  height: 29px;
-  min-height: 29px;
-  padding: 0 8px;
-  background: var(--ribbon-surface-card);
-  box-shadow: 0 0 0 1px var(--ribbon-border) inset;
+  padding: 0 var(--eoc-gap-x);
+  background: var(--eoc-bg-sunken);
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border);
 }
 
 .geo-filter-search :deep(.el-input__inner) {
-  height: 27px;
-  font-size: 11px;
-  color: var(--ribbon-text-primary);
+  height: calc(var(--eoc-control-h) - 2px);
+  font-size: var(--eoc-fs-body);
+  color: var(--eoc-text-primary);
 }
 
 .geo-filter-search :deep(.el-input__prefix-inner svg) {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .geo-filter-selects {
@@ -1350,25 +1278,25 @@ onBeforeUnmount(() => {
 }
 
 .geo-filter-selects :deep(.el-select__wrapper) {
-  min-height: 25px;
-  padding: 0 7px;
-  border-radius: 3px;
-  background: var(--ribbon-surface-card);
-  box-shadow: 0 0 0 1px var(--ribbon-border) inset;
+  min-height: var(--eoc-control-h);
+  padding: 0 var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-sunken);
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border);
 }
 
 .geo-filter-selects :deep(.el-select__placeholder) {
-  font-size: 10px;
-  color: var(--ribbon-text-primary);
+  font-size: var(--eoc-fs-body);
+  color: var(--eoc-text-primary);
 }
 
 .geo-zone-select :deep(.el-input__wrapper) {
-  background: var(--ribbon-surface-card);
-  box-shadow: 0 0 0 1px var(--ribbon-border) inset;
+  background: var(--eoc-bg-sunken);
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border);
 }
 
 .geo-zone-select :deep(.el-input__inner) {
-  color: var(--ribbon-text-primary);
+  color: var(--eoc-text-primary);
 }
 
 .geo-filter-status {
@@ -1385,18 +1313,14 @@ onBeforeUnmount(() => {
 }
 
 .geo-filter-status :deep(.el-radio-button__inner) {
-  height: 24px;
-  padding: 4px 7px;
-  font-size: 9px;
+  height: var(--eoc-control-h);
+  padding: 0 var(--eoc-gap-x);
+  font-size: var(--eoc-fs-micro);
   white-space: nowrap;
 }
 
 .geo-filter-heatmap {
   min-width: 150px;
-}
-
-.geo-filter-heatmap .geo-radius-control {
-  height: 25px;
 }
 
 .geo-filter-heatmap .geo-radius-control span {
@@ -1415,133 +1339,105 @@ onBeforeUnmount(() => {
 }
 
 .geo-filter-actions .geo-tool-icon :deep(svg) {
-  width: 20px;
-  height: 20px;
-}
-
-.geo-filter-actions .geo-big-tool > span:last-child {
-  font-size: 9px;
+  width: 18px;
+  height: 18px;
 }
 
 /* --- Hazard Telemetry Strip --- */
 .geo-ribbon :deep(.hazard-telemetry-strip) {
-  min-height: 34px;
-  padding: 3px 12px;
-  background: var(--ribbon-telemetry);
-  border-top: 1px solid var(--ribbon-border);
-  border-bottom: 1px solid var(--ribbon-border);
+  min-height: var(--eoc-tabstrip-h);
+  padding: 3px var(--eoc-pad-panel);
+  background: var(--eoc-bg-statusbar);
+  border-top: var(--eoc-border-width) solid var(--eoc-border);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
   box-shadow: none;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
   flex-wrap: nowrap;
-  font-size: 10px;
+  font-size: var(--eoc-fs-micro);
 }
 
 .geo-ribbon :deep(.telemetry-badge-box) {
-  color: var(--ribbon-text-muted);
-  font-size: 9px;
-  letter-spacing: 0.045em;
-  padding-right: 8px;
-  border-right: 1px solid var(--ribbon-border);
+  color: var(--eoc-text-label);
+  padding-right: var(--eoc-gap-x);
+  border-right: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .geo-ribbon :deep(.weather-pill),
 .geo-ribbon :deep(.events-pill) {
-  min-height: 25px;
-  padding: 2px 8px;
-  background: var(--ribbon-surface-card);
-  border: 1px solid var(--ribbon-border);
-  border-radius: 3px;
+  min-height: var(--eoc-control-h);
+  padding: 2px var(--eoc-gap-x);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
   white-space: nowrap;
-  color: var(--ribbon-text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  color: var(--eoc-text-primary);
+  box-shadow: none;
 }
 
 .geo-ribbon :deep(.telemetry-label) {
-  color: var(--ribbon-text-muted);
+  color: var(--eoc-text-muted);
 }
 
 .geo-ribbon :deep(.top-event-title) {
-  color: var(--ribbon-text-primary);
+  color: var(--eoc-text-primary);
 }
 
 .geo-ribbon :deep(.calm-text),
 .geo-ribbon :deep(.feed-freshness) {
-  color: var(--ribbon-text-muted);
+  color: var(--eoc-text-muted);
 }
 
 .geo-ribbon :deep(.telemetry-controls) {
   flex-wrap: nowrap;
-  gap: 7px;
+  gap: var(--eoc-gap-x);
 }
 
 .geo-ribbon :deep(.live-monitoring-badge),
 .geo-ribbon :deep(.active-drill-badge) {
-  border-radius: 3px;
-  padding: 3px 7px;
-  font-size: 10px;
+  border-radius: var(--eoc-radius-control);
+  padding: 2px var(--eoc-gap-x);
+  font-size: var(--eoc-fs-micro);
 }
 
 .geo-ribbon :deep(.drill-toggle-btn) {
-  border-radius: 3px;
-  background: var(--ribbon-surface-card);
-  border: 1px solid var(--ribbon-border);
-  color: var(--ribbon-text-secondary);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  color: var(--eoc-text-secondary);
 }
 
 .geo-ribbon :deep(.drill-toggle-btn:hover) {
-  border-color: var(--ribbon-accent);
-  color: var(--ribbon-text-primary);
-  background: var(--ribbon-hover);
+  border-color: var(--eoc-border-strong);
+  color: var(--eoc-text-primary);
+  background: var(--eoc-bg-hover);
 }
 
 .geo-ribbon :deep(.nominatim-input-row) {
-  border-radius: 3px;
-  background: var(--ribbon-surface-card);
-  border: 1px solid var(--ribbon-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-sunken);
+  border: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .geo-ribbon :deep(.nominatim-input) {
-  color: var(--ribbon-text-primary);
+  color: var(--eoc-text-primary);
 }
 
 .geo-ribbon :deep(.nominatim-input::placeholder) {
-  color: var(--ribbon-text-muted);
+  color: var(--eoc-text-muted);
 }
 
 .geo-ribbon :deep(.nominatim-dropdown) {
-  border-radius: 3px;
-  background: var(--ribbon-surface-card);
-  border: 1px solid var(--ribbon-border);
+  border-radius: var(--eoc-radius-menu);
+  background: var(--eoc-bg-overlay);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
 }
 
 .geo-ribbon :deep(.nominatim-option) {
-  color: var(--ribbon-text-primary);
+  color: var(--eoc-text-primary);
 }
 
 .geo-ribbon :deep(.nominatim-option:hover) {
-  background: var(--ribbon-hover);
-}
-
-.geo-ribbon :deep([data-testid="nominatim-search-btn"]) {
-  background: #1e293b;
-  border-color: #1e293b;
-  color: #fff;
-}
-
-.geo-ribbon :deep([data-testid="nominatim-search-btn"]:hover) {
-  background: #334155;
-  border-color: #334155;
-}
-
-.dark .geo-ribbon :deep([data-testid="nominatim-search-btn"]) {
-  background: #2a3240;
-  border-color: #394354;
-  color: #fff;
-}
-
-.dark .geo-ribbon :deep([data-testid="nominatim-search-btn"]:hover) {
-  background: #384357;
-  border-color: #48566d;
+  background: var(--eoc-bg-hover);
 }
 
 /* --- Focus rings --- */
@@ -1557,16 +1453,17 @@ onBeforeUnmount(() => {
 .geo-icon-btn:focus-visible,
 .geo-locale:focus-visible,
 .geo-quick:focus-visible {
-  outline: 2px solid var(--ribbon-focus);
+  outline: 2px solid var(--eoc-border-focus);
   outline-offset: 2px;
+  border-radius: var(--eoc-radius-control);
 }
 
-/* --- Command Palette Modal --- */
+/* --- Command Palette Modal (floating: the one place a shadow belongs) --- */
 .command-backdrop {
   position: fixed;
   inset: 0;
   z-index: 3000;
-  background: rgba(15, 23, 42, 0.52);
+  background: var(--el-mask-color);
   padding: 12vh 16px 24px;
   overflow: auto;
 }
@@ -1579,27 +1476,27 @@ onBeforeUnmount(() => {
 .command-palette {
   width: min(560px, 100%);
   margin: 0 auto;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-text-primary);
-  border: 1px solid var(--ribbon-border);
-  border-radius: 8px;
-  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.25);
+  background: var(--eoc-bg-overlay);
+  color: var(--eoc-text-primary);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-dialog);
+  box-shadow: var(--eoc-shadow-dialog);
   overflow: hidden;
 }
 
 .command-search-row {
-  height: 58px;
+  height: 42px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 17px;
-  border-bottom: 1px solid var(--ribbon-border);
-  color: var(--ribbon-accent);
+  gap: var(--eoc-pad-panel);
+  padding: 0 14px;
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
+  color: var(--eoc-icon);
 }
 
 .command-search-row > svg {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   flex: none;
 }
 
@@ -1609,77 +1506,76 @@ onBeforeUnmount(() => {
   border: 0;
   outline: 0;
   background: transparent;
-  color: var(--ribbon-text-primary);
-  font: 500 15px "Segoe UI", system-ui, sans-serif;
+  color: var(--eoc-text-primary);
+  font-family: var(--eoc-font-sans);
+  font-size: var(--eoc-fs-title);
+  font-weight: var(--eoc-fw-regular);
 }
 
 .command-search-row input::placeholder {
-  color: var(--ribbon-text-muted);
+  color: var(--eoc-text-muted);
 }
 
 .command-close {
-  padding: 3px 7px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 4px;
-  background: var(--ribbon-hover);
-  color: var(--ribbon-text-secondary);
-  font: 11px ui-monospace, monospace;
+  padding: var(--eoc-pad-button);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-hover);
+  color: var(--eoc-text-secondary);
+  font-family: var(--eoc-font-mono);
+  font-size: var(--eoc-fs-micro);
   cursor: pointer;
 }
 
 .command-hint {
   margin: 0;
-  padding: 12px 16px 6px;
-  color: var(--ribbon-text-muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  padding: var(--eoc-pad-panel) 14px 4px;
 }
 
 .command-list {
   max-height: min(440px, 55vh);
   overflow: auto;
-  padding: 4px 7px 8px;
+  padding: 3px var(--eoc-gap-x) var(--eoc-gap-x);
 }
 
 .command-option {
   width: 100%;
-  min-height: 46px;
+  min-height: 32px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 6px 9px;
+  gap: var(--eoc-pad-panel);
+  padding: 4px var(--eoc-gap-x);
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--eoc-radius-control);
   background: transparent;
-  color: var(--ribbon-text-secondary);
+  color: var(--eoc-text-secondary);
   text-align: left;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background-color var(--eoc-transition),
+    color var(--eoc-transition);
 }
 
 .command-option:hover,
 .command-option.active {
-  background: var(--ribbon-hover);
-  color: var(--ribbon-accent);
+  background: var(--eoc-bg-selected);
+  color: var(--eoc-text-primary);
 }
 
 .command-option-icon {
-  width: 29px;
-  height: 29px;
+  width: var(--eoc-icon-btn);
+  height: var(--eoc-icon-btn);
   display: grid;
   place-items: center;
   flex: none;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 4px;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-accent);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-card);
+  color: var(--eoc-icon);
 }
 
 .command-option-icon :deep(svg) {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .command-option-copy {
@@ -1687,42 +1583,43 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--eoc-pad-panel);
 }
 
 .command-option-copy strong {
-  font-size: 12px;
-  font-weight: 650;
-  color: var(--ribbon-text-primary);
+  font-size: var(--eoc-fs-body);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-text-primary);
 }
 
 .command-option-copy small {
-  color: var(--ribbon-text-muted);
-  font-size: 10px;
+  color: var(--eoc-text-muted);
+  font-size: var(--eoc-fs-micro);
 }
 
 .command-option-arrow {
-  color: var(--ribbon-text-muted);
-  font: 12px ui-monospace, monospace;
+  color: var(--eoc-text-muted);
+  font-family: var(--eoc-font-mono);
+  font-size: var(--eoc-fs-body);
 }
 
 .command-empty {
-  padding: 22px 12px;
-  color: var(--ribbon-text-muted);
+  padding: 18px var(--eoc-pad-panel);
+  color: var(--eoc-text-muted);
   text-align: center;
-  font-size: 12px;
+  font-size: var(--eoc-fs-body);
 }
 
 .command-footer {
-  min-height: 34px;
+  min-height: var(--eoc-statusbar-h);
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 0 13px;
-  border-top: 1px solid var(--ribbon-border);
-  background: var(--ribbon-telemetry);
-  color: var(--ribbon-text-muted);
-  font-size: 10px;
+  gap: var(--eoc-pad-panel);
+  padding: 0 var(--eoc-pad-panel);
+  border-top: var(--eoc-border-width) solid var(--eoc-border);
+  background: var(--eoc-bg-statusbar);
+  color: var(--eoc-text-muted);
+  font-size: var(--eoc-fs-micro);
 }
 
 .command-footer span {
@@ -1734,12 +1631,13 @@ onBeforeUnmount(() => {
 .command-footer kbd {
   min-width: 18px;
   padding: 1px 4px;
-  border: 1px solid var(--ribbon-border);
-  border-radius: 3px;
-  background: var(--ribbon-surface-card);
-  color: var(--ribbon-text-secondary);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-card);
+  color: var(--eoc-text-secondary);
   text-align: center;
-  font: 10px ui-monospace, monospace;
+  font-family: var(--eoc-font-mono);
+  font-size: var(--eoc-fs-micro);
 }
 
 .command-footer-spacer {
@@ -1749,15 +1647,11 @@ onBeforeUnmount(() => {
 /* --- Responsive Media Queries --- */
 @media (max-width: 800px) {
   .geo-titlebar {
-    height: 44px;
-    gap: 6px;
+    gap: 4px;
   }
   .geo-mark {
-    width: 36px;
-    height: 36px;
-  }
-  .geo-brand strong {
-    font-size: 14px;
+    width: 20px;
+    height: 20px;
   }
   .geo-project-title,
   .geo-search span,
@@ -1766,11 +1660,11 @@ onBeforeUnmount(() => {
     display: none;
   }
   .geo-toolrow {
-    height: 88px;
+    height: 82px;
   }
   .geo-toolgroup {
-    padding-left: 7px;
-    padding-right: 7px;
+    padding-left: var(--eoc-gap-x);
+    padding-right: var(--eoc-gap-x);
   }
   .geo-tool-stack {
     min-width: 170px;

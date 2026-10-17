@@ -195,7 +195,7 @@ function selectSuggestion(item: GeocodeResultRead): void {
         :class="`alert-${props.activeHazards?.overall_alert_level ?? 'green'}`"
       ></span>
       <Icon0 name="siren" :size="14" />
-      <span class="badge-title">{{ labels.feedsBadge }}</span>
+      <span class="badge-title eoc-label">{{ labels.feedsBadge }}</span>
     </div>
 
     <div
@@ -204,16 +204,16 @@ function selectSuggestion(item: GeocodeResultRead): void {
     >
       <Icon0 name="activity" :size="14" class="text-sky" />
       <span class="telemetry-label">{{ labels.weatherTitle }}:</span>
-      <strong>{{ props.activeHazards.weather.temperature_c.toFixed(1) }}°C</strong>
+      <strong class="eoc-numeric">{{ props.activeHazards.weather.temperature_c.toFixed(1) }}°C</strong>
       <span class="sep">•</span>
       <span>
         {{ labels.rain }}:
-        <b>{{ props.activeHazards.weather.precipitation_mm.toFixed(1) }} mm</b>
+        <b class="eoc-numeric">{{ props.activeHazards.weather.precipitation_mm.toFixed(1) }} mm</b>
       </span>
       <span class="sep">•</span>
       <span>
         {{ labels.gusts }}:
-        <b>{{ props.activeHazards.weather.wind_gusts_kmh.toFixed(0) }} km/h</b>
+        <b class="eoc-numeric">{{ props.activeHazards.weather.wind_gusts_kmh.toFixed(0) }} km/h</b>
       </span>
     </div>
 
@@ -227,6 +227,7 @@ function selectSuggestion(item: GeocodeResultRead): void {
           size="small"
           :type="getAlertTagType(props.activeHazards.overall_alert_level)"
           effect="dark"
+          class="eoc-numeric"
         >
           {{ props.activeHazards.events.length }}
           {{ labels.activeEventsCount }}
@@ -250,7 +251,7 @@ function selectSuggestion(item: GeocodeResultRead): void {
         </span>
         <span
           v-if="props.activeHazards.zone_hazard_bonus > 0"
-          class="hazard-boost-pill"
+          class="hazard-boost-pill eoc-numeric"
         >
           +{{ props.activeHazards.zone_hazard_bonus.toFixed(1) }} pts
         </span>
@@ -384,62 +385,56 @@ function selectSuggestion(item: GeocodeResultRead): void {
 
 <style scoped>
 .hazard-telemetry-strip {
-  background: var(--eoc-bg-canvas);
-  border-bottom: 1px solid var(--eoc-border);
+  background: var(--eoc-bg-statusbar);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
   color: var(--eoc-text-secondary);
-  padding: 4px 18px;
+  padding: 3px var(--eoc-pad-panel);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  font-size: 11px;
+  gap: var(--eoc-gap-x);
+  font-size: var(--eoc-fs-micro);
   z-index: 19;
-  min-height: 32px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  min-height: var(--eoc-tabstrip-h);
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition);
 }
 
 .telemetry-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
 }
 
 .telemetry-badge-box {
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--eoc-text-muted);
   background: transparent;
   border: none;
   padding: 0 4px 0 0;
-  text-transform: uppercase;
 }
 
 .weather-pill,
 .events-pill {
-  background: var(--eoc-bg-panel);
-  border: 1px solid var(--eoc-border);
-  padding: 2px 8px;
-  border-radius: 6px;
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: 2px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
 }
 
 .alert-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--eoc-radius-pill);
 }
 
 .alert-green {
   background: var(--eoc-success);
 }
 
-.alert-yellow {
-  background: var(--eoc-warning);
-}
-
+/* DGPC yellow and orange alerts both land on the warning role */
+.alert-yellow,
 .alert-orange {
-  background: #f97316;
+  background: var(--eoc-warning);
 }
 
 .alert-red {
@@ -447,16 +442,16 @@ function selectSuggestion(item: GeocodeResultRead): void {
 }
 
 .telemetry-label {
-  color: var(--eoc-text-muted);
-  font-weight: 500;
+  color: var(--eoc-text-label);
+  font-weight: var(--eoc-fw-regular);
 }
 
 .sep {
-  opacity: 0.3;
+  color: var(--eoc-text-muted);
 }
 
 .top-event-title {
-  font-weight: 600;
+  font-weight: var(--eoc-fw-semibold);
   color: var(--eoc-text-primary);
   max-width: 240px;
   white-space: nowrap;
@@ -465,22 +460,22 @@ function selectSuggestion(item: GeocodeResultRead): void {
 }
 
 .hazard-boost-pill {
-  font-size: 9.5px;
-  font-weight: 700;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   color: var(--eoc-critical);
   background: var(--eoc-critical-bg);
-  border: 1px solid var(--eoc-critical-border);
-  padding: 0 6px;
-  border-radius: 999px;
+  border: var(--eoc-border-width) solid var(--eoc-critical-border);
+  padding: 0 var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-pill);
 }
 
 .regional-feed-badge {
   color: var(--eoc-text-secondary);
   background: var(--eoc-bg-card);
-  border: 1px solid var(--eoc-border);
-  border-radius: 999px;
-  padding: 0 6px;
-  font-size: 9.5px;
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-pill);
+  padding: 0 var(--eoc-gap-x);
+  font-size: var(--eoc-fs-micro);
   white-space: nowrap;
 }
 
@@ -488,15 +483,16 @@ function selectSuggestion(item: GeocodeResultRead): void {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--eoc-accent);
-  background: var(--eoc-accent-glow);
-  border: 1px solid var(--eoc-border);
-  padding: 1px 6px;
-  border-radius: 4px;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-regular);
+  color: var(--eoc-text-secondary);
+  background: var(--eoc-bg-sunken);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: 1px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
   cursor: help;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .calm-text {
@@ -506,7 +502,7 @@ function selectSuggestion(item: GeocodeResultRead): void {
 .telemetry-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
   flex-wrap: wrap;
 }
 
@@ -515,7 +511,7 @@ function selectSuggestion(item: GeocodeResultRead): void {
   align-items: center;
   gap: 4px;
   color: var(--eoc-text-muted);
-  font-size: 10px;
+  font-size: var(--eoc-fs-micro);
   white-space: nowrap;
 }
 
@@ -545,24 +541,23 @@ function selectSuggestion(item: GeocodeResultRead): void {
 .live-monitoring-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
   background: var(--eoc-success-bg);
-  border: 1px solid var(--eoc-success-border);
+  border: var(--eoc-border-width) solid var(--eoc-success-border);
   color: var(--eoc-success);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.01em;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  padding: 2px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
   white-space: nowrap;
 }
 
 .live-status-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--eoc-radius-pill);
   background: var(--eoc-success);
-  animation: beacon-pulse 2s infinite;
+  animation: eoc-beacon-pulse 2s infinite;
 }
 
 .nominatim-box {
@@ -573,10 +568,10 @@ function selectSuggestion(item: GeocodeResultRead): void {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: var(--eoc-bg-panel);
-  border: 1px solid var(--eoc-border);
-  border-radius: 6px;
-  padding: 1px 2px 1px 6px;
+  background: var(--eoc-bg-sunken);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
+  padding: 1px 2px 1px var(--eoc-gap-x);
 }
 
 .nominatim-icon {
@@ -588,7 +583,8 @@ function selectSuggestion(item: GeocodeResultRead): void {
   border: none;
   outline: none;
   color: var(--eoc-text-primary);
-  font-size: 11px;
+  font-family: var(--eoc-font-sans);
+  font-size: var(--eoc-fs-body);
   width: 155px;
 }
 
@@ -596,31 +592,32 @@ function selectSuggestion(item: GeocodeResultRead): void {
   color: var(--eoc-text-muted);
 }
 
+/* Floating suggestion list: genuinely elevated, so it keeps a popup shadow */
 .nominatim-dropdown {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
   width: 280px;
-  background: var(--eoc-bg-panel);
-  border: 1px solid var(--eoc-border);
-  border-radius: 8px;
+  background: var(--eoc-bg-overlay);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-menu);
   list-style: none;
   margin: 0;
   padding: 4px;
   z-index: 999;
-  box-shadow: var(--eoc-card-shadow);
+  box-shadow: var(--eoc-shadow-popup);
 }
 
 .nominatim-option {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 5px;
+  gap: var(--eoc-gap-x);
+  padding: 4px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
   color: var(--eoc-text-primary);
-  font-size: 11px;
+  font-size: var(--eoc-fs-body);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--eoc-transition);
 }
 
 .nominatim-option:hover {
@@ -631,60 +628,62 @@ function selectSuggestion(item: GeocodeResultRead): void {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: var(--eoc-bg-panel);
-  border: 1px solid var(--eoc-border);
+  height: var(--eoc-control-h);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
   color: var(--eoc-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  padding: var(--eoc-pad-button);
+  border-radius: var(--eoc-radius-button);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .drill-toggle-btn:hover {
   color: var(--eoc-text-primary);
-  border-color: var(--eoc-accent);
+  border-color: var(--eoc-border-strong);
   background: var(--eoc-bg-hover);
 }
 
 .active-drill-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
   background: var(--eoc-critical-bg);
-  border: 1px solid var(--eoc-critical-border);
+  border: var(--eoc-border-width) solid var(--eoc-critical-border);
   color: var(--eoc-critical);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 6px;
-  letter-spacing: 0.02em;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  padding: 2px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
   white-space: nowrap;
 }
 
 .active-drill-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--eoc-radius-pill);
   background: var(--eoc-critical);
-  animation: beacon-pulse 1.8s infinite;
+  animation: eoc-beacon-pulse 1.8s infinite;
 }
 
 .exit-drill-btn {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: var(--eoc-bg-panel);
-  border: 1px solid var(--eoc-border);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
   color: var(--eoc-text-primary);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  padding: 1px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
   cursor: pointer;
   margin-left: 2px;
-  transition: all 0.15s ease;
+  transition: background-color var(--eoc-transition),
+    color var(--eoc-transition);
 }
 
 .exit-drill-btn:hover {
@@ -695,8 +694,8 @@ function selectSuggestion(item: GeocodeResultRead): void {
 .drill-item-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
+  gap: var(--eoc-gap-x);
+  font-size: var(--eoc-fs-body);
 }
 
 .text-sky {

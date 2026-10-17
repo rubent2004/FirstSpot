@@ -305,6 +305,17 @@ table td.eoc-numeric {
   color: var(--eoc-text-label);
 }
 
+/* Liveness beacon. Opacity only: a glowing ring would be a decorative shadow */
+@keyframes eoc-beacon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--eoc-border-focus);
   outline-offset: 2px;
@@ -358,6 +369,32 @@ table td.eoc-numeric {
 .el-button--small {
   height: var(--eoc-control-h);
   padding: var(--eoc-pad-button);
+}
+
+/* One control height for every small field, so rows line up on the grid */
+.el-input--small .el-input__wrapper,
+.el-select--small .el-select__wrapper,
+.el-input-number--small .el-input__wrapper {
+  min-height: var(--eoc-control-h);
+}
+
+.el-input--small .el-input__inner,
+.el-select--small .el-select__wrapper {
+  font-size: var(--eoc-fs-body);
+}
+
+.el-radio-button--small .el-radio-button__inner {
+  height: var(--eoc-control-h);
+  padding: 0 8px;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+}
+
+.el-tag--small {
+  height: 18px;
+  padding: 0 5px;
+  font-size: var(--eoc-fs-micro);
+  border-radius: var(--eoc-radius-control);
 }
 
 .el-card,

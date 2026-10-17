@@ -104,7 +104,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
         <div class="queue-title-row">
           <Icon0 name="activity" :size="18" class="title-icon" />
           <h2 class="queue-title">{{ t.queue.title }}</h2>
-          <span class="queue-count-badge">
+          <span class="queue-count-badge eoc-numeric">
             {{ props.places.length }} {{ t.queue.showingCount }}
           </span>
         </div>
@@ -130,7 +130,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
         <ElTableColumn :label="t.queue.colRank" width="46" align="center">
           <template #default="{ $index }">
             <span
-              class="rank-badge"
+              class="rank-badge eoc-numeric"
               :class="{ 'rank-top-three': $index < 3 }"
             >
               {{ (currentPage - 1) * pageSize + $index + 1 }}
@@ -146,7 +146,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
         >
           <template #default="{ row }">
             <span
-              class="score-pill"
+              class="score-pill eoc-numeric"
               :class="getScoreSeverityClass(Number(row.priority_score))"
               data-testid="row-priority-score"
             >
@@ -164,7 +164,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                   :style="{
                     backgroundColor:
                       GROUP_COLORS[row.vulnerability_group as VulnerabilityGroup] ??
-                      '#ef4444',
+                      'var(--eoc-text-muted)',
                   }"
                 >
                   <Icon0
@@ -194,7 +194,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                     t.categories[row.category as PlaceCategory] ?? row.category
                   }}
                 </ElTag>
-                <span class="cluster-badge" :title="t.drawer.clusterNeighborsText">
+                <span class="cluster-badge eoc-numeric" :title="t.drawer.clusterNeighborsText">
                   <Icon0 name="layers" :size="11" />
                   +{{ row.nearby_places_count }} {{ t.queue.clusterBadge }}
                 </span>
@@ -215,7 +215,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                   t.urgencyShort[row.urgency_level] ?? `L${row.urgency_level}`
                 }}
               </ElTag>
-              <span class="vuln-count">
+              <span class="vuln-count eoc-numeric">
                 <Icon0 name="community_centre" :size="11" />
                 {{ row.estimated_vulnerable_count }} {{ t.queue.peopleAbbr }}
               </span>
@@ -264,7 +264,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
       </ElTable>
     </div>
     <div class="queue-pagination">
-      <span class="queue-page-range">{{ pageSummary }}</span>
+      <span class="queue-page-range eoc-numeric">{{ pageSummary }}</span>
       <ElPagination
         v-model:current-page="currentPage"
         :page-size="pageSize"
@@ -288,9 +288,9 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   height: 100%;
   min-width: 0;
   background: var(--eoc-bg-panel);
-  border-left: 1px solid var(--eoc-border);
-  padding: 9px 11px;
-  gap: 7px;
+  border-left: var(--eoc-border-width) solid var(--eoc-border);
+  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  gap: var(--eoc-gap-y);
   box-sizing: border-box;
 }
 
@@ -298,7 +298,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
 }
 
 .queue-title-block {
@@ -310,7 +310,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 .queue-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
   flex-wrap: wrap;
 }
 
@@ -320,51 +320,50 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
 .queue-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--eoc-fs-title);
+  font-weight: var(--eoc-fw-semibold);
   color: var(--eoc-text-primary);
-  letter-spacing: -0.015em;
 }
 
 .queue-count-badge {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--eoc-accent);
-  background: var(--eoc-accent-glow);
-  border: 1px solid var(--eoc-border);
-  padding: 1px 7px;
-  border-radius: 999px;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-text-secondary);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: 0 var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-pill);
 }
 
 .queue-subtitle {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-muted);
 }
 
+/* Elevation is the 1px frame, not a shadow */
 .table-container {
   flex: 1;
   min-width: 0;
   min-height: 240px;
   overflow: hidden;
-  border: 1px solid var(--eoc-border);
-  border-radius: 8px;
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
   background: var(--eoc-bg-panel);
 }
 
 .queue-pagination {
-  min-height: 28px;
+  min-height: var(--eoc-icon-btn);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
   padding: 0 2px;
 }
 
 .queue-page-range {
   color: var(--eoc-text-muted);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
+  font-size: var(--eoc-fs-micro);
   white-space: nowrap;
 }
 
@@ -377,7 +376,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
 .queue-pagination :deep(.el-pager li.is-active) {
   background-color: var(--eoc-accent) !important;
-  color: var(--eoc-text-inverse) !important;
+  color: var(--eoc-on-accent) !important;
 }
 
 .rank-badge {
@@ -386,12 +385,12 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  font-size: 10.5px;
-  font-weight: 700;
+  border-radius: var(--eoc-radius-pill);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   color: var(--eoc-text-muted);
   background: var(--eoc-bg-card);
-  border: 1px solid var(--eoc-border);
+  border: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .rank-badge.rank-top-three {
@@ -402,86 +401,86 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
 .score-pill {
   display: inline-block;
-  font-weight: 700;
-  font-size: 12px;
-  padding: 2px 7px;
-  border-radius: 5px;
-  font-variant-numeric: tabular-nums;
+  font-weight: var(--eoc-fw-semibold);
+  font-size: var(--eoc-fs-body);
+  padding: 1px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
 }
 
 .score-critical {
   color: var(--eoc-critical);
   background: var(--eoc-critical-bg);
-  border: 1px solid var(--eoc-critical-border);
+  border: var(--eoc-border-width) solid var(--eoc-critical-border);
 }
 
 .score-high {
   color: var(--eoc-warning);
   background: var(--eoc-warning-bg);
-  border: 1px solid var(--eoc-warning-border);
+  border: var(--eoc-border-width) solid var(--eoc-warning-border);
 }
 
 .score-medium {
-  color: var(--eoc-accent);
-  background: var(--eoc-accent-glow);
-  border: 1px solid var(--eoc-accent);
+  color: var(--eoc-text-secondary);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
 }
 
 .score-low {
-  color: var(--eoc-info);
-  background: var(--eoc-info-bg);
-  border: 1px solid var(--eoc-info-border);
+  color: var(--eoc-text-muted);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .place-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .place-title-line {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--eoc-gap-x);
 }
 
+/* Group color is data, so the glyph stays white in both themes */
 .category-icon-badge {
   width: 20px;
   height: 20px;
-  border-radius: 5px;
+  border-radius: var(--eoc-radius-control);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--eoc-on-accent);
   flex-shrink: 0;
 }
 
 .place-name {
-  font-size: 12.5px;
+  font-size: var(--eoc-fs-body);
   color: var(--eoc-text-primary);
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .place-badges {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
   flex-wrap: wrap;
-  padding-left: 27px;
+  padding-left: 26px;
 }
 
 .cluster-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-regular);
   color: var(--eoc-text-secondary);
   background: var(--eoc-bg-card);
-  border: 1px solid var(--eoc-border);
-  padding: 1px 5px;
-  border-radius: 4px;
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: 0 5px;
+  border-radius: var(--eoc-radius-control);
 }
 
 .urgency-cell {
@@ -495,8 +494,8 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-regular);
   color: var(--eoc-text-secondary);
 }
 
@@ -507,20 +506,21 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 }
 
 .triage-cta-btn {
-  font-weight: 600;
-  font-size: 12px;
-  height: 26px;
-  border-radius: 6px;
-  background: var(--eoc-accent-glow) !important;
+  font-weight: var(--eoc-fw-semibold);
+  font-size: var(--eoc-fs-micro);
+  height: var(--eoc-control-h);
+  border-radius: var(--eoc-radius-button);
+  background: var(--eoc-bg-card) !important;
   border-color: var(--eoc-border) !important;
-  color: var(--eoc-accent) !important;
-  transition: all 0.15s ease;
+  color: var(--eoc-text-primary) !important;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .triage-cta-btn:hover {
   background: var(--eoc-accent) !important;
   border-color: var(--eoc-accent) !important;
-  color: var(--eoc-text-inverse) !important;
+  color: var(--eoc-on-accent) !important;
 }
 
 :deep(.el-table) {
@@ -535,17 +535,19 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 }
 
 :deep(.el-table th.el-table__cell) {
+  height: var(--eoc-table-header-h);
   background-color: var(--eoc-bg-card) !important;
-  color: var(--eoc-text-secondary) !important;
-  border-bottom: 1px solid var(--eoc-border) !important;
-  font-weight: 600;
-  font-size: 10.5px;
+  color: var(--eoc-text-label) !important;
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border-strong) !important;
+  font-weight: var(--eoc-fw-semibold);
+  font-size: var(--eoc-fs-micro);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
 }
 
 :deep(.el-table td.el-table__cell) {
-  border-bottom: 1px solid var(--eoc-border) !important;
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border) !important;
+  padding: 4px 0;
 }
 
 :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
@@ -554,7 +556,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
 :deep(.el-table__row) {
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--eoc-transition);
 }
 
 :deep(.is-selected-place-row > td.el-table__cell) {
@@ -562,29 +564,30 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 }
 
 :deep(.is-selected-place-row > td:first-child) {
-  box-shadow: inset 4px 0 0 var(--eoc-accent);
+  box-shadow: inset 3px 0 0 var(--eoc-accent);
 }
 
+/* Selection is operational, so it reads in accent and never in brand lime */
 .selected-place-indicator {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 20px;
-  padding: 2px 6px;
-  border: 1px solid var(--eoc-accent);
-  border-radius: 4px;
-  background: var(--eoc-brand-lime);
-  color: #1e1e1e;
-  font-size: 9px;
-  font-weight: 700;
+  min-height: 18px;
+  padding: 1px 5px;
+  border: var(--eoc-border-width) solid var(--eoc-accent);
+  border-radius: var(--eoc-radius-control);
+  background: var(--eoc-bg-selected);
+  color: var(--eoc-text-primary);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   line-height: 1;
   white-space: nowrap;
 }
 
 :deep(.el-input__wrapper),
 :deep(.el-select__wrapper) {
-  background-color: var(--eoc-bg-card) !important;
-  box-shadow: 0 0 0 1px var(--eoc-border) inset !important;
+  background-color: var(--eoc-bg-sunken) !important;
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border) !important;
   color: var(--eoc-text-primary) !important;
 }
 
@@ -606,7 +609,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
 :deep(.el-radio-button.is-active .el-radio-button__inner) {
   background-color: var(--eoc-accent) !important;
-  color: var(--eoc-text-inverse) !important;
+  color: var(--eoc-on-accent) !important;
   border-color: var(--eoc-accent) !important;
   box-shadow: none !important;
 }

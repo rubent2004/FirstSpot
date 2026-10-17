@@ -93,7 +93,7 @@ function handleKpiClick(
           <Icon0 name="shield_alert" :size="15" class="eyebrow-icon" />
           <h1 class="brand-title">{{ t.header.title }}</h1>
           <span class="coe-tag">COE 24/7</span>
-          <span class="brand-badge-clean">{{ t.header.badge }}</span>
+          <span class="brand-badge-clean eoc-label">{{ t.header.badge }}</span>
         </div>
       </div>
 
@@ -224,7 +224,7 @@ function handleKpiClick(
       >
         <span class="kpi-dot bg-sky"></span>
         <span class="kpi-label">{{ t.kpis.activeZone }}:</span>
-        <strong class="kpi-val">
+        <strong class="kpi-val eoc-numeric">
           <VbCountUp
             :value="props.kpis.total_places"
             :suffix="t.kpis.placesSuffix"
@@ -247,7 +247,7 @@ function handleKpiClick(
       >
         <span class="kpi-dot bg-red" :class="{ 'pulse-danger': props.kpis.critical_urgency_count > 0 }"></span>
         <span class="kpi-label">{{ t.kpis.criticalUrgency }}:</span>
-        <strong class="kpi-val text-red">
+        <strong class="kpi-val text-red eoc-numeric">
           <VbCountUp :value="props.kpis.critical_urgency_count" />
         </strong>
       </button>
@@ -263,7 +263,7 @@ function handleKpiClick(
       >
         <span class="kpi-dot bg-amber"></span>
         <span class="kpi-label">{{ t.kpis.pendingTriage }}:</span>
-        <strong class="kpi-val text-amber">
+        <strong class="kpi-val text-amber eoc-numeric">
           <VbCountUp :value="props.kpis.pending_count" />
         </strong>
       </button>
@@ -279,7 +279,7 @@ function handleKpiClick(
       >
         <span class="kpi-dot bg-blue"></span>
         <span class="kpi-label">{{ t.kpis.inProgress }}:</span>
-        <strong class="kpi-val text-blue">
+        <strong class="kpi-val text-blue eoc-numeric">
           <VbCountUp :value="props.kpis.in_progress_count" />
         </strong>
       </button>
@@ -295,7 +295,7 @@ function handleKpiClick(
       >
         <span class="kpi-dot bg-emerald"></span>
         <span class="kpi-label">{{ t.kpis.attended }}:</span>
-        <strong class="kpi-val text-emerald">
+        <strong class="kpi-val text-emerald eoc-numeric">
           <VbCountUp :value="props.kpis.attended_count" />
         </strong>
       </button>
@@ -305,7 +305,7 @@ function handleKpiClick(
       <div class="kpi-item kpi-item-static" data-testid="kpi-population">
         <span class="kpi-dot bg-purple"></span>
         <span class="kpi-label">{{ t.kpis.vulnerablePop }}:</span>
-        <strong class="kpi-val">
+        <strong class="kpi-val eoc-numeric">
           <VbCountUp
             :value="props.kpis.total_estimated_vulnerable"
             :suffix="t.kpis.peopleSuffix"
@@ -318,15 +318,16 @@ function handleKpiClick(
 
 <style scoped>
 .sync-header-bar {
-  background: var(--eoc-bg-panel);
+  background: var(--eoc-bg-header);
   color: var(--eoc-text-primary);
-  padding: 8px 18px 7px;
-  border-bottom: 1px solid var(--eoc-border);
+  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--eoc-gap-y);
   z-index: 20;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition);
 }
 
 .header-main-row {
@@ -334,7 +335,7 @@ function handleKpiClick(
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--eoc-pad-panel);
 }
 
 .brand-block {
@@ -345,29 +346,17 @@ function handleKpiClick(
 .brand-identity-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
   flex-wrap: wrap;
 }
 
+/* Liveness is signalled by opacity; a glow ring would be a stray shadow */
 .pulse-beacon {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--eoc-radius-pill);
   background: var(--eoc-success);
-  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
-  animation: beacon-pulse 2.2s infinite;
-}
-
-@keyframes beacon-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
-  }
-  70% {
-    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
-  }
+  animation: eoc-beacon-pulse 2.2s infinite;
 }
 
 .eyebrow-icon {
@@ -376,35 +365,26 @@ function handleKpiClick(
 
 .brand-title {
   margin: 0;
-  font-size: 14.5px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-size: var(--eoc-fs-title);
+  font-weight: var(--eoc-fw-semibold);
   color: var(--eoc-text-primary);
 }
 
 .coe-tag {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--eoc-accent);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-accent-text);
   background: var(--eoc-accent-glow);
-  border: 1px solid var(--eoc-border);
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-}
-
-.brand-badge-clean {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--eoc-text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: 1px 5px;
+  border-radius: var(--eoc-radius-control);
+  letter-spacing: 0.09em;
 }
 
 .sync-controls-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--eoc-gap-x);
   flex-wrap: wrap;
 }
 
@@ -417,9 +397,9 @@ function handleKpiClick(
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-secondary);
-  font-weight: 500;
+  font-weight: var(--eoc-fw-regular);
 }
 
 .zone-select {
@@ -427,47 +407,39 @@ function handleKpiClick(
 }
 
 .sync-btn {
-  font-weight: 600;
-  font-size: 12px;
-  height: 28px;
-  background: var(--eoc-accent) !important;
-  border-color: var(--eoc-accent) !important;
-  color: var(--eoc-text-inverse) !important;
-  transition: all 0.15s ease;
-}
-
-.sync-btn:hover {
-  background: var(--eoc-accent-hover) !important;
-  border-color: var(--eoc-accent-hover) !important;
+  font-weight: var(--eoc-fw-semibold);
+  font-size: var(--eoc-fs-body);
+  height: var(--eoc-control-h);
 }
 
 .radius-mode-box {
   background: var(--eoc-bg-card);
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--eoc-border);
-  transition: all 0.15s ease;
+  padding: 1px var(--eoc-gap-x);
+  border-radius: var(--eoc-radius-control);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition);
 }
 
 .radius-mode-box.is-radius-active {
   border-color: var(--eoc-accent);
-  background: var(--eoc-accent-glow);
+  background: var(--eoc-bg-selected);
 }
 
 .radius-switch-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
 }
 
 .radius-num-input {
-  width: 90px;
+  width: 88px;
 }
 
 .radius-unit {
-  font-size: 11px;
+  font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-secondary);
-  font-weight: 600;
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .lang-switch-item {
@@ -479,42 +451,43 @@ function handleKpiClick(
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 28px;
-  padding: 0 9px;
-  border-radius: 6px;
-  border: 1px solid var(--eoc-border);
+  height: var(--eoc-control-h);
+  padding: var(--eoc-pad-button);
+  border-radius: var(--eoc-radius-button);
+  border: var(--eoc-border-width) solid var(--eoc-border);
   background: var(--eoc-bg-card);
   color: var(--eoc-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .lang-toggle-btn:hover,
 .theme-toggle-btn:hover {
-  border-color: var(--eoc-accent);
+  border-color: var(--eoc-border-strong);
   color: var(--eoc-text-primary);
   background: var(--eoc-bg-hover);
 }
 
 .lang-toggle-btn .active-lang {
-  color: var(--eoc-accent);
-  font-weight: 700;
+  color: var(--eoc-accent-text);
+  font-weight: var(--eoc-fw-semibold);
 }
 
 .lang-sep {
-  opacity: 0.3;
+  color: var(--eoc-text-muted);
 }
 
 /* Operational Minimalist Statusline */
 .kpi-strip {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
   overflow-x: auto;
-  padding: 4px 0 2px;
-  border-top: 1px solid var(--eoc-border-subtle);
+  padding: 3px 0 1px;
+  border-top: var(--eoc-border-width) solid var(--eoc-border-subtle);
   scrollbar-width: none;
 }
 
@@ -525,26 +498,28 @@ function handleKpiClick(
 .kpi-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--eoc-gap-x);
+  height: var(--eoc-control-h);
   background: var(--eoc-bg-card);
-  border: 1px solid var(--eoc-border);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  padding: var(--eoc-pad-button);
+  border-radius: var(--eoc-radius-control);
+  font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
 }
 
 .kpi-item:hover {
   background: var(--eoc-bg-hover);
   color: var(--eoc-text-primary);
-  border-color: var(--eoc-accent);
+  border-color: var(--eoc-border-strong);
 }
 
 .kpi-item.is-active {
-  background: var(--eoc-accent-glow);
+  background: var(--eoc-bg-selected);
   color: var(--eoc-text-primary);
   border-color: var(--eoc-accent);
 }
@@ -567,24 +542,18 @@ function handleKpiClick(
 .kpi-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--eoc-radius-pill);
   flex-shrink: 0;
 }
 
 .pulse-danger {
-  animation: pulse-dot-red 2s infinite;
-}
-
-@keyframes pulse-dot-red {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
-  70% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  animation: eoc-beacon-pulse 2s infinite;
 }
 
 .kpi-label {
-  color: var(--eoc-text-muted);
-  font-weight: 500;
-  font-size: 11px;
+  color: var(--eoc-text-label);
+  font-weight: var(--eoc-fw-regular);
+  font-size: var(--eoc-fs-micro);
 }
 
 .kpi-item:hover .kpi-label,
@@ -593,26 +562,25 @@ function handleKpiClick(
 }
 
 .kpi-val {
-  font-weight: 700;
-  font-size: 11.5px;
+  font-weight: var(--eoc-fw-semibold);
+  font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-primary);
-  font-variant-numeric: tabular-nums;
 }
 
 .zone-pill {
-  font-size: 9.5px;
-  background: var(--eoc-bg-panel);
-  color: var(--eoc-accent);
-  padding: 1px 5px;
-  border-radius: 3px;
-  border: 1px solid var(--eoc-border);
-  font-weight: 600;
+  font-size: var(--eoc-fs-micro);
+  background: var(--eoc-bg-sunken);
+  color: var(--eoc-text-secondary);
+  padding: 0 5px;
+  border-radius: var(--eoc-radius-control);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  font-weight: var(--eoc-fw-semibold);
   margin-left: 2px;
 }
 
 .kpi-divider {
   display: inline-block;
-  width: 1px;
+  width: var(--eoc-border-width);
   height: 12px;
   background: var(--eoc-border);
   color: transparent;
@@ -621,12 +589,13 @@ function handleKpiClick(
   user-select: none;
 }
 
+/* Status dots map onto the semantic palette; none is decorative */
 .bg-sky { background: var(--eoc-accent); }
 .bg-red { background: var(--eoc-critical); }
 .bg-amber { background: var(--eoc-warning); }
 .bg-blue { background: var(--eoc-info); }
 .bg-emerald { background: var(--eoc-success); }
-.bg-purple { background: #a855f7; }
+.bg-purple { background: var(--eoc-text-muted); }
 
 .text-red { color: var(--eoc-critical); }
 .text-amber { color: var(--eoc-warning); }

@@ -202,7 +202,7 @@ async function copyInvite(): Promise<void> {
       <div v-else class="invite-tools">
         <ElButton type="primary" :loading="isSubmitting" @click="createInvite">{{ copy.invite }}</ElButton>
         <div v-if="inviteResult" class="invite-result">
-          <label>{{ copy.inviteCreated }}</label>
+          <label class="eoc-label">{{ copy.inviteCreated }}</label>
           <code>{{ inviteResult.invite_code }}</code>
           <ElButton size="small" @click="copyInvite">{{ copy.inviteCopy }}</ElButton>
           <small>{{ new Date(inviteResult.expires_at).toLocaleString() }}</small>
@@ -219,7 +219,7 @@ async function copyInvite(): Promise<void> {
         <div class="success-mark">✓</div>
         <h3>{{ copy.requestSent }}</h3>
         <p>{{ registrationResult.message }}</p>
-        <span>{{ copy.requestCode }}</span>
+        <span class="eoc-label">{{ copy.requestCode }}</span>
         <code>{{ registrationResult.registration_code }}</code>
         <ElAlert :title="copy.codeNotice" type="warning" show-icon :closable="false" />
         <ElButton type="primary" @click="registrationResult = null; activeTab = 'login'">{{ copy.close }}</ElButton>
@@ -229,34 +229,34 @@ async function copyInvite(): Promise<void> {
     <ElTabs v-else v-model="activeTab" class="access-tabs">
       <ElTabPane :label="copy.login" name="login">
         <form class="access-form" @submit.prevent="submitLogin">
-          <label>{{ copy.email }}<ElInput v-model="loginForm.email" type="email" autocomplete="username" required /></label>
-          <label>{{ copy.password }}<ElInput v-model="loginForm.password" type="password" autocomplete="current-password" show-password required /></label>
+          <label>{{ copy.email }}<ElInput v-model="loginForm.email" type="email" size="small" autocomplete="username" required /></label>
+          <label>{{ copy.password }}<ElInput v-model="loginForm.password" type="password" size="small" autocomplete="current-password" show-password required /></label>
           <ElButton native-type="submit" type="primary" :loading="isSubmitting" class="submit-button">{{ copy.signIn }}</ElButton>
         </form>
       </ElTabPane>
 
       <ElTabPane :label="copy.register" name="register">
         <form class="access-form two-column-form" @submit.prevent="submitRegistration">
-          <label class="wide-field">{{ copy.name }}<ElInput v-model="registrationForm.name" minlength="2" maxlength="160" required /></label>
-          <label>{{ copy.country }}<ElInput v-model="registrationForm.country" maxlength="80" required /></label>
+          <label class="wide-field">{{ copy.name }}<ElInput v-model="registrationForm.name" size="small" minlength="2" maxlength="160" required /></label>
+          <label>{{ copy.country }}<ElInput v-model="registrationForm.country" size="small" maxlength="80" required /></label>
           <label>{{ copy.sector }}
-            <ElSelect v-model="registrationForm.sector" allow-create filterable default-first-option required>
+            <ElSelect v-model="registrationForm.sector" size="small" allow-create filterable default-first-option required>
               <ElOption v-for="sector in copy.sectors" :key="sector" :label="sector" :value="sector" />
             </ElSelect>
           </label>
-          <label>{{ copy.contactName }}<ElInput v-model="registrationForm.contact_name" maxlength="100" autocomplete="name" required /></label>
-          <label>{{ copy.email }}<ElInput v-model="registrationForm.email" type="email" maxlength="254" autocomplete="email" required /></label>
-          <label class="wide-field">{{ copy.password }}<ElInput v-model="registrationForm.password" type="password" minlength="12" maxlength="128" autocomplete="new-password" show-password required /></label>
+          <label>{{ copy.contactName }}<ElInput v-model="registrationForm.contact_name" size="small" maxlength="100" autocomplete="name" required /></label>
+          <label>{{ copy.email }}<ElInput v-model="registrationForm.email" type="email" size="small" maxlength="254" autocomplete="email" required /></label>
+          <label class="wide-field">{{ copy.password }}<ElInput v-model="registrationForm.password" type="password" size="small" minlength="12" maxlength="128" autocomplete="new-password" show-password required /></label>
           <ElButton native-type="submit" type="primary" :loading="isSubmitting" class="submit-button wide-field">{{ copy.submitRegistration }}</ElButton>
         </form>
       </ElTabPane>
 
       <ElTabPane :label="copy.join" name="join">
         <form class="access-form" @submit.prevent="submitJoin">
-          <label>{{ copy.inviteCode }}<ElInput v-model="joinForm.invite_code" autocomplete="off" required /></label>
-          <label>{{ copy.contactName }}<ElInput v-model="joinForm.display_name" autocomplete="name" required /></label>
-          <label>{{ copy.email }}<ElInput v-model="joinForm.email" type="email" autocomplete="email" required /></label>
-          <label>{{ copy.password }}<ElInput v-model="joinForm.password" type="password" minlength="12" maxlength="128" autocomplete="new-password" show-password required /></label>
+          <label>{{ copy.inviteCode }}<ElInput v-model="joinForm.invite_code" size="small" autocomplete="off" required /></label>
+          <label>{{ copy.contactName }}<ElInput v-model="joinForm.display_name" size="small" autocomplete="name" required /></label>
+          <label>{{ copy.email }}<ElInput v-model="joinForm.email" type="email" size="small" autocomplete="email" required /></label>
+          <label>{{ copy.password }}<ElInput v-model="joinForm.password" type="password" size="small" minlength="12" maxlength="128" autocomplete="new-password" show-password required /></label>
           <ElButton native-type="submit" type="primary" :loading="isSubmitting" class="submit-button">{{ copy.joinAction }}</ElButton>
         </form>
       </ElTabPane>
@@ -267,36 +267,30 @@ async function copyInvite(): Promise<void> {
 </template>
 
 <style scoped>
-.dialog-intro { margin: -4px 0 18px; color: #637184; font-size: 13px; line-height: 1.5; }
+/* Tokens carry both themes, so this dialog needs no dark-mode overrides */
+.dialog-intro { margin: -4px 0 var(--eoc-pad-panel); color: var(--eoc-text-secondary); font-size: var(--eoc-fs-body); line-height: 1.5; }
 .access-tabs { min-height: 300px; }
-.access-form { display: grid; gap: 14px; padding: 14px 2px 4px; }
-.access-form label { display: grid; gap: 6px; color: #465468; font-size: 12px; font-weight: 650; }
+.access-form { display: grid; gap: var(--eoc-pad-panel); padding: var(--eoc-pad-panel) 2px 4px; }
+.access-form label { display: grid; gap: var(--eoc-gap-y); color: var(--eoc-text-primary); font-size: var(--eoc-fs-micro); font-weight: var(--eoc-fw-semibold); }
 .two-column-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .wide-field { grid-column: 1 / -1; }
 .submit-button { justify-self: end; min-width: 150px; }
-.privacy-note { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid #e0e6ed; color: #7b8795; font-size: 11px; }
-.account-panel { display: grid; gap: 18px; }
-.account-heading { display: flex; align-items: center; gap: 12px; padding: 14px; background: #f2f5f8; border: 1px solid #d9e0e8; border-radius: 5px; }
-.account-avatar { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 4px; color: white; background: #168e81; font-weight: 700; }
+.privacy-note { margin: var(--eoc-pad-panel) 0 0; padding-top: var(--eoc-pad-panel); border-top: var(--eoc-border-width) solid var(--eoc-border-subtle); color: var(--eoc-text-muted); font-size: var(--eoc-fs-micro); }
+.account-panel { display: grid; gap: var(--eoc-pad-panel); }
+.account-heading { display: flex; align-items: center; gap: var(--eoc-pad-panel); padding: var(--eoc-pad-panel); background: var(--eoc-bg-card); border: var(--eoc-border-width) solid var(--eoc-border); border-radius: var(--eoc-radius-control); }
+.account-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: var(--eoc-radius-control); color: var(--eoc-on-accent); background: var(--eoc-accent); font-weight: var(--eoc-fw-semibold); }
 .account-heading-copy { display: grid; gap: 3px; flex: 1; min-width: 0; }
-.account-heading-copy strong { color: #273244; font-size: 14px; }
-.account-heading-copy span { color: #687789; font-size: 11px; overflow-wrap: anywhere; }
-.account-actions { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e0e6ed; padding-top: 12px; color: #687789; font-size: 12px; }
-.invite-tools { display: grid; justify-items: start; gap: 12px; }
-.invite-result { display: grid; gap: 8px; width: 100%; padding: 12px; border: 1px solid #c8d8e4; background: #f8fafc; border-radius: 4px; }
-.invite-result label, .registration-result > span { color: #657487; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-.invite-result code, .registration-result code { width: fit-content; padding: 8px 10px; background: #edf2f7; border: 1px solid #d4dde6; color: #263447; font-size: 14px; overflow-wrap: anywhere; }
-.invite-result small { color: #778494; }
-.registration-result { display: grid; justify-items: center; gap: 12px; padding: 8px 0 12px; text-align: center; }
-.registration-result h3 { margin: 0; color: #253143; }
-.registration-result p { margin: 0; color: #637184; font-size: 13px; line-height: 1.5; }
-.success-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fff; background: #168e81; font-size: 23px; }
+.account-heading-copy strong { color: var(--eoc-text-primary); font-size: var(--eoc-fs-title); font-weight: var(--eoc-fw-semibold); }
+.account-heading-copy span { color: var(--eoc-text-secondary); font-size: var(--eoc-fs-micro); overflow-wrap: anywhere; }
+.account-actions { display: flex; align-items: center; justify-content: space-between; border-top: var(--eoc-border-width) solid var(--eoc-border-subtle); padding-top: var(--eoc-pad-panel); color: var(--eoc-text-secondary); font-size: var(--eoc-fs-micro); }
+.invite-tools { display: grid; justify-items: start; gap: var(--eoc-pad-panel); }
+.invite-result { display: grid; gap: var(--eoc-gap-x); width: 100%; padding: var(--eoc-pad-panel); border: var(--eoc-border-width) solid var(--eoc-border); background: var(--eoc-bg-card); border-radius: var(--eoc-radius-control); }
+.invite-result code, .registration-result code { width: fit-content; padding: var(--eoc-gap-y) var(--eoc-gap-x); background: var(--eoc-bg-sunken); border: var(--eoc-border-width) solid var(--eoc-border); color: var(--eoc-text-primary); font-family: var(--eoc-font-mono); font-size: var(--eoc-fs-title); overflow-wrap: anywhere; }
+.invite-result small { color: var(--eoc-text-muted); }
+.registration-result { display: grid; justify-items: center; gap: var(--eoc-pad-panel); padding: var(--eoc-gap-x) 0 var(--eoc-pad-panel); text-align: center; }
+.registration-result h3 { margin: 0; color: var(--eoc-text-primary); font-size: var(--eoc-fs-title); font-weight: var(--eoc-fw-semibold); }
+.registration-result p { margin: 0; color: var(--eoc-text-secondary); font-size: var(--eoc-fs-body); line-height: 1.5; }
+.success-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--eoc-radius-pill); color: var(--eoc-on-accent); background: var(--eoc-success); font-size: var(--eoc-fs-heading); }
 .registration-result :deep(.el-alert) { text-align: left; }
-:global(.dark) .dialog-intro, :global(.dark) .access-form label, :global(.dark) .account-actions { color: #aab6c4; }
-:global(.dark) .account-heading, :global(.dark) .invite-result { background: #232a33; border-color: #3c4652; }
-:global(.dark) .account-heading-copy strong, :global(.dark) .registration-result h3 { color: #e5eaf0; }
-:global(.dark) .account-heading-copy span, :global(.dark) .registration-result p { color: #aab6c4; }
-:global(.dark) .invite-result code, :global(.dark) .registration-result code { color: #e1e7ee; background: #171c22; border-color: #3c4652; }
-:global(.dark) .privacy-note, :global(.dark) .account-actions { border-color: #3c4652; }
 @media (max-width: 540px) { .two-column-form { grid-template-columns: 1fr; } .wide-field { grid-column: auto; } .account-heading { flex-wrap: wrap; } .account-heading-copy { min-width: calc(100% - 64px); } }
 </style>

@@ -231,10 +231,10 @@ function handleFitMap(): void {
         <span class="status-connection"><i></i>{{ locale === "es" ? "Fuentes operativas" : "Operational feeds" }}</span>
         <span class="status-separator"></span>
         <span>{{ store.activeZoneName || (locale === "es" ? "Área personalizada" : "Custom area") }}</span>
-        <span class="status-stat">{{ store.kpis.total_places }} {{ locale === "es" ? "lugares" : "places" }}</span>
-        <span class="status-stat status-critical">{{ store.kpis.critical_urgency_count }} {{ locale === "es" ? "críticos" : "critical" }}</span>
+        <span class="status-stat eoc-numeric">{{ store.kpis.total_places }} {{ locale === "es" ? "lugares" : "places" }}</span>
+        <span class="status-stat status-critical eoc-numeric">{{ store.kpis.critical_urgency_count }} {{ locale === "es" ? "críticos" : "critical" }}</span>
         <span class="status-spacer"></span>
-        <span>{{ locale === "es" ? "Coordenadas" : "Coordinates" }} · {{ store.currentZone?.latitude.toFixed(4) ?? "—" }}, {{ store.currentZone?.longitude.toFixed(4) ?? "—" }}</span>
+        <span class="status-coordinates eoc-numeric">{{ locale === "es" ? "Coordenadas" : "Coordinates" }} · {{ store.currentZone?.latitude.toFixed(4) ?? "—" }}, {{ store.currentZone?.longitude.toFixed(4) ?? "—" }}</span>
         <span class="status-separator"></span>
         <span>FirstSpot</span>
       </footer>
@@ -276,7 +276,7 @@ function handleFitMap(): void {
   grid-template-columns: minmax(420px, min(42%, 600px)) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
-  border-top: 1px solid var(--eoc-border);
+  border-top: var(--eoc-border-width) solid var(--eoc-border);
 }
 
 .workspace-map-col,
@@ -292,29 +292,25 @@ function handleFitMap(): void {
 .workspace-map-col :deep(.map-panel-wrapper) { min-height: 0; }
 
 .geo-statusbar {
-  height: 24px;
+  height: var(--eoc-statusbar-h);
   flex: none;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 0 10px;
-  background: var(--eoc-bg-card);
-  border-top: 1px solid var(--eoc-border);
+  gap: 10px;
+  padding: 0 var(--eoc-pad-panel);
+  background: var(--eoc-bg-statusbar);
+  border-top: var(--eoc-border-width) solid var(--eoc-border);
   color: var(--eoc-text-secondary);
-  font-size: 10px;
+  font-size: var(--eoc-fs-micro);
   white-space: nowrap;
 }
-.status-connection { display: inline-flex; align-items: center; gap: 5px; }
-.status-connection i { width: 6px; height: 6px; border-radius: 50%; background: var(--eoc-accent); }
-.status-separator { height: 12px; width: 1px; background: var(--eoc-border); }
-.status-stat { color: var(--eoc-text-primary); font-weight: 600; }
-.status-critical { color: #bd3836; }
+.status-connection { display: inline-flex; align-items: center; gap: var(--eoc-gap-x); }
+.status-connection i { width: 6px; height: 6px; border-radius: var(--eoc-radius-pill); background: var(--eoc-success); }
+.status-separator { height: 12px; width: var(--eoc-border-width); background: var(--eoc-border); }
+.status-stat { color: var(--eoc-text-primary); font-weight: var(--eoc-fw-semibold); }
+.status-critical { color: var(--eoc-critical); }
+.status-coordinates { font-family: var(--eoc-font-mono); }
 .status-spacer { flex: 1; }
-
-:global(.dark) .dashboard-shell { background: var(--eoc-bg-canvas); }
-:global(.dark) .geo-statusbar { background: var(--eoc-bg-panel); border-color: var(--eoc-border); color: var(--eoc-text-secondary); }
-:global(.dark) .status-stat { color: var(--eoc-text-primary); }
-:global(.dark) .workspace-map-col { border-color: var(--eoc-border); }
 
 @media (max-width: 1024px) {
   .dashboard-shell {
