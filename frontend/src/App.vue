@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { ElAlert, ElConfigProvider } from "element-plus";
 import HazardTelemetryStrip from "./modules/sync-controls/HazardTelemetryStrip.vue";
 import VulnerabilityHeatmapCanvas from "./modules/map-viewer/VulnerabilityHeatmapCanvas.vue";
 import PriorityQueuePanel from "./modules/priority-queue/PriorityQueuePanel.vue";
-import CommunityTriagePanel from "./modules/community-triage/CommunityTriagePanel.vue";
-import ViewTabs, { type WorkspaceView } from "./modules/community-triage/ViewTabs.vue";
+import CommunityTriagePanel, {
+  type TriageLevel,
+} from "./modules/community-triage/CommunityTriagePanel.vue";
 import PlaceTriageDrawer from "./modules/priority-queue/PlaceTriageDrawer.vue";
 import GeoRibbon from "./components/GeoRibbon.vue";
 import InstitutionAccessDialog from "./modules/institutions/InstitutionAccessDialog.vue";
@@ -27,13 +28,29 @@ const showHeatmapLayer = ref(true);
 const showMarkersLayer = ref(true);
 const showHazardsLayer = ref(true);
 const showInstitutionAccess = ref(false);
-/** Territory is the primary unit; places are the drill-down detail. */
-const workspaceView = ref<WorkspaceView>("territories");
+/** District ranking is the overview; the district detail opens beside it on demand. */
+const triageLevel = ref<TriageLevel>("list");
+const detailOpen = ref(false);
+/** A custom radius is not a predefined zone, so it never scopes the district list. */
+const zoneName = computed(() =>
+  store.customRadiusMode.enabled ? null : (store.currentZone?.name ?? null),
+);
+const zoneDepartment = computed(() =>
+  store.customRadiusMode.enabled ? null : (store.currentZone?.department ?? null),
+);
 const tacticalBasemap = ref(isDark.value);
 const geocodeTarget = ref<{ lat: number; lon: number; label: string } | null>(
   null,
 );
 let hazardRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+watch(
+  locale,
+  (value) => {
+    document.documentElement.lang = value;
+  },
+  { immediate: true },
+);
 
 watch(isDark, (value) => {
   tacticalBasemap.value = value;
@@ -199,8 +216,9 @@ function handleFitMap(): void {
         @close="store.error = null"
       />
 
-      <main class="dashboard-workspace">
+      <main class="dashboard-workspace" :class="{ 'has-detail': detailOpen }">
         <div class="workspace-map-col">
+          <p v-if="triageLevel === 'list'" class="map-caption">{{ t.community.map.caption }}</p>
           <VulnerabilityHeatmapCanvas
             :places="store.places"
             :heatmap-points="store.heatmapPoints"
@@ -221,19 +239,21 @@ function handleFitMap(): void {
           />
         </div>
 
-        <aside class="workspace-queue-col" :aria-label="t.community.tabs.label">
-          <ViewTabs v-model="workspaceView" />
-          <div class="queue-body">
-            <CommunityTriagePanel v-if="workspaceView === 'territories'" />
+        <CommunityTriagePanel
+          :zone-name="zoneName"
+          :zone-department="zoneDepartment"
+          @level-change="triageLevel = $event"
+          @detail-change="detailOpen = $event"
+        >
+          <template #places>
             <PriorityQueuePanel
-              v-else
               :places="store.places"
               :selected-place="store.selectedPlace"
               :is-loading="store.isLoading"
               @select-place="handleSelectPlace"
             />
-          </div>
-        </aside>
+          </template>
+        </CommunityTriagePanel>
       </main>
 
       <footer class="geo-statusbar">
@@ -288,18 +308,32 @@ function handleFitMap(): void {
   border-top: var(--eoc-border-width) solid var(--eoc-border);
 }
 
-.workspace-map-col,
-.workspace-queue-col {
+/* The district detail is a third column only while it is open (wide screens) */
+.dashboard-workspace.has-detail {
+  grid-template-areas: "queue map detail";
+  grid-template-columns: minmax(420px, min(34%, 520px)) minmax(0, 1fr) 360px;
+}
+
+.workspace-map-col {
+  grid-area: map;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
+.workspace-map-col > :deep(.map-panel-wrapper) { flex: 1 1 0; min-height: 0; height: auto; }
 
-.workspace-map-col { grid-area: map; }
-.workspace-queue-col { grid-area: queue; display: flex; flex-direction: column; }
-.queue-body { flex: 1; min-height: 0; }
-.workspace-map-col :deep(.map-panel-wrapper) { min-height: 0; }
+.map-caption {
+  flex: none;
+  margin: 0;
+  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  background: var(--eoc-bg-header);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
+}
 
 .geo-statusbar {
   height: var(--eoc-statusbar-h);
@@ -322,19 +356,17 @@ function handleFitMap(): void {
 .status-coordinates { font-family: var(--eoc-font-mono); }
 .status-spacer { flex: 1; }
 
-@media (max-width: 1024px) {
-  .dashboard-shell {
-    height: 100dvh;
-  }
-
-  .dashboard-workspace {
+@media (max-width: 1100px) {
+  /* Below this width the detail floats over the map instead of taking a column */
+  .dashboard-workspace.has-detail {
+    grid-template-areas: "queue map";
     grid-template-columns: minmax(420px, min(48%, 520px)) minmax(280px, 1fr);
   }
 }
 
 @media (max-width: 700px) {
-  .dashboard-workspace { grid-template-areas: "map" "queue"; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(300px, 45dvh) minmax(320px, 1fr); overflow-y: auto; }
-  .workspace-queue-col { min-height: 320px; }
+  .dashboard-workspace,
+  .dashboard-workspace.has-detail { grid-template-areas: "map" "queue"; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(260px, 60dvh) minmax(240px, 1fr); overflow-y: auto; }
   .geo-statusbar { overflow-x: auto; }
 }
 </style>

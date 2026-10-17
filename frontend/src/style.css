@@ -533,6 +533,23 @@ table td.eoc-numeric {
   --el-button-active-text-color: var(--eoc-on-accent);
 }
 
+/* Segmented controls follow the same accent and ink pair as primary buttons, so the
+   selected segment keeps AA contrast in both themes (white on the dark accent did not). */
+.el-segmented {
+  --el-segmented-bg-color: var(--eoc-bg-sunken);
+  --el-segmented-color: var(--eoc-text-secondary);
+  --el-segmented-item-hover-color: var(--eoc-text-primary);
+  --el-segmented-item-hover-bg-color: var(--eoc-bg-hover);
+  --el-segmented-item-selected-bg-color: var(--eoc-accent);
+  --el-segmented-item-selected-color: var(--eoc-on-accent);
+  --el-segmented-item-selected-disabled-bg-color: var(--eoc-accent);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+}
+.el-segmented__item-label {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 /* --------------------------------------------------------------------------
    Shared patterns
    -------------------------------------------------------------------------- */

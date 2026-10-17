@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { DATA_ATTRIBUTION, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
+import InfoPopover from "./InfoPopover.vue";
 
 const props = defineProps<{ districtCount: number }>();
 const { t } = useI18n();
@@ -14,13 +15,13 @@ const relative = computed(() =>
 </script>
 
 <template>
-  <section class="honesty" data-testid="honesty-notice" :aria-label="t.community.honesty.title">
-    <!-- Always visible: the one sentence that must never be missed -->
-    <p class="short">{{ t.community.honesty.short }}</p>
-
-    <!-- Native disclosure: one click or Enter/Space, no script, full text stays in the DOM -->
-    <details class="more">
-      <summary>{{ t.community.honesty.more }}</summary>
+  <!--
+    The limits are one click away, never removed: this is the ⓘ next to the
+    score header. The same text ships in every export and in the PDF.
+  -->
+  <InfoPopover :label="t.community.honesty.more" align="end">
+    <div class="honesty" data-testid="honesty-notice">
+      <h3 class="eoc-label">{{ t.community.honesty.title }}</h3>
       <ul>
         <li class="strong">{{ t.community.honesty.ranking }}</li>
         <li>{{ t.community.honesty.noVictims }}</li>
@@ -31,48 +32,31 @@ const relative = computed(() =>
       <p class="source">
         {{ t.community.honesty.attributionLabel }}: {{ DATA_ATTRIBUTION }}
       </p>
-    </details>
-  </section>
+    </div>
+  </InfoPopover>
 </template>
 
 <style scoped>
 .honesty {
-  border-left: 3px solid var(--eoc-info);
-  padding: 0 var(--eoc-pad-panel);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--eoc-gap-y);
 }
-.short {
+h3 {
   margin: 0;
-  font-size: var(--eoc-fs-micro);
-  color: var(--eoc-text-primary);
-  line-height: 1.4;
-}
-summary {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--eoc-target-min);
-  cursor: pointer;
-  font-size: var(--eoc-fs-micro);
-  font-weight: var(--eoc-fw-semibold);
-  color: var(--eoc-accent-text);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 ul {
   margin: 0;
-  padding-left: 14px;
-  font-size: var(--eoc-fs-micro);
+  padding-left: 16px;
   color: var(--eoc-text-secondary);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 .strong {
   color: var(--eoc-text-primary);
   font-weight: var(--eoc-fw-semibold);
 }
 .source {
-  margin: 2px 0 0;
+  margin: 0;
   font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-secondary);
 }

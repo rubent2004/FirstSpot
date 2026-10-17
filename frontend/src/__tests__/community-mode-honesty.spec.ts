@@ -20,7 +20,7 @@ async function mountPanel() {
   return { wrapper, store: useCommunityTriageStore() };
 }
 
-describe("mode control and honesty line", () => {
+describe("mode control and limits trigger", () => {
   beforeEach(() => {
     setAppLocale("en");
     document.body.innerHTML = "";
@@ -66,22 +66,21 @@ describe("mode control and honesty line", () => {
     expect(wrapper.get('[data-testid="mode-badge"]').text()).toContain("Pick an earthquake");
   });
 
-  it("always shows the one-line honesty statement, with the long text collapsed", async () => {
+  it("renders no paragraph-level honesty text by default, only the info trigger", async () => {
     const { wrapper } = await mountPanel();
-    const notice = wrapper.get('[data-testid="honesty-notice"]');
-    expect(notice.get(".short").text()).toContain("relative ranking of territories, not of people");
-    expect(notice.get(".short").text()).toContain("never reports victims or casualties");
-    const details = notice.get("details");
-    expect(details.attributes("open")).toBeUndefined();
-    expect(details.get("summary").text()).toBe("How to read this and its limits");
+    expect(wrapper.find('[data-testid="honesty-notice"]').exists()).toBe(false);
+    const trigger = wrapper.get('button[aria-label="How to read this and its limits"]');
+    expect(trigger.attributes("aria-expanded")).toBe("false");
+    expect(trigger.attributes("aria-haspopup")).toBe("dialog");
+    expect(wrapper.text()).not.toContain("construction quality");
   });
 
-  it("keeps the full limits reachable in one click and keeps the attribution", async () => {
+  it("opens the full limits in one click and keeps the attribution", async () => {
     const { wrapper } = await mountPanel();
-    const details = wrapper.get('[data-testid="honesty-notice"] details');
-    await details.get("summary").trigger("click");
-    (details.element as HTMLDetailsElement).open = true;
-    const text = details.text();
+    const trigger = wrapper.get('button[aria-label="How to read this and its limits"]');
+    await trigger.trigger("click");
+    expect(trigger.attributes("aria-expanded")).toBe("true");
+    const text = wrapper.get('[data-testid="honesty-notice"]').text();
     for (const phrase of [
       "relative ranking of territories (districts), not of people",
       "never reports victims or casualties",
@@ -93,5 +92,21 @@ describe("mode control and honesty line", () => {
     ]) {
       expect(text).toContain(phrase);
     }
+  });
+
+  it("closes with Escape and returns focus to the trigger", async () => {
+    const { wrapper } = await mountPanel();
+    const trigger = wrapper.get('button[aria-label="How to read this and its limits"]');
+    await trigger.trigger("click");
+    await flushPromises();
+    await wrapper.get('[role="dialog"]').trigger("keydown", { key: "Escape" });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="honesty-notice"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(trigger.element);
+  });
+
+  it("the score column header says the priority is relative, even with the popover closed", async () => {
+    const { wrapper } = await mountPanel();
+    expect(wrapper.get(".columns").text()).toContain("Relative priority");
   });
 });

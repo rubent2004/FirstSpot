@@ -7,13 +7,12 @@ import type { AlertClassKey, DimensionKey } from "../modules/community-triage/tr
  * field names, no INFORM jargon. `{name}` tokens are filled by `fillMessage`.
  */
 export interface CommunityMessages {
-  tabs: { label: string; territories: string; places: string };
   nav: {
     label: string;
     districts: string;
     places: string;
     breadcrumb: string;
-    back: string;
+    closeDetail: string;
     placesIn: string;
     openZonePlaces: string;
     announceDetail: string;
@@ -56,7 +55,7 @@ export interface CommunityMessages {
   /** Baseline's neutral structural scale: never an alert, never a status hue. */
   levels: Record<AlertClassKey, { name: string; meaning: string; group: string }>;
   levelsNote: string;
-  dimensions: Record<DimensionKey, { name: string; short: string }>;
+  dimensions: Record<DimensionKey, { name: string; short: string; abbr: string }>;
   honesty: {
     title: string;
     ranking: string;
@@ -65,7 +64,6 @@ export interface CommunityMessages {
     gaps: string;
     relative: string;
     attributionLabel: string;
-    short: string;
     more: string;
   };
   list: {
@@ -91,22 +89,21 @@ export interface CommunityMessages {
     scopeLabel: string;
     scopeZone: string;
     scopeCountry: string;
-    scopeNote: string;
     showing: string;
     nationalRank: string;
-    barsLegend: string;
-    barsLegendLabel: string;
+    columnRank: string;
+    columnDistrict: string;
+    columnScore: string;
     clearFilters: string;
     rankLabel: string;
     exposedNone: string;
-    groupHeading: string;
     zeroShort: string;
   };
   detail: {
-    back: string;
     rankOf: string;
     score: string;
-    dimensionsTitle: string;
+    driversTitle: string;
+    technicalTitle: string;
     dimensionRank: string;
     dimensionAbsent: string;
     baselineNoHazard: string;
@@ -184,13 +181,12 @@ export interface CommunityMessages {
 }
 
 export const COMMUNITY_ES: CommunityMessages = {
-  tabs: { label: "Vista", territories: "Territorios", places: "Lugares" },
   nav: {
     label: "Prioridad por distrito",
     districts: "Distritos",
     places: "Lugares",
     breadcrumb: "Dónde estás",
-    back: "Volver a distritos",
+    closeDetail: "Cerrar",
     placesIn: "Lugares en {zone}",
     openZonePlaces: "Ver lugares de {zone}",
     announceDetail: "Detalle abierto: {name}",
@@ -266,9 +262,13 @@ export const COMMUNITY_ES: CommunityMessages = {
   },
   levelsNote: "Sin sismo no hay alerta: esta escala es de fragilidad, no de emergencia.",
   dimensions: {
-    hazard_and_exposure: { name: "Amenaza y exposición", short: "Amenaza" },
-    vulnerability: { name: "Vulnerabilidad", short: "Vulnerab." },
-    lack_of_coping_capacity: { name: "Falta de capacidad de respuesta", short: "Capacidad" },
+    hazard_and_exposure: { name: "Amenaza y exposición", short: "Amenaza", abbr: "AyE" },
+    vulnerability: { name: "Vulnerabilidad", short: "Vulnerab.", abbr: "V" },
+    lack_of_coping_capacity: {
+      name: "Falta de capacidad de respuesta",
+      short: "Capacidad",
+      abbr: "FCR",
+    },
   },
   honesty: {
     title: "Cómo leer esto",
@@ -282,7 +282,6 @@ export const COMMUNITY_ES: CommunityMessages = {
     relative:
       "Un puntaje es una posición entre {total} distritos, no una medida de daño.",
     attributionLabel: "Datos",
-    short: "Ranking relativo de territorios, no de personas. No informa víctimas ni fallecidos.",
     more: "Cómo leer esto y sus límites",
   },
   list: {
@@ -308,22 +307,21 @@ export const COMMUNITY_ES: CommunityMessages = {
     scopeLabel: "Alcance",
     scopeZone: "Solo {department}",
     scopeCountry: "Todo el país",
-    scopeNote: "Estás viendo los distritos de {department}, la zona de trabajo actual.",
     showing: "Mostrando {shown} de {total} distritos",
     nationalRank: "El puesto es nacional, entre {total} distritos.",
-    barsLegend: "Barras: amenaza y exposición, vulnerabilidad, falta de capacidad (0–10)",
-    barsLegendLabel: "Barras por dimensión",
+    columnRank: "Puesto",
+    columnDistrict: "Distrito",
+    columnScore: "Prioridad relativa",
     clearFilters: "Quitar filtros",
     rankLabel: "puesto {rank}",
     exposedNone: "sin estimación",
-    groupHeading: "{level}",
     zeroShort: "0 · ver motivo",
   },
   detail: {
-    back: "Volver a la lista",
     rankOf: "Puesto {rank} de {total}",
     score: "Prioridad",
-    dimensionsTitle: "Puntaje por dimensión",
+    driversTitle: "Qué más pesa en la prioridad",
+    technicalTitle: "Indicadores, necesidades Sphere y fuentes",
     dimensionRank: "puesto {rank}",
     dimensionAbsent: "no entra en este modo",
     baselineNoHazard:
@@ -412,13 +410,12 @@ export const COMMUNITY_ES: CommunityMessages = {
 };
 
 export const COMMUNITY_EN: CommunityMessages = {
-  tabs: { label: "View", territories: "Territories", places: "Places" },
   nav: {
     label: "Priority by district",
     districts: "Districts",
     places: "Places",
     breadcrumb: "Where you are",
-    back: "Back to districts",
+    closeDetail: "Close",
     placesIn: "Places in {zone}",
     openZonePlaces: "See places in {zone}",
     announceDetail: "Detail opened: {name}",
@@ -494,9 +491,9 @@ export const COMMUNITY_EN: CommunityMessages = {
   },
   levelsNote: "With no earthquake there is no alert: this scale measures fragility, not emergency.",
   dimensions: {
-    hazard_and_exposure: { name: "Hazard and exposure", short: "Hazard" },
-    vulnerability: { name: "Vulnerability", short: "Vulnerab." },
-    lack_of_coping_capacity: { name: "Lack of coping capacity", short: "Capacity" },
+    hazard_and_exposure: { name: "Hazard and exposure", short: "Hazard", abbr: "H&E" },
+    vulnerability: { name: "Vulnerability", short: "Vulnerab.", abbr: "V" },
+    lack_of_coping_capacity: { name: "Lack of coping capacity", short: "Capacity", abbr: "LCC" },
   },
   honesty: {
     title: "How to read this",
@@ -509,7 +506,6 @@ export const COMMUNITY_EN: CommunityMessages = {
     relative:
       "A score is a position among {total} districts, not a measure of damage.",
     attributionLabel: "Data",
-    short: "A relative ranking of territories, not of people. It never reports victims or casualties.",
     more: "How to read this and its limits",
   },
   list: {
@@ -535,22 +531,21 @@ export const COMMUNITY_EN: CommunityMessages = {
     scopeLabel: "Scope",
     scopeZone: "{department} only",
     scopeCountry: "Whole country",
-    scopeNote: "Showing the districts of {department}, the current work zone.",
     showing: "Showing {shown} of {total} districts",
     nationalRank: "Rank is national, among {total} districts.",
-    barsLegend: "Bars: hazard and exposure, vulnerability, lack of coping capacity (0–10)",
-    barsLegendLabel: "Bars per dimension",
+    columnRank: "Rank",
+    columnDistrict: "District",
+    columnScore: "Relative priority",
     clearFilters: "Clear filters",
     rankLabel: "rank {rank}",
     exposedNone: "no estimate",
-    groupHeading: "{level}",
     zeroShort: "0 · see why",
   },
   detail: {
-    back: "Back to list",
     rankOf: "Rank {rank} of {total}",
     score: "Priority",
-    dimensionsTitle: "Score by dimension",
+    driversTitle: "What weighs most in the priority",
+    technicalTitle: "Indicators, Sphere needs and sources",
     dimensionRank: "rank {rank}",
     dimensionAbsent: "not used in this mode",
     baselineNoHazard: "Baseline has no earthquake, so no hazard is measured.",

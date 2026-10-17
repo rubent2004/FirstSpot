@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { ElButton } from "element-plus";
 import type { DistrictPrioRead, PrioIndexAuditRead } from "../../api/client";
-import { fillMessage } from "../../i18n/communityMessages";
+import { DATA_ATTRIBUTION, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
 import ClassBadge from "./ClassBadge.vue";
+import { departmentName } from "./departments";
 import { formatInteger, formatScore } from "./formatters";
 import {
   DIMENSION_ORDER,
@@ -21,9 +22,14 @@ const props = defineProps<{
   auditError: string | null;
   total: number;
   mode: "baseline" | "event";
+  /** Work-zone name, when the zone is a predefined one. */
+  zoneName: string | null;
 }>();
 
-const emit = defineEmits<{ (e: "back"): void }>();
+const emit = defineEmits<{ (e: "open-places"): void; (e: "close"): void }>();
+
+const heading = ref<HTMLElement | null>(null);
+defineExpose({ focusHeading: () => heading.value?.focus() });
 
 const { t, locale } = useI18n();
 const c = computed(() => t.value.community);
@@ -65,6 +71,13 @@ const dimensionLines = computed<DimensionLine[]>(() => {
     });
 });
 
+/** The strongest drivers first: what pushes this district up the ranking. */
+const drivers = computed(() =>
+  [...dimensionLines.value]
+    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+    .slice(0, 3),
+);
+
 const zeroLines = computed<string[]>(() => {
   if (!isZero.value) return [];
   const keys = view.value.zeroed_by
@@ -92,28 +105,45 @@ const informReference = computed(() =>
 </script>
 
 <template>
-  <article class="detail">
-    <ElButton size="small" text class="back" @click="emit('back')">
-      ← {{ c.detail.back }}
-    </ElButton>
-
+  <article class="detail" data-testid="detail-panel">
     <header class="head">
-      <h3 class="name">{{ district.district_name }}</h3>
-      <ClassBadge v-if="alertClass && !district.withheld" :alert-class="alertClass" :mode="mode" />
+      <div class="title">
+        <h3 ref="heading" class="name" tabindex="-1" data-testid="detail-heading">
+          {{ district.district_name }}
+        </h3>
+        <p v-if="departmentName(district.district_code)" class="dept">
+          {{ departmentName(district.district_code) }}
+        </p>
+      </div>
+      <ElButton class="close" size="small" :aria-label="c.nav.closeDetail" @click="emit('close')">
+        <span aria-hidden="true">✕</span>
+        <span class="close-text">{{ c.nav.closeDetail }}</span>
+      </ElButton>
     </header>
 
     <p v-if="district.withheld" class="note">{{ c.detail.withheldWhole }}</p>
 
     <template v-else>
-      <div class="headline">
-        <span class="score eoc-numeric">
-          {{ view.score === null ? "—" : formatScore(view.score, locale) }}
-        </span>
-        <span class="of10 eoc-numeric">/ 10 · {{ c.detail.score }}</span>
-        <span v-if="view.rank !== null" class="rank eoc-numeric">
+      <!-- 1. Where it stands and why -->
+      <section class="summary">
+        <div class="headline">
+          <span class="score eoc-numeric">
+            {{ view.score === null ? "—" : formatScore(view.score, locale) }}
+          </span>
+          <span class="of10 eoc-numeric">/ 10 · {{ c.detail.score }}</span>
+          <ClassBadge v-if="alertClass" :alert-class="alertClass" :mode="mode" />
+        </div>
+        <p v-if="view.rank !== null" class="rank eoc-numeric">
           {{ fillMessage(c.detail.rankOf, { rank: view.rank, total }) }}
-        </span>
-      </div>
+        </p>
+        <p v-if="mode === 'event'" class="exposed" data-testid="detail-exposed">
+          <span class="eoc-label">{{ c.detail.exposedTitle }}</span>
+          <strong v-if="view.estimated_exposed_population !== null" class="eoc-numeric">
+            {{ formatInteger(view.estimated_exposed_population, locale) }}
+          </strong>
+          <strong v-else>{{ c.list.exposedNone }}</strong>
+        </p>
+      </section>
 
       <section v-if="zeroLines.length" class="zero" data-testid="zero-reason">
         <h4 class="eoc-label">{{ c.detail.zeroTitle }}</h4>
@@ -121,9 +151,9 @@ const informReference = computed(() =>
       </section>
 
       <section class="block">
-        <h4 class="eoc-label">{{ c.detail.dimensionsTitle }}</h4>
+        <h4 class="eoc-label">{{ c.detail.driversTitle }}</h4>
         <ul class="dims">
-          <li v-for="line in dimensionLines" :key="line.key">
+          <li v-for="line in drivers" :key="line.key">
             <div class="dim-head">
               <span>{{ c.dimensions[line.key].name }}</span>
               <span v-if="line.withheld" class="muted">{{ c.detail.withheldDimension }}</span>
@@ -141,12 +171,20 @@ const informReference = computed(() =>
         </ul>
         <p v-if="mode === 'baseline'" class="muted small">{{ c.detail.baselineNoHazard }}</p>
       </section>
+    </template>
 
-      <section v-if="view.estimated_exposed_population !== null" class="block">
-        <h4 class="eoc-label">{{ c.detail.exposedTitle }}</h4>
-        <p class="big eoc-numeric">{{ formatInteger(view.estimated_exposed_population, locale) }}</p>
-        <p class="muted small">{{ c.detail.exposedNote }}</p>
-      </section>
+    <!-- 2. What to attend next -->
+    <section class="block" data-testid="detail-places">
+      <h4 class="eoc-label">{{ c.detail.placesTitle }}</h4>
+      <p class="small">{{ c.detail.placesBody }}</p>
+      <ElButton size="small" class="places-open" @click="emit('open-places')">
+        {{ zoneName ? fillMessage(c.detail.placesOpen, { zone: zoneName }) : c.nav.places }}
+      </ElButton>
+    </section>
+
+    <!-- 3. Raw indicators, Sphere needs and sources: folded -->
+    <details v-if="!district.withheld" class="fold">
+      <summary>{{ c.detail.technicalTitle }}</summary>
 
       <section v-if="view.sphere" class="block" data-testid="sphere-block">
         <h4 class="eoc-label">{{ c.detail.sphereTitle }}</h4>
@@ -168,8 +206,19 @@ const informReference = computed(() =>
       </section>
       <p v-else-if="showsSphereNote" class="muted small">{{ c.detail.sphereNotComputed }}</p>
 
+      <section v-if="mode === 'event'" class="block">
+        <h4 class="eoc-label">{{ c.detail.exposedTitle }}</h4>
+        <p class="muted small">{{ c.detail.exposedNote }}</p>
+      </section>
+
       <section class="block">
         <h4 class="eoc-label">{{ c.detail.auditTitle }}</h4>
+        <ul class="dims all">
+          <li v-for="line in dimensionLines" :key="line.key" class="small">
+            {{ c.dimensions[line.key].name }}:
+            <span class="eoc-numeric">{{ line.score === null ? "—" : formatScore(line.score, locale) }}</span>
+          </li>
+        </ul>
         <p class="small">
           {{ fillMessage(c.detail.auditRule, { count: dimensionLines.length }) }}
         </p>
@@ -179,10 +228,11 @@ const informReference = computed(() =>
         <p v-if="informReference" class="muted small eoc-numeric">
           {{ c.detail.auditReference }}: {{ informReference }}
         </p>
-        <p v-if="auditLoading" class="muted small">{{ c.detail.auditLoading }}</p>
-        <p v-else-if="auditError" class="error small">{{ c.detail.auditFailed }}</p>
+        <p v-if="auditLoading" class="muted small" role="status">{{ c.detail.auditLoading }}</p>
+        <p v-else-if="auditError" class="error small" role="alert">{{ c.detail.auditFailed }}</p>
+        <p class="muted small">{{ c.honesty.attributionLabel }}: {{ DATA_ATTRIBUTION }}</p>
       </section>
-    </template>
+    </details>
   </article>
 </template>
 
@@ -195,20 +245,37 @@ const informReference = computed(() =>
   min-height: 0;
   flex: 1;
 }
-.back {
-  align-self: flex-start;
-  padding-left: 0;
-}
 .head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--eoc-gap-x);
-  flex-wrap: wrap;
+}
+.title {
+  min-width: 0;
 }
 .name {
   margin: 0;
-  font-size: var(--eoc-fs-title);
+  font-size: var(--eoc-fs-heading);
   font-weight: var(--eoc-fw-semibold);
+  overflow-wrap: anywhere;
+}
+.name:focus-visible {
+  outline-offset: 2px;
+}
+.dept {
+  margin: 0;
+  font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-label);
+}
+.close {
+  flex: none;
+  min-width: var(--eoc-target-min);
+}
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .headline {
   display: flex;
@@ -217,13 +284,22 @@ const informReference = computed(() =>
   flex-wrap: wrap;
 }
 .score {
-  font-size: var(--eoc-fs-heading);
+  font-size: 28px;
+  line-height: 1.1;
   font-weight: var(--eoc-fw-semibold);
 }
 .of10,
 .rank {
+  margin: 0;
   font-size: var(--eoc-fs-micro);
   color: var(--eoc-text-secondary);
+}
+.exposed {
+  margin: var(--eoc-gap-y) 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--eoc-gap-x);
+  flex-wrap: wrap;
 }
 .zero {
   border: var(--eoc-border-width) solid var(--eoc-info-border);
@@ -268,14 +344,26 @@ const informReference = computed(() =>
   background: var(--eoc-bg-sunken);
   border: var(--eoc-border-width) solid var(--eoc-border);
 }
-/* Operational accent: a bar is a measurement, not a severity */
+/* A bar is a measurement, not a severity: neutral ink */
 .fill {
   height: 100%;
-  background: var(--eoc-accent);
+  background: var(--eoc-icon);
 }
-.big {
-  font-size: var(--eoc-fs-title);
+.fold {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eoc-gap-y);
+}
+.fold > summary {
+  min-height: var(--eoc-target-min);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
   font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-accent-text);
+}
+.fold[open] > summary {
+  margin-bottom: var(--eoc-gap-y);
 }
 .sphere {
   margin: 0 0 var(--eoc-gap-y);
@@ -292,18 +380,23 @@ const informReference = computed(() =>
   text-align: right;
 }
 .muted {
-  color: var(--eoc-text-muted);
+  color: var(--eoc-text-secondary);
 }
 .small {
   font-size: var(--eoc-fs-micro);
   line-height: 1.4;
 }
 .error {
-  color: var(--eoc-critical);
+  color: var(--eoc-text-primary);
+  border-left: 3px solid var(--eoc-critical);
+  padding-left: var(--eoc-gap-x);
 }
 .note {
   margin: 0;
   font-size: var(--eoc-fs-body);
   color: var(--eoc-text-secondary);
+}
+.places-open {
+  margin-top: var(--eoc-gap-y);
 }
 </style>

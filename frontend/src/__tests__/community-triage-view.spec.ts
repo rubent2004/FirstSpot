@@ -79,8 +79,9 @@ describe("CommunityTriagePanel", () => {
     expect(facts).toContain("range, not a count");
   });
 
-  it("keeps the honesty notice visible with the declared gaps", async () => {
+  it("keeps the limits one click away, behind the info trigger, with the declared gaps", async () => {
     const { wrapper } = await mountPanel();
+    await wrapper.get('button[aria-label="How to read this and its limits"]').trigger("click");
     const notice = wrapper.get('[data-testid="honesty-notice"]').text();
     expect(notice).toContain("relative ranking of territories (districts), not of people");
     expect(notice).toContain("never reports victims or casualties");
@@ -137,6 +138,7 @@ describe("CommunityTriagePanel", () => {
   it("renders in Spanish with no English copy for the mode", async () => {
     setAppLocale("es");
     const { wrapper } = await mountPanel();
+    await wrapper.get('button[aria-label="Cómo leer esto y sus límites"]').trigger("click");
     expect(wrapper.get('[data-testid="mode-badge"]').text()).toContain("Línea base");
     expect(wrapper.get('[data-testid="honesty-notice"]').text()).toContain(
       "no de personas",
