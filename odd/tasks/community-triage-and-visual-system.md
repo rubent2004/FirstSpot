@@ -366,22 +366,48 @@ PRIO-SV's V dimension therefore runs on: `poblacion`, `edad_sexo`,
 `discapacidad`, `discapacidad_tipo`, `viviendas_particulares`, `estructuras`
 and `hogar_parentesco` (which carries the `Monoparentales` variable).
 
-- [ ] **B4** Spatial attachment of `vulnerable_places` to census units
-  (`ST_Intersects`, cached in a column — not computed per query) and
-  areal-weighted population estimate around each place. Use EPSG:5399
-  (SIRGAS-ES2007) for area math; `location` is `GEOGRAPHY`, so buffers are
-  already in meters. **This is what replaces the `0 pers.` column in the
-  dispatch queue.**
-- [ ] **B5** Move `disclosure.py` to `app/core/privacy.py` before Phase D
-  imports it, so voluntary-location k-anonymity does not import from census.
-  `SuppressionPolicy(minimum_units=5, label="k-anonymity k=5")` is the path.
-- [ ] **B6** Add a `justfile` recipe (`just census-download`, `just
-  census-ingest`) to match project conventions.
-- [ ] **B4** Spatial attachment of `vulnerable_places` to census units
-  (`ST_Intersects`, cached in a column — not computed per query) and
-  areal-weighted population estimate around each place. Use EPSG:5399
-  (SIRGAS-ES2007) for area math; `location` is `GEOGRAPHY`, so buffers are
-  already in meters.
+- [x] **B4** Spatial attachment of `vulnerable_places` to census units and
+  areal-weighted exposed-population estimate. **Commit `1c1c46b`.**
+  *Route: delegated writer (multi-file).*
+  Verified: 207 tests pass (142 pre-existing + 65 new), `alembic upgrade head`
+  applies, `alembic check` reports no drift, `0003 <-> 0004` round-trip clean.
+  Backfill from scratch attached 1,425 places; the second run reported
+  `attached=0 detached=0`, so it is idempotent.
+
+  `census_unit_id` is cached in the column and resolved with `ST_Intersects`,
+  never per query. The on-demand endpoint
+  `GET /places/{id}/population-exposure?radius_meters=` recomputes for any
+  radius in 12–31 ms; the dispatch queue reads the cached 500 m estimate.
+
+  **EPSG:5399 does not exist.** The research named it as "SIRGAS-ES2007", but
+  it is absent from PROJ's `crs_view` and from PostGIS `spatial_ref_sys`, and
+  the SIRGAS-ES2007.8 codes that do exist (5391 / 5392 / 5393) are geodetic
+  only — there is no projected metric member. Area math uses **EPSG:32616**
+  (WGS 84 / UTM zone 16N), which shares the WGS 84 datum with the stored
+  `GEOGRAPHY`, so the transform needs no datum shift and no PROJ "ballpark"
+  fallback. Measured on the westernmost DEGURBA unit — the worst case for a
+  zone whose central meridian is 87°W — the areal weight differs from the
+  geodesic weight by 1.5e-6 relative. EPSG:5460 (El Salvador Lambert) is
+  metric and national but sits on the 1935 Ocotepeque datum.
+
+  Declared spatial assignment rule: **intersection with areal weighting**.
+  Centroid containment would report a whole sub-district or zero; plain
+  intersection would assign a whole sub-district to any polygon merely
+  touching the buffer.
+- [x] **B5** `disclosure.py` moved to `app/core/privacy.py`. **Commit `69d1337`.**
+  *Route: inline (pure move plus re-point).*
+  Public API unchanged; `SuppressionPolicy(minimum_units=5,
+  label="k-anonymity k=5")` verified as the Phase D path.
+
+  **Incident:** the file rename was swept into `5f9abe1` (an A4 map-viewer
+  commit) without its import re-points, leaving HEAD importing
+  `app.modules.census.domain.disclosure` from both `loaders.py` and the census
+  test module after that path had ceased to exist. `69d1337` repairs it. Cause:
+  two writers on one branch at the same time, which is what single-threaded
+  writes exist to prevent.
+- [x] **B6** `just census-download`, `just census-ingest` and `just
+  census-attach`. **Commit `cc4190a`.** *Route: inline (1 file).*
+  Verified by running `just census-download --dry-run` against the real corpus.
 
 ### Phase C — PRIO-SV index
 
@@ -446,6 +472,46 @@ Phase A visual work complete (A1-A3). Phase B ingestion complete (B1-B3).
 | `26a82c3` | dead colour literals removed | 34 tests, vue-tsc |
 | `9c0d037` | **basemap fix** — CARTO now needs a key | 34 tests, live tiles |
 | `51e62e7` | **B1-B3** census ingestion | 142 tests, real 570 MB ingest |
+| `69d1337` | **B5** suppression policy in `app/core` | 207 tests |
+| `1c1c46b` | **B4** place-census attachment + exposure | 207 tests, alembic check, backfill |
+| `cc4190a` | **B6** census justfile recipes | `just census-download --dry-run` |
+
+### What the exposure estimates actually look like
+
+At the declared 500 m default radius, over 1,425 attached places: minimum 52,
+median 4,694, maximum 8,809, 504 distinct values, and 548 places whose buffer
+spans more than one DEGURBA unit. 56 places are outside census coverage and
+hold a **null** estimate, never a zero.
+
+The median sits far above the national mean density (5,922,921 people over
+~21,000 km² is 282/km², so an average 500 m buffer would hold ~222 people)
+because OSM places — schools, hospitals, pharmacies — are overwhelmingly inside
+dense DEGURBA classes. That is a selection effect of where places are, not an
+inflated estimator.
+
+**Consequence of the uniform-density assumption, worth stating plainly:** when a
+buffer falls entirely inside one DEGURBA unit, the estimate is
+`density × buffer area` and is therefore *spatially flat within that unit*. The
+twelve highest estimates are all 8,809 because they share unit 060108
+"Ciudades": 134,596 people over 11.923 km² is 11,288/km², and a 500 m buffer of
+0.785 km² predicts 8,866. The estimate discriminates between dense and sparse
+units, not between locations inside one unit. Buffers that cross a unit boundary
+do vary by location.
+
+### Vulnerable-rate denominator decision
+
+All three rates (65+, under 5, disability) share one denominator: the district's
+published total resident population (`topic='poblacion'`), which reconciles
+exactly to 5,922,921. Two findings forced this:
+
+- 88 `edad_sexo` district cells are withheld under D.L. 904, so the age-band sum
+  (5,922,778) is 143 people short of the population total. Numerator and
+  denominator are deliberately *not* both drawn from the bands; the age rates
+  are instead marginally conservative by 0.0024%.
+- The census publishes its own `share` beside the disability count, but against
+  an unstated denominator worth about 96% of resident population (district
+  010101: 4,127 / 0.03381 implies 122,061 against 127,301 residents). Using it
+  would overstate by ~4%, so it is not used as the multiplier.
 
 ### Incident: the CARTO basemap failure
 
@@ -464,12 +530,19 @@ invisible to automated verification. Visual surfaces need a human check.**
 
 ## Next step
 
-**B4** — attach places to census units and compute areal-weighted population.
-This is the task that replaces `0 pers.` in the dispatch queue with real
-exposed population, which is the whole point of Phase B.
+Phase B is complete (B1–B6). The backend now serves a real exposed-population
+estimate per place.
 
-Then **A4** (decompose the map component) before C5 touches it, and **C1-C4**
-for the PRIO-SV index itself.
+**The frontend has not been updated and still shows `0 pers.`** The dispatch
+queue reads `estimated_vulnerable_count`, which is the institution-entered
+field and is deliberately unchanged. The census estimate arrives in two new
+additive fields on `PlaceRead` — `census_unit_id` and `population_exposure` —
+plus the new `GET /places/{id}/population-exposure` endpoint.
+`backend/openapi.json` is regenerated, so `pnpm --dir frontend run
+generate:api` (or `just codegen`) will pick them up. Wiring the queue column to
+`population_exposure.estimated_exposed_population` is a frontend task.
+
+Then **C1-C4** for the PRIO-SV index itself. A4 is in progress on this branch.
 
 ## Open decisions
 
