@@ -31,7 +31,7 @@ DEMO_REGISTRATION_CODE = "FSP-DEMO000001"
 # example.com is reserved for documentation (RFC 2606) and accepted by the API's
 # email validator; special-use TLDs such as .test are rejected at login.
 DEMO_EMAIL = "demo@example.com"
-DEMO_PASSWORD = "FirstSpotDemo2026!"
+DEMO_PASSWORD = "demo1234"
 DEMO_DISPLAY_NAME = "Coordinación Demo"
 
 
