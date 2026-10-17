@@ -91,6 +91,43 @@ const copy = computed(() => locale.value === "es" ? {
   verificationDisclaimer: "Verification confirms the organization’s identity, not report accuracy. The map status is the latest update, not multi-agency consensus.",
 });
 
+interface LogRow {
+  key: string;
+  items: PlaceActivityRead[];
+  /** A support request answered by another organization, kept together as one row. */
+  exchange: boolean;
+}
+
+/**
+ * The log, newest first, with the most recent support exchange kept in one row:
+ * a "resource available" entry directly answering another organization's
+ * "request support". The row looks the same; it gives the exchange one
+ * element the guided tour can point at.
+ */
+const logRows = computed<LogRow[]>(() => {
+  const items = props.activities;
+  const rows: LogRow[] = [];
+  let paired = false;
+  for (let i = 0; i < items.length; i++) {
+    const answer = items[i];
+    const request = items[i + 1];
+    if (
+      !paired &&
+      request &&
+      answer.activity_type === "resource_available" &&
+      request.activity_type === "needs_support" &&
+      answer.organization.id !== request.organization.id
+    ) {
+      rows.push({ key: `${answer.id}+${request.id}`, items: [answer, request], exchange: true });
+      paired = true;
+      i++;
+      continue;
+    }
+    rows.push({ key: answer.id, items: [answer], exchange: false });
+  }
+  return rows;
+});
+
 const statusOptions = computed(() => [
   { value: "pending", label: copy.value.pending },
   { value: "in_progress", label: copy.value.progress },
@@ -429,19 +466,26 @@ function handleSave(): void {
         <div v-else-if="props.activitiesLoading" class="activity-loading">{{ locale === 'es' ? 'Cargando bitácora…' : 'Loading activity…' }}</div>
         <div v-else-if="props.activities.length === 0" class="activity-empty">{{ copy.noActivity }}</div>
         <ol v-else class="activity-list">
-          <li v-for="item in props.activities" :key="item.id" class="activity-entry">
-            <span class="activity-marker" aria-hidden="true"></span>
-            <div class="activity-main">
-              <div class="activity-title-row">
-                <strong>{{ copy.actionTypes[item.activity_type] }}</strong>
-                <time :datetime="item.created_at">{{ new Intl.DateTimeFormat(locale === 'es' ? 'es-SV' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.created_at)) }}</time>
-              </div>
-              <div class="activity-byline"><b>{{ item.organization.name }}</b><span>·</span>{{ copy.verifiedBy }} {{ item.actor_name }}<ElTag v-if="item.organization.verification_status === 'verified'" size="small" type="success" effect="plain">{{ copy.verified }}</ElTag></div>
-              <p v-if="item.notes" class="activity-notes">{{ item.notes }}</p>
-              <div v-if="item.attention_status || item.urgency_level || item.estimated_vulnerable_count !== null" class="activity-snapshot">
-                <span v-if="item.attention_status">{{ statusOptions.find((option) => option.value === item.attention_status)?.label ?? item.attention_status }}</span>
-                <span v-if="item.urgency_level">{{ copy.urgency }}: {{ t.urgency[item.urgency_level] ?? item.urgency_level }}</span>
-                <span v-if="item.estimated_vulnerable_count != null">{{ item.estimated_vulnerable_count }} {{ locale === 'es' ? 'personas' : 'people' }}</span>
+          <li
+            v-for="row in logRows"
+            :key="row.key"
+            class="activity-row"
+            :data-tour="row.exchange ? 'place-log-exchange' : undefined"
+          >
+            <div v-for="item in row.items" :key="item.id" class="activity-entry">
+              <span class="activity-marker" aria-hidden="true"></span>
+              <div class="activity-main">
+                <div class="activity-title-row">
+                  <strong>{{ copy.actionTypes[item.activity_type] }}</strong>
+                  <time :datetime="item.created_at">{{ new Intl.DateTimeFormat(locale === 'es' ? 'es-SV' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.created_at)) }}</time>
+                </div>
+                <div class="activity-byline"><b>{{ item.organization.name }}</b><span>·</span>{{ copy.verifiedBy }} {{ item.actor_name }}<ElTag v-if="item.organization.verification_status === 'verified'" size="small" type="success" effect="plain">{{ copy.verified }}</ElTag></div>
+                <p v-if="item.notes" class="activity-notes">{{ item.notes }}</p>
+                <div v-if="item.attention_status || item.urgency_level || item.estimated_vulnerable_count !== null" class="activity-snapshot">
+                  <span v-if="item.attention_status">{{ statusOptions.find((option) => option.value === item.attention_status)?.label ?? item.attention_status }}</span>
+                  <span v-if="item.urgency_level">{{ copy.urgency }}: {{ t.urgency[item.urgency_level] ?? item.urgency_level }}</span>
+                  <span v-if="item.estimated_vulnerable_count != null">{{ item.estimated_vulnerable_count }} {{ locale === 'es' ? 'personas' : 'people' }}</span>
+                </div>
               </div>
             </div>
           </li>
@@ -561,7 +605,8 @@ function handleSave(): void {
 .activity-count { min-width: var(--eoc-icon-btn); height: var(--eoc-control-h); display: grid; place-items: center; border: var(--eoc-border-width) solid var(--eoc-border); border-radius: var(--eoc-radius-control); color: var(--eoc-text-secondary); font-size: var(--eoc-fs-micro); }
 .activity-list { list-style: none; margin: 0; padding: 0 0 0 4px; }
 .activity-entry { position: relative; display: flex; gap: var(--eoc-pad-panel); padding: var(--eoc-gap-y) 0 var(--eoc-pad-panel); }
-.activity-entry:not(:last-child)::before { content: ''; position: absolute; left: 4px; top: 17px; bottom: -1px; width: var(--eoc-border-width); background: var(--eoc-border); }
+.activity-entry::before { content: ''; position: absolute; left: 4px; top: 17px; bottom: -1px; width: var(--eoc-border-width); background: var(--eoc-border); }
+.activity-row:last-child .activity-entry:last-child::before { content: none; }
 .activity-marker { position: relative; z-index: 1; flex: 0 0 9px; width: 9px; height: 9px; margin-top: 4px; border: 2px solid var(--eoc-accent); border-radius: var(--eoc-radius-pill); background: var(--eoc-bg-panel); }
 .activity-main { flex: 1; min-width: 0; }
 .activity-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--eoc-gap-x); }

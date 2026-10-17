@@ -46,6 +46,8 @@ export interface TourStepDef {
   deferData?: boolean;
   /** Wait this long after the anchor appears, for an opening dialog to settle. */
   settleMs?: number;
+  /** Why the step falls back when its anchor is missing; "anchor" by default. */
+  missingAnchor?: TourSkipReason;
 }
 
 const CLOSED: TourScene = {
@@ -64,8 +66,9 @@ const EVENT: Partial<TourScene> = { zoneKey: DEMO_ZONE_KEY, eventId: DEMO_EVENT_
 const ON_PLACE: Partial<TourScene> = { placesOpen: true, place: "demo" };
 
 /**
- * Fourteen steps of about 8-9 seconds, following the challenge: whom to attend
- * first, where to concentrate effort, what to send, and how it reaches the field.
+ * Fifteen steps of about 6-9 seconds, following the challenge: whom to attend
+ * first, where to concentrate effort, what to send, how organizations coordinate
+ * on a place, and how it reaches the field.
  * docs/demo/guion-video.md is aligned 1:1 with this list.
  */
 export const TOUR_STEPS: readonly TourStepDef[] = [
@@ -137,6 +140,15 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
     scene: { ...CLOSED, ...EVENT, ...ON_PLACE, placeOpen: true },
   },
   {
+    id: "placeExchange",
+    anchor: "place-log-exchange",
+    side: "left",
+    requires: ["place"],
+    settleMs: 300,
+    missingAnchor: "exchange",
+    scene: { ...CLOSED, ...EVENT, ...ON_PLACE, placeOpen: true },
+  },
+  {
     id: "placeAccess",
     anchor: "place-access",
     side: "top",
@@ -180,6 +192,11 @@ export function findAnchor(anchor: string, root: ParentNode = document): HTMLEle
   return element;
 }
 
+/** The fallback a step shows when only its anchor is missing (it may still appear). */
+export function anchorSkip(def: TourStepDef): TourSkipReason {
+  return def.missingAnchor ?? (def.id === "sphere" ? "sphere" : "anchor");
+}
+
 export interface PlannedStep {
   def: TourStepDef;
   /** Null when the step can be shown as designed. */
@@ -188,7 +205,7 @@ export interface PlannedStep {
 
 /**
  * Decide whether a step can be shown as designed. A missing anchor or unmet
- * requirement keeps the step in the list (so "6 / 14" stays aligned with the
+ * requirement keeps the step in the list (so "6 / 15" stays aligned with the
  * narrator script) but turns it into a short centred note.
  */
 export function planStep(
@@ -198,9 +215,7 @@ export function planStep(
 ): PlannedStep {
   const unmet = def.requires.find((requirement) => !meets(requirement));
   if (unmet) return { def, skip: unmet };
-  if (def.anchor && !hasAnchor(def.anchor)) {
-    return { def, skip: def.id === "sphere" ? "sphere" : "anchor" };
-  }
+  if (def.anchor && !hasAnchor(def.anchor)) return { def, skip: anchorSkip(def) };
   return { def, skip: null };
 }
 

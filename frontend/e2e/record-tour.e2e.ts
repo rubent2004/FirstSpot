@@ -5,11 +5,14 @@ import { expect, test, type Browser, type BrowserContext, type Page } from "@pla
 import { ARTIFACTS_DIR } from "./support/app";
 
 /**
- * Records the guided tour (`?tour=1` flow, 14 steps) as the 2-minute demo video,
+ * Records the guided tour (`?tour=1` flow, 15 steps) as the 2-minute demo video,
  * paced by the narrator script in docs/demo/guion-video.md. Run it with
  * `pnpm record:tour` (playwright.record.config.ts); the normal suite skips it.
  *
  * Output: e2e-artifacts/video/{firstspot-tour.raw.webm,firstspot-tour.mp4,timings.json,frames/}.
+ *
+ * REHEARSE_ONLY=1 runs only the untimed rehearsal (every step, no-write and
+ * fallback checks, the seeded coordination log) and records nothing.
  */
 test.skip(process.env.RECORD_TOUR !== "1", "recording only runs from playwright.record.config.ts");
 
@@ -17,26 +20,30 @@ const VIEWPORT = { width: 1920, height: 1080 };
 const VIDEO_DIR = path.join(ARTIFACTS_DIR, "video");
 const RAW_DIR = path.join(VIDEO_DIR, "raw");
 const MAX_TOTAL_S = 115;
-const CLOSING_HOLD_S = Number(process.env.CLOSING_HOLD_S ?? 4);
+const CLOSING_HOLD_S = Number(process.env.CLOSING_HOLD_S ?? 8);
+const REHEARSE_ONLY = process.env.REHEARSE_ONLY === "1";
+/** The two fictitious organizations `just demo-seed` writes into the log. */
+const DEMO_ORGANIZATIONS = ["Brigada Demo FirstSpot (ficticia)", "Cuerpo de Socorro Demo (ficticio)"];
 const STEP_TIMEOUT_MS = 20_000;
 const WRITE_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
-/** Seconds per step from docs/demo/guion-video.md (0-9, 9-17, ... 110-120). */
+/** Seconds per step from docs/demo/guion-video.md (0-8, 8-14, ... 105-113). */
 const SCRIPT_STEPS = [
-  { id: "opening", seconds: 9 },
-  { id: "zone", seconds: 8 },
-  { id: "baseline", seconds: 9 },
-  { id: "mode", seconds: 9 },
-  { id: "eventTop", seconds: 8 },
-  { id: "detail", seconds: 8 },
-  { id: "sphere", seconds: 8 },
-  { id: "places", seconds: 8 },
-  { id: "placeSummary", seconds: 8 },
+  { id: "opening", seconds: 8 },
+  { id: "zone", seconds: 6 },
+  { id: "baseline", seconds: 8 },
+  { id: "mode", seconds: 8 },
+  { id: "eventTop", seconds: 7 },
+  { id: "detail", seconds: 7 },
+  { id: "sphere", seconds: 7 },
+  { id: "places", seconds: 7 },
+  { id: "placeSummary", seconds: 7 },
   { id: "placeLog", seconds: 9 },
+  { id: "placeExchange", seconds: 8 },
   { id: "placeAccess", seconds: 7 },
-  { id: "exportFormat", seconds: 9 },
-  { id: "exportMap", seconds: 10 },
-  { id: "closing", seconds: 10 },
+  { id: "exportFormat", seconds: 8 },
+  { id: "exportMap", seconds: 8 },
+  { id: "closing", seconds: 8 },
 ] as const;
 
 /** The closing card is held CLOSING_HOLD_S; scale everything if the result is still too long. */
@@ -121,6 +128,16 @@ async function startTour(page: Page): Promise<void> {
   await page.keyboard.press("Shift+Alt+KeyT");
 }
 
+/** The log shows the seeded drill from both demo organizations (`just demo-seed`). */
+async function expectSeededLog(page: Page): Promise<void> {
+  const log = page.getByTestId("place-activity-log");
+  await expect(log, "seeded drill in the coordination log (run `just demo-seed`)").toContainText("Simulacro:", {
+    timeout: STEP_TIMEOUT_MS,
+  });
+  for (const name of DEMO_ORGANIZATIONS) await expect(log).toContainText(name);
+  await expect(page.locator('[data-tour="place-log-exchange"]')).toHaveCount(1);
+}
+
 /** Untimed pass: warms the backend caches (the 2001 ShakeMap) and fails fast on a fallback. */
 async function rehearse(browser: Browser, writes: string[]): Promise<void> {
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
@@ -131,6 +148,7 @@ async function rehearse(browser: Browser, writes: string[]): Promise<void> {
   for (let i = 1; i <= SCRIPT_STEPS.length; i++) {
     if (i > 1) await page.keyboard.press("ArrowRight");
     checks.push(await waitForStep(page, i));
+    if (SCRIPT_STEPS[i - 1].id === "placeLog") await expectSeededLog(page);
     await page.waitForTimeout(400);
   }
   await page.keyboard.press("Escape");
@@ -151,11 +169,11 @@ function ffmpegAvailable(): boolean {
 test("record the guided tour video", async ({ browser }) => {
   const writes: string[] = [];
   const durations = plannedDurations();
-  rmSync(RAW_DIR, { recursive: true, force: true });
-  mkdirSync(RAW_DIR, { recursive: true });
-
   await rehearse(browser, writes);
   expect(writes, "backend writes during the rehearsal").toEqual([]);
+  if (REHEARSE_ONLY) return;
+  rmSync(RAW_DIR, { recursive: true, force: true });
+  mkdirSync(RAW_DIR, { recursive: true });
 
   const context = await browser.newContext({
     viewport: VIEWPORT,

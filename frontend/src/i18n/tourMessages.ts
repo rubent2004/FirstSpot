@@ -16,12 +16,21 @@ export type TourStepId =
   | "places"
   | "placeSummary"
   | "placeLog"
+  | "placeExchange"
   | "placeAccess"
   | "exportFormat"
   | "exportMap"
   | "closing";
 
-export type TourSkipReason = "anchor" | "data" | "event" | "district" | "sphere" | "zone" | "place";
+export type TourSkipReason =
+  | "anchor"
+  | "data"
+  | "event"
+  | "district"
+  | "sphere"
+  | "zone"
+  | "place"
+  | "exchange";
 
 interface StepCopy {
   title: string;
@@ -87,11 +96,15 @@ const ES: TourMessages = {
     },
     placeLog: {
       title: "Bitácora de coordinación",
-      body: "Cada acción queda con su autor y su organización: unidad en camino, en el lugar, solicitar apoyo, atención resuelta. Todas las organizaciones ven la misma bitácora y saben quién ya va en camino.",
+      body: "Cada organización verificada registra lo que hace: reporte, unidad en camino, solicitud de apoyo, recurso disponible, en el lugar; siempre con autor y organización. Todas ven la misma bitácora, así se coordinan sin duplicar viajes ni llamar a todos.",
+    },
+    placeExchange: {
+      title: "Cómo se comunican",
+      body: "Simulacro: una organización solicita apoyo y otra responde con el recurso que puede enviar. Solicitud y respuesta quedan en el mismo registro del lugar.",
     },
     placeAccess: {
       title: "Quién puede registrar",
-      body: "Registrar exige iniciar sesión con una organización verificada. La verificación identifica a la organización; no confirma la exactitud del reporte.",
+      body: "Registrar exige iniciar sesión con una organización verificada, y cada entrada lleva su nombre. La verificación identifica a la organización; no confirma la exactitud del reporte.",
     },
     exportFormat: {
       title: "Exportar",
@@ -99,7 +112,7 @@ const ES: TourMessages = {
     },
     exportMap: {
       title: "Mapa para el equipo de campo",
-      body: "Plantillas Resumen, Completo o Despacho de un lugar, con vista previa en vivo; los límites y la atribución BCR/ONEC siempre van. Se genera en el navegador, listo para entregar.",
+      body: "Plantillas Resumen, Completo o Despacho de un lugar, con vista previa de la composición de la hoja; los límites y la atribución BCR/ONEC siempre van. Se genera en el navegador, listo para entregar.",
     },
     closing: {
       title: "Listo para operar",
@@ -108,7 +121,7 @@ const ES: TourMessages = {
   },
   variants: {
     placeLogEmpty:
-      "Cada acción queda con su autor y su organización: unidad en camino, en el lugar, solicitar apoyo, atención resuelta. Este lugar aún no tiene acciones registradas.",
+      "Cada organización verificada registra lo que hace, con autor y organización, y todas ven la misma bitácora. Este lugar aún no tiene acciones registradas.",
   },
   skipped: {
     title: "Paso no disponible",
@@ -120,6 +133,7 @@ const ES: TourMessages = {
       sphere: "Este distrito no tiene requerimiento Esfera calculado: solo se calcula para niveles roja y naranja.",
       zone: "La zona de demostración Sonsonate no está disponible ahora.",
       place: "No hay lugares cargados en esta zona; el servidor no devolvió ninguno.",
+      exchange: "La bitácora de este lugar aún no tiene una solicitud de apoyo respondida por otra organización.",
     },
   },
 };
@@ -169,11 +183,15 @@ const EN: TourMessages = {
     },
     placeLog: {
       title: "Coordination log",
-      body: "Every action keeps its author and organization: unit en route, unit on scene, request support, response resolved. Every organization sees the same log and knows who is already on the way.",
+      body: "Each verified organization records what it does: a report, a unit en route, a support request, an available resource, on scene; always with author and organization. They all see the same log, so they coordinate without duplicate trips or calling around.",
+    },
+    placeExchange: {
+      title: "How they communicate",
+      body: "Drill (simulacro): one organization requests support and another answers with the resource it can send. Request and answer stay on the same place record.",
     },
     placeAccess: {
       title: "Who can record",
-      body: "Recording requires signing in with a verified organization. Verification identifies the organization; it does not confirm the report is accurate.",
+      body: "Recording requires signing in with a verified organization, and every entry carries its name. Verification identifies the organization; it does not confirm the report is accurate.",
     },
     exportFormat: {
       title: "Export",
@@ -181,7 +199,7 @@ const EN: TourMessages = {
     },
     exportMap: {
       title: "A map for the field team",
-      body: "Summary, Complete or Single-place dispatch templates, with a live preview; the limits and the BCR/ONEC attribution always travel. It is generated in the browser, ready to hand over.",
+      body: "Summary, Complete or Single-place dispatch templates, with a preview of the sheet layout; the limits and the BCR/ONEC attribution always travel. It is generated in the browser, ready to hand over.",
     },
     closing: {
       title: "Ready to operate",
@@ -190,7 +208,7 @@ const EN: TourMessages = {
   },
   variants: {
     placeLogEmpty:
-      "Every action keeps its author and organization: unit en route, unit on scene, request support, response resolved. This place has no recorded actions yet.",
+      "Each verified organization records what it does, with author and organization, and they all see the same log. This place has no recorded actions yet.",
   },
   skipped: {
     title: "Step not available",
@@ -202,6 +220,7 @@ const EN: TourMessages = {
       sphere: "This district has no Sphere requirement: it is computed only for red and orange levels.",
       zone: "The Sonsonate demo zone is not available right now.",
       place: "No places are loaded for this zone; the server returned none.",
+      exchange: "This place's log has no support request answered by another organization yet.",
     },
   },
 };
