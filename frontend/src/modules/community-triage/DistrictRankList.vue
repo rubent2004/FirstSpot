@@ -9,7 +9,10 @@ import {
   ALERT_CLASS_ORDER,
   asAlertClass,
   classCounts,
+  classCarrier,
+  classLabels,
   type AlertClassKey,
+  type TriageMode,
 } from "./triageModel";
 
 const props = defineProps<{
@@ -18,6 +21,7 @@ const props = defineProps<{
   isLoading: boolean;
   error: string | null;
   showExposed: boolean;
+  mode: TriageMode;
 }>();
 
 const emit = defineEmits<{
@@ -75,13 +79,13 @@ function exposedText(d: DistrictPrioRead): string {
         :key="key"
         type="button"
         class="chip"
-        :class="[`eoc-class-${key}`, { active: classFilter === key }]"
+        :class="[classCarrier(mode, key), { active: classFilter === key }]"
         :aria-pressed="classFilter === key"
-        :title="t.community.classes[key].meaning"
+        :title="classLabels(t.community, mode, key).meaning"
         @click="toggleClass(key)"
       >
         <span class="swatch" aria-hidden="true"></span>
-        {{ t.community.classes[key].name }}
+        {{ classLabels(t.community, mode, key).name }}
         <span class="eoc-numeric count">{{ counts[key] }}</span>
       </button>
     </div>
@@ -107,7 +111,7 @@ function exposedText(d: DistrictPrioRead): string {
           type="button"
           class="row"
           :class="[
-            asAlertClass(district.alert_class) ? `eoc-class-${asAlertClass(district.alert_class)}` : '',
+            asAlertClass(district.alert_class) ? classCarrier(mode, asAlertClass(district.alert_class)!) : '',
             { selected: district.district_code === selectedCode, withheld: district.withheld },
           ]"
           @click="emit('select', district.district_code)"
@@ -120,7 +124,7 @@ function exposedText(d: DistrictPrioRead): string {
             </span>
           </template>
           <template v-else>
-            <ClassBadge v-if="asAlertClass(district.alert_class)" :alert-class="asAlertClass(district.alert_class)!" />
+            <ClassBadge v-if="asAlertClass(district.alert_class)" :alert-class="asAlertClass(district.alert_class)!" :mode="mode" />
             <span class="score eoc-numeric">
               {{ district.score === null ? "—" : formatScore(district.score, locale) }}
             </span>

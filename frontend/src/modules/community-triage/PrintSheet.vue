@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
           <h2 class="eoc-label">{{ s.legend }}</h2>
           <ul>
             <li v-for="cls in model.classes" :key="cls.key">
-              <ClassBadge :alert-class="cls.key" />
+              <ClassBadge :alert-class="cls.key" :mode="model.mode" />
               <span class="eoc-numeric range">{{ cls.floor }}–{{ cls.ceiling }}</span>
             </li>
           </ul>
@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
                 <td class="eoc-numeric">{{ row.rank ?? "—" }}</td>
                 <td>{{ row.name }}</td>
                 <td>
-                  <ClassBadge v-if="row.classKey" :alert-class="row.classKey" />
+                  <ClassBadge v-if="row.classKey" :alert-class="row.classKey" :mode="model.mode" />
                   <em v-else>{{ t.community.list.withheld }}</em>
                 </td>
                 <td class="eoc-numeric num">{{ rowScore(row) }}</td>
@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
                 <li v-for="row in priorityRows" :key="`${row.rank}-${row.name}`">
                   <span class="eoc-numeric rank">{{ row.rank }}</span>
                   <span class="name">{{ row.name }}</span>
-                  <ClassBadge v-if="row.classKey" :alert-class="row.classKey" />
+                  <ClassBadge v-if="row.classKey" :alert-class="row.classKey" :mode="model.mode" />
                   <span class="eoc-numeric">{{ rowScore(row) }}</span>
                 </li>
               </ol>

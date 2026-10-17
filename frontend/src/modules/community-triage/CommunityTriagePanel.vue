@@ -100,6 +100,7 @@ const showExposed = computed(() => mode.value === "event");
       :is-loading="store.isLoading"
       :error="store.error"
       :show-exposed="showExposed"
+      :mode="mode"
       @select="store.selectDistrict"
       @retry="store.loadIndex"
     />

@@ -11,6 +11,7 @@ import {
   DIMENSION_ORDER,
   asAlertClass,
   asDimensionKey,
+  classLabels,
   type AlertClassKey,
   type DimensionKey,
 } from "./triageModel";
@@ -152,7 +153,7 @@ export function buildReportModel(
     dimensionKeys,
     classes: ALERT_CLASS_ORDER.map((key) => ({
       key,
-      name: t.classes[key].name,
+      name: classLabels(t, isEvent ? "event" : "baseline", key).name,
       floor: floors.get(key)?.floor ?? 0,
       ceiling: floors.get(key)?.ceiling ?? 0,
     })),

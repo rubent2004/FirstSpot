@@ -2,6 +2,7 @@ import type { CommunityMessages } from "../../i18n/communityMessages";
 import type { AppLocale } from "../../i18n/useI18n";
 import type { ReportModel, ReportRow } from "./exportModel";
 import { formatInteger } from "./formatters";
+import { classLabels } from "./triageModel";
 
 type SheetCell = string | number | null | { value: string; fontWeight: "bold" };
 
@@ -82,7 +83,11 @@ function rankingSheet(
   const body = model.rows.map((row): SheetCell[] => [
     row.rank,
     row.name,
-    row.withheld ? t.xlsx.withheldRow : row.classKey ? t.classes[row.classKey].name : null,
+    row.withheld
+      ? t.xlsx.withheldRow
+      : row.classKey
+        ? classLabels(t, model.mode, row.classKey).name
+        : null,
     round2(row.score),
     ...row.dimensions.map((d) => round2(d.score)),
     row.population,

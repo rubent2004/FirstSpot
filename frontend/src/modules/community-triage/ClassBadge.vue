@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "../../i18n/useI18n";
-import { ALERT_CLASS_ORDER, type AlertClassKey } from "./triageModel";
+import {
+  ALERT_CLASS_ORDER,
+  classCarrier,
+  classLabels,
+  type AlertClassKey,
+  type TriageMode,
+} from "./triageModel";
 
-const props = defineProps<{ alertClass: AlertClassKey }>();
+const props = defineProps<{ alertClass: AlertClassKey; mode: TriageMode }>();
 const { t } = useI18n();
 
 /** Roja lights four pips, verde one: severity survives a greyscale print. */
@@ -13,11 +19,11 @@ const litPips = computed(
 </script>
 
 <template>
-  <span class="class-badge" :class="`eoc-class-${alertClass}`">
+  <span class="class-badge" :class="classCarrier(mode, alertClass)">
     <span class="pips" aria-hidden="true">
       <i v-for="n in ALERT_CLASS_ORDER.length" :key="n" :class="{ lit: n <= litPips }"></i>
     </span>
-    {{ t.community.classes[alertClass].name }}
+    {{ classLabels(t.community, mode, alertClass).name }}
   </span>
 </template>
 

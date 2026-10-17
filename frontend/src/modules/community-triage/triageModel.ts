@@ -1,4 +1,5 @@
 import type { DistrictPrioRead, PagerRead } from "../../api/client";
+import type { CommunityMessages } from "../../i18n/communityMessages";
 
 /** The four official DGPC alert classes, most urgent first. */
 export const ALERT_CLASS_ORDER = ["roja", "naranja", "amarilla", "verde"] as const;
@@ -25,6 +26,23 @@ export function asDimensionKey(value: string): DimensionKey | null {
   return (DIMENSION_ORDER as readonly string[]).includes(value)
     ? (value as DimensionKey)
     : null;
+}
+
+/**
+ * Which scale names the four classes. The official DGPC alert colours declare
+ * an emergency, so they appear only when an event exists; baseline has no
+ * emergency and uses a neutral structural-risk scale instead.
+ */
+export function classCarrier(mode: TriageMode, key: AlertClassKey): string {
+  return mode === "event" ? `eoc-class-${key}` : `eoc-level-${key}`;
+}
+
+export function classLabels(
+  t: CommunityMessages,
+  mode: TriageMode,
+  key: AlertClassKey,
+): { name: string; meaning: string } {
+  return mode === "event" ? t.classes[key] : t.levels[key];
 }
 
 export type ClassCounts = Record<AlertClassKey, number>;

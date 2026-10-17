@@ -361,6 +361,17 @@ table td.eoc-numeric {
   --class-border: var(--eoc-success-border);
 }
 
+/* Baseline structural levels: a neutral scale that is NOT an alert. No status
+   hue on purpose; the pips, the label and the group heading carry the level. */
+.eoc-level-roja,
+.eoc-level-naranja,
+.eoc-level-amarilla,
+.eoc-level-verde {
+  --class-color: var(--eoc-icon);
+  --class-bg: var(--eoc-bg-sunken);
+  --class-border: var(--eoc-border-strong);
+}
+
 /* Liveness beacon. Opacity only: a glowing ring would be a decorative shadow */
 @keyframes eoc-beacon-pulse {
   0%,

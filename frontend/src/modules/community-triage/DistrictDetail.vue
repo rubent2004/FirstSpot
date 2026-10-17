@@ -99,7 +99,7 @@ const informReference = computed(() =>
 
     <header class="head">
       <h3 class="name">{{ district.district_name }}</h3>
-      <ClassBadge v-if="alertClass && !district.withheld" :alert-class="alertClass" />
+      <ClassBadge v-if="alertClass && !district.withheld" :alert-class="alertClass" :mode="mode" />
     </header>
 
     <p v-if="district.withheld" class="note">{{ c.detail.withheldWhole }}</p>
