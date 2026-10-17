@@ -53,3 +53,6 @@ export const HEAT_GRADIENT_STOPS: Record<number, string> = {
   0.8: "#e8833c",
   1.0: "#f06a6a",
 };
+
+/** White ring around a point on a printed map: it separates the dot from any basemap. */
+export const POINT_RING_HEX = "#ffffff";

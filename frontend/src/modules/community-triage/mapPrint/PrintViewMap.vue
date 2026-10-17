@@ -9,6 +9,7 @@ import {
   ACCENT_HEX,
   ALERT_RAMP_HEX,
   HEAT_GRADIENT_STOPS,
+  POINT_RING_HEX,
 } from "../../map-viewer/composables/canvasColors";
 import { BASEMAP_PRESETS, canUseCanvasHeatmap } from "../../map-viewer/composables/useLeafletMap";
 import { printBasemap } from "./mapPrintModel";
@@ -62,7 +63,7 @@ onMounted(() => {
       const selected = props.snapshot.selectedPlace?.id === place.id;
       L.circleMarker([place.latitude, place.longitude], {
         radius: selected ? 9 : 4 + place.urgency_level,
-        color: selected ? ACCENT_HEX : "#ffffff",
+        color: selected ? ACCENT_HEX : POINT_RING_HEX,
         weight: selected ? 3 : 1.5,
         fillColor: GROUP_COLORS[place.vulnerability_group] ?? GROUP_COLOR_FALLBACK,
         fillOpacity: 0.95,
@@ -83,7 +84,7 @@ onMounted(() => {
       }).addTo(map);
       L.circleMarker([event.latitude, event.longitude], {
         radius: 6,
-        color: "#ffffff",
+        color: POINT_RING_HEX,
         weight: 2,
         fillColor: color,
         fillOpacity: 1,

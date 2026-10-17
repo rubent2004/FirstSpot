@@ -121,7 +121,9 @@ const scopeOptions = computed<ScopeOption[]>(() => [
   },
   {
     value: "selected",
-    label: fillMessage(d.value.scopes.selected, { name: props.selectedName ?? "" }),
+    label: props.selectedName
+      ? fillMessage(d.value.scopes.selected, { name: props.selectedName })
+      : d.value.scopeSelectedNone,
     count: counts.value.selected,
     disabledReason: props.scopeContext.selectedCode !== null ? null : d.value.noSelection,
   },

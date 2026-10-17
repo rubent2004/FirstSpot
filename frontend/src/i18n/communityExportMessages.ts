@@ -8,6 +8,7 @@ export interface ExportDialogMessages {
   scopeLegend: string;
   formats: Record<ExportFormat, { name: string; type: string; purpose: string }>;
   scopes: Record<ExportScope, string>;
+  scopeSelectedNone: string;
   rows: string;
   noFilter: string;
   noSelection: string;
@@ -61,6 +62,7 @@ export const EXPORT_ES: ExportDialogMessages = {
     selected: "Distrito abierto: {name}",
     all: "Todos los distritos",
   },
+  scopeSelectedNone: "Distrito abierto",
   rows: "{n} filas",
   noFilter: "No hay filtros activos",
   noSelection: "Abre un distrito para exportarlo solo",
@@ -126,6 +128,7 @@ export const EXPORT_EN: ExportDialogMessages = {
     selected: "Open district: {name}",
     all: "All districts",
   },
+  scopeSelectedNone: "Open district",
   rows: "{n} rows",
   noFilter: "No filters are active",
   noSelection: "Open a district to export it alone",
