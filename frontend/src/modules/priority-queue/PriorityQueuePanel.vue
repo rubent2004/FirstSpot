@@ -16,10 +16,7 @@ import {
   type VulnerabilityGroup,
 } from "../../api/client";
 import Icon0 from "../../components/Icon0.vue";
-import {
-  CATEGORY_ICON_MAP,
-  STATUS_ICON_MAP,
-} from "../../components/icons0Registry";
+import { CATEGORY_ICON_MAP } from "../../components/icons0Registry";
 import { useI18n } from "../../i18n/useI18n";
 import {
   exposedPopulationState,
@@ -352,12 +349,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn
-          :label="t.queue.colScore"
-          width="72"
-          sortable
-          prop="priority_score"
-        >
+        <ElTableColumn :label="t.queue.colScore" width="84" prop="priority_score">
           <template #default="{ row }">
             <div
               class="priority-cell"
@@ -378,7 +370,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colPlace" min-width="170">
+        <ElTableColumn :label="t.queue.colPlace" min-width="164">
           <template #default="{ row }">
             <div class="place-cell">
               <div class="place-title-line">
@@ -445,7 +437,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colUrgency" width="80">
+        <ElTableColumn :label="t.queue.colUrgency" width="84">
           <template #default="{ row }">
             <div
               class="urgency-reading"
@@ -485,25 +477,17 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colStatus" width="92">
+        <ElTableColumn :label="t.queue.colStatus" width="88">
           <template #default="{ row }">
             <ElTag
               size="small"
               :type="getStatusTagType(row.attention_status)"
               class="status-tag"
             >
-              <span class="status-tag-inner">
-                <Icon0
-                  :name="STATUS_ICON_MAP[row.attention_status as AttentionStatus]"
-                  :size="12"
-                />
-                <span>
-                  {{
-                    t.statuses[row.attention_status as AttentionStatus] ??
-                    row.attention_status
-                  }}
-                </span>
-              </span>
+              {{
+                t.statuses[row.attention_status as AttentionStatus] ??
+                row.attention_status
+              }}
             </ElTag>
           </template>
         </ElTableColumn>
@@ -847,12 +831,6 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   color: var(--eoc-text-muted);
 }
 
-.status-tag-inner {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
 :deep(.el-table) {
   --el-table-bg-color: var(--eoc-bg-panel);
   --el-table-tr-bg-color: var(--eoc-bg-panel);
@@ -862,6 +840,20 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   --el-table-header-text-color: var(--eoc-text-secondary);
   --el-table-row-hover-bg-color: var(--eoc-bg-hover);
   background-color: var(--eoc-bg-panel);
+}
+
+:deep(.el-table .cell) {
+  padding: 0 8px;
+}
+
+/* A header that outgrows its column must shorten sideways, never get sliced in
+   half by the 24px header row: that vertical clip is how "5496 pob. estimada"
+   became unreadable. Cells keep wrapping, because an unknown exposure reading
+   needs its full reason */
+:deep(.el-table th.el-table__cell .cell) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 :deep(.el-table th.el-table__cell) {

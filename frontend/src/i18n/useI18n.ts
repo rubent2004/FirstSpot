@@ -142,7 +142,6 @@ export interface I18nMessages {
     colUrgency: string;
     colExposed: string;
     colStatus: string;
-    colAction: string;
     triageAction: string;
     quickDispatch: string;
     showingCount: string;
@@ -163,7 +162,6 @@ export interface I18nMessages {
     nearbyHint: string;
   };
   exposure: {
-    queueLabel: string;
     panelTitle: string;
     radiusLabel: string;
     noCoverage: string;
@@ -192,7 +190,6 @@ export interface I18nMessages {
     fieldGroup: string;
     fieldZoneCoords: string;
     fieldCluster: string;
-    clusterNeighborsText: string;
     formStatusLabel: string;
     statusPendingBtn: string;
     statusInProgressBtn: string;
@@ -355,7 +352,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       colUrgency: "Urgencia",
       colExposed: "Pob. estimada",
       colStatus: "Estado",
-      colAction: "Acción",
       triageAction: "Evaluar",
       quickDispatch: "Despachar",
       showingCount: "lugares priorizados",
@@ -373,7 +369,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
         "Otros lugares vulnerables a menos de 500 metros de este punto: una sola salida puede cubrirlos.",
     },
     exposure: {
-      queueLabel: "pob. estimada",
       panelTitle: "Población Expuesta Estimada",
       radiusLabel: "Radio",
       noCoverage: "sin cobertura censal",
@@ -404,7 +399,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       fieldGroup: "Población Objetivo",
       fieldZoneCoords: "Municipio y Coordenadas",
       fieldCluster: "Concentración en Entorno",
-      clusterNeighborsText: "lugares vulnerables en radio de impacto inmediato (500m)",
       formStatusLabel: "Estado de Despacho y Operación en Terreno",
       statusPendingBtn: "Pendiente de Despacho",
       statusInProgressBtn: "Unidad en Camino / Terreno",
@@ -602,7 +596,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       colUrgency: "Urgency",
       colExposed: "Exposed pop.",
       colStatus: "Status",
-      colAction: "Action",
       triageAction: "Triage",
       quickDispatch: "Dispatch",
       showingCount: "prioritized places",
@@ -620,7 +613,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
         "Other vulnerable places within 500 metres of this point: one trip can cover them.",
     },
     exposure: {
-      queueLabel: "est. population",
       panelTitle: "Estimated Exposed Population",
       radiusLabel: "Radius",
       noCoverage: "no census coverage",
@@ -651,7 +643,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       fieldGroup: "Target Population",
       fieldZoneCoords: "Municipality & Coordinates",
       fieldCluster: "Cluster Concentration",
-      clusterNeighborsText: "vulnerable facilities within immediate impact radius (500m)",
       formStatusLabel: "Dispatch Status & Field Operations",
       statusPendingBtn: "Pending Dispatch",
       statusInProgressBtn: "Units En Route / On Site",
