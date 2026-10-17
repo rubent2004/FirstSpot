@@ -35,6 +35,25 @@ useTourActions({
     the score header. The same text ships in every export and in the PDF.
   -->
   <InfoPopover v-model:open="open" :label="t.community.honesty.more" align="end">
-    <HonestyContent :district-count="districtCount" />
+    <div class="limits-body">
+      <HonestyContent :district-count="districtCount" />
+    </div>
   </InfoPopover>
 </template>
+
+<style scoped>
+/*
+ * The trigger sits in the list's column header, which is an uppercase,
+ * letter-spaced, no-wrap label row. The popover is its child, so without this
+ * reset the limits inherit all three and run off the panel's edge.
+ */
+.limits-body {
+  white-space: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--eoc-fw-regular, 400);
+  font-size: var(--eoc-fs-body);
+  color: var(--eoc-text-primary);
+  overflow-wrap: anywhere;
+}
+</style>
