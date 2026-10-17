@@ -8,7 +8,7 @@ re-run converges instead of duplicating.
 The defects enforced here are listed in
 ``app.modules.census.domain.population`` and
 ``app.modules.census.domain.geo_codes``; the thresholds in
-``app.modules.census.domain.disclosure``. Three further rules are specific to
+``app.core.privacy``. Three further rules are specific to
 loading:
 
 * **Census segments carry no population.** The segment layer publishes geometry
@@ -35,7 +35,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.census.domain.disclosure import (
+from app.core.privacy import (
     CENSUS_SUPPRESSION_POLICY,
     SuppressionPolicy,
     suppress_measure,

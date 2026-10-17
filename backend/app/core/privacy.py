@@ -1,15 +1,26 @@
-"""Statistical disclosure control: minimum publishable cell size.
+"""Statistical disclosure control: the single minimum-publishable-cell threshold.
 
-The Ley Especial de Estadistica y Censos (Decreto Legislativo 904), Arts. 24, 25,
-33 and 35, imposes statistical secrecy, aggregate-only dissemination, and a
-**minimum of three units per published cell**. No license is published for the
-CPV 2024 items, so the binding regime is legal rather than contractual: a derived
-cell holding fewer than three units must be suppressed before it can leave the API.
+This is cross-cutting privacy machinery, not census machinery. Two independent
+obligations of this system reduce to the same comparison, so they share one
+implementation and this module deliberately imports nothing from any feature
+module:
 
-The same mechanism is the k-anonymity suppression required for voluntary location
-sharing: instantiate :class:`SuppressionPolicy` with the desired ``minimum_units``
-instead of writing a second threshold comparison. This module therefore depends on
-nothing census-specific and is the single place where a publication threshold lives.
+**Statistical secrecy (census dissemination).** The Ley Especial de Estadistica y
+Censos (Decreto Legislativo 904), Arts. 24, 25, 33 and 35, imposes statistical
+secrecy, aggregate-only dissemination, and a **minimum of three units per
+published cell**. No license is published for the CPV 2024 items, so the binding
+regime is legal rather than contractual: a derived cell holding fewer than three
+units must be suppressed before it can leave the API. That is
+:data:`CENSUS_SUPPRESSION_POLICY`.
+
+**k-anonymity (voluntary anonymous location sharing).** An aggregated cell of
+self-reported locations must not single anybody out either. That path is
+``SuppressionPolicy(minimum_units=5, label="k-anonymity k=5")`` -- the same rule
+at a stricter threshold, not a second threshold comparison written again.
+
+The one invariant both regimes share is enforced by :func:`suppress_measure`: a
+withheld count and its derived share are withheld **together**, because a
+percentage published against a known denominator reconstructs the count exactly.
 """
 
 from collections.abc import Mapping

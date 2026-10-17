@@ -21,7 +21,7 @@ from app.modules.census.domain.catalog import (
     CensusLayer,
     layer_by_filename,
 )
-from app.modules.census.domain.disclosure import (
+from app.core.privacy import (
     CENSUS_SUPPRESSION_POLICY,
     MINIMUM_PUBLISHABLE_UNITS,
     STATISTICAL_SECRECY_REFERENCE,
