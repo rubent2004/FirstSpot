@@ -49,7 +49,6 @@ from app.modules.census.domain.geo_codes import CENSUS_SOURCE_ATTRIBUTION
 from app.modules.prioritization.domain.vulnerability import (
     DECLARED_GAPS,
     DIMENSION_KEY,
-    SCORE_INTERPRETATION,
     UNIFORM_DISTRICT_SCORE_ASSUMPTION,
     UNIT_OF_ANALYSIS,
     VULNERABILITY_VARIABLES,
