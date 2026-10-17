@@ -1,12 +1,8 @@
 <script setup lang="ts">
+import { computed, ref, watch } from "vue";
 import {
   ElButton,
-  ElInput,
-  ElOption,
-  ElRadioButton,
-  ElRadioGroup,
-  ElSelect,
-  ElSwitch,
+  ElPagination,
   ElTable,
   ElTableColumn,
   ElTag,
@@ -24,22 +20,46 @@ import {
   STATUS_ICON_MAP,
 } from "../../components/icons0Registry";
 import { useI18n } from "../../i18n/useI18n";
-import type { PlaceFilters } from "../../stores/usePrioritizationStore";
 
 const props = defineProps<{
   places: PlaceRead[];
   selectedPlace: PlaceRead | null;
-  filters: PlaceFilters;
   isLoading: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "filter-change"): void;
-  (e: "reset-filters"): void;
   (e: "select-place", place: PlaceRead, openDrawer: boolean): void;
 }>();
 
-const { t, localizePlaceName } = useI18n();
+const { t, locale, localizePlaceName } = useI18n();
+const currentPage = ref(1);
+const pageSize = 10;
+const visiblePlaces = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return props.places.slice(start, start + pageSize);
+});
+const pageSummary = computed(() => {
+  const total = props.places.length;
+  if (total === 0) return "0";
+  const first = (currentPage.value - 1) * pageSize + 1;
+  const last = Math.min(currentPage.value * pageSize, total);
+  return locale.value === "es"
+    ? `${first}–${last} de ${total}`
+    : `${first}–${last} of ${total}`;
+});
+
+watch(
+  () => [props.places, props.selectedPlace?.id] as const,
+  ([places, selectedPlaceId]) => {
+    const selectedIndex = selectedPlaceId
+      ? places.findIndex((place) => place.id === selectedPlaceId)
+      : -1;
+    currentPage.value = selectedIndex >= 0
+      ? Math.floor(selectedIndex / pageSize) + 1
+      : 1;
+  },
+  { immediate: true },
+);
 
 function getStatusTagType(
   status: AttentionStatus,
@@ -92,96 +112,15 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           {{ t.queue.subtitle }}
         </p>
       </div>
-      <ElButton
-        size="small"
-        class="reset-btn"
-        @click="emit('reset-filters')"
-      >
-        <template #icon>
-          <Icon0 name="rotate_ccw" :size="13" />
-        </template>
-        {{ t.queue.resetFilters }}
-      </ElButton>
-    </div>
-
-    <div class="filters-grid">
-      <ElInput
-        v-model="props.filters.search"
-        :placeholder="t.queue.searchPlaceholder"
-        clearable
-        size="small"
-        data-testid="search-input"
-        @input="emit('filter-change')"
-        @clear="emit('filter-change')"
-      >
-        <template #prefix>
-          <Icon0 name="search" :size="13" />
-        </template>
-      </ElInput>
-
-      <ElSelect
-        v-model="props.filters.vulnerabilityGroup"
-        :placeholder="t.queue.allGroups"
-        clearable
-        size="small"
-        @change="emit('filter-change')"
-      >
-        <ElOption
-          v-for="(label, groupKey) in t.groups"
-          :key="groupKey"
-          :label="label"
-          :value="groupKey"
-        />
-      </ElSelect>
-
-      <ElSelect
-        v-model="props.filters.category"
-        :placeholder="t.queue.allCategories"
-        clearable
-        size="small"
-        @change="emit('filter-change')"
-      >
-        <ElOption
-          v-for="(label, catKey) in t.categories"
-          :key="catKey"
-          :label="label"
-          :value="catKey"
-        />
-      </ElSelect>
-
-      <div class="status-filter-row">
-        <ElRadioGroup
-          v-model="props.filters.attentionStatus"
-          size="small"
-          @change="emit('filter-change')"
-        >
-          <ElRadioButton value="">{{ t.queue.statusAll }}</ElRadioButton>
-          <ElRadioButton value="pending">
-            {{ t.queue.statusPending }}
-          </ElRadioButton>
-          <ElRadioButton value="in_progress">
-            {{ t.queue.statusInProgress }}
-          </ElRadioButton>
-          <ElRadioButton value="attended">
-            {{ t.queue.statusAttended }}
-          </ElRadioButton>
-        </ElRadioGroup>
-
-        <ElSwitch
-          v-model="props.filters.includeAttendedInHeatmap"
-          :active-text="t.queue.showAttendedHeatmap"
-          size="small"
-          @change="emit('filter-change')"
-        />
-      </div>
     </div>
 
     <div class="table-container">
       <ElTable
-        :data="props.places"
+        :data="visiblePlaces"
         v-loading="props.isLoading"
         stripe
         highlight-current-row
+        row-key="id"
         :row-class-name="tableRowClassName"
         height="100%"
         :empty-text="t.queue.emptyText"
@@ -194,7 +133,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
               class="rank-badge"
               :class="{ 'rank-top-three': $index < 3 }"
             >
-              {{ $index + 1 }}
+              {{ (currentPage - 1) * pageSize + $index + 1 }}
             </span>
           </template>
         </ElTableColumn>
@@ -241,6 +180,15 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                 </strong>
               </div>
               <div class="place-badges">
+                <span
+                  v-if="props.selectedPlace?.id === row.id"
+                  class="selected-place-indicator"
+                  data-testid="selected-place-indicator"
+                  :aria-label="locale === 'es' ? 'Lugar marcado en el mapa' : 'Place marked on the map'"
+                >
+                  <Icon0 name="locate_fixed" :size="11" />
+                  {{ locale === "es" ? "En el mapa" : "On map" }}
+                </span>
                 <ElTag size="small" effect="plain">
                   {{
                     t.categories[row.category as PlaceCategory] ?? row.category
@@ -315,6 +263,21 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
         </ElTableColumn>
       </ElTable>
     </div>
+    <div class="queue-pagination">
+      <span class="queue-page-range">{{ pageSummary }}</span>
+      <ElPagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="props.places.length"
+        :pager-count="5"
+        layout="prev, pager, next"
+        background
+        size="small"
+        :hide-on-single-page="true"
+        :aria-label="locale === 'es' ? 'Paginación de lugares priorizados' : 'Prioritized places pagination'"
+        data-testid="places-pagination"
+      />
+    </div>
   </section>
 </template>
 
@@ -323,10 +286,11 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
   background: var(--eoc-bg-panel);
   border-left: 1px solid var(--eoc-border);
-  padding: 10px 14px;
-  gap: 8px;
+  padding: 9px 11px;
+  gap: 7px;
   box-sizing: border-box;
 }
 
@@ -378,43 +342,42 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   color: var(--eoc-text-muted);
 }
 
-.reset-btn {
-  background: var(--eoc-bg-card);
-  border-color: var(--eoc-border);
-  color: var(--eoc-text-secondary);
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-.reset-btn:hover {
-  background: var(--eoc-bg-hover);
-  color: var(--eoc-text-primary);
-  border-color: var(--eoc-accent);
-}
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 8px;
-}
-
-.status-filter-row {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 2px;
-}
-
 .table-container {
   flex: 1;
-  min-height: 360px;
+  min-width: 0;
+  min-height: 240px;
   overflow: hidden;
   border: 1px solid var(--eoc-border);
   border-radius: 8px;
   background: var(--eoc-bg-panel);
+}
+
+.queue-pagination {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.queue-page-range {
+  color: var(--eoc-text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.queue-pagination :deep(.el-pagination) {
+  --el-pagination-button-bg-color: var(--eoc-bg-card);
+  --el-pagination-hover-color: var(--eoc-accent);
+  --el-pagination-text-color: var(--eoc-text-secondary);
+  padding: 0;
+}
+
+.queue-pagination :deep(.el-pager li.is-active) {
+  background-color: var(--eoc-accent) !important;
+  color: var(--eoc-text-inverse) !important;
 }
 
 .rank-badge {
@@ -598,6 +561,26 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   background-color: var(--eoc-bg-active) !important;
 }
 
+:deep(.is-selected-place-row > td:first-child) {
+  box-shadow: inset 4px 0 0 var(--eoc-accent);
+}
+
+.selected-place-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+  padding: 2px 6px;
+  border: 1px solid var(--eoc-accent);
+  border-radius: 4px;
+  background: var(--eoc-brand-lime);
+  color: #1e1e1e;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 :deep(.el-input__wrapper),
 :deep(.el-select__wrapper) {
   background-color: var(--eoc-bg-card) !important;
@@ -607,6 +590,12 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
 :deep(.el-input__inner) {
   color: var(--eoc-text-primary) !important;
+}
+
+:deep(.el-pagination button:focus-visible),
+:deep(.el-pager li:focus-visible) {
+  outline: 2px solid var(--eoc-accent);
+  outline-offset: 1px;
 }
 
 :deep(.el-radio-button__inner) {

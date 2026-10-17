@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Geo-Prioridad Vulnerable API",
+    "title": "FirstSpot API",
     "description": "Geospatial prioritization platform for humanitarian response, civil protection, and healthcare institutions.",
     "version": "0.1.0"
   },
@@ -466,8 +466,13 @@
           "places"
         ],
         "summary": "Update institutional triage fields and recalculate priority score",
-        "description": "Update attention status, urgency level, vulnerable population count, or notes.",
+        "description": "Record authenticated triage and an immutable public activity entry.",
         "operationId": "updatePlaceTriage",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "place_id",
@@ -513,10 +518,398 @@
           }
         }
       }
+    },
+    "/api/v1/places/{place_id}/activities": {
+      "get": {
+        "tags": [
+          "place-activity"
+        ],
+        "summary": "Read the public, attributed activity timeline for a place",
+        "operationId": "listPlaceActivities",
+        "parameters": [
+          {
+            "name": "place_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Place Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlaceActivityRead"
+                  },
+                  "title": "Response Listplaceactivities"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "place-activity"
+        ],
+        "summary": "Append an activity with the verified organization and individual author",
+        "operationId": "createPlaceActivity",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "place_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Place Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceActivityCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceActivityRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/institutions/register": {
+      "post": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Submit an institution for independent verification",
+        "description": "Create a pending organization and its owner account.",
+        "operationId": "registerInstitution",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstitutionRegistrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionRegistrationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/institutions/login": {
+      "post": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Sign in as an individual institutional account",
+        "description": "Authenticate with Argon2id password hash and issue a short-lived token.",
+        "operationId": "loginInstitutionUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/institutions/me": {
+      "get": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Get the signed-in institution account",
+        "operationId": "getInstitutionAccount",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionAccountRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/institutions/verification": {
+      "post": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Verify or reject an organization after independent review",
+        "description": "Moderate a registration; never treat its public reference code as proof.",
+        "operationId": "reviewInstitutionRegistration",
+        "parameters": [
+          {
+            "name": "X-Platform-Admin-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Platform-Admin-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionPublicRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/institutions/invites": {
+      "post": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Create a one-time invitation for a colleague",
+        "description": "Issue a high-entropy invitation, storing only its SHA-256 digest.",
+        "operationId": "createInstitutionInvite",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteCreateRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/institutions/join": {
+      "post": {
+        "tags": [
+          "institutions"
+        ],
+        "summary": "Join a verified institution using a one-time invitation",
+        "description": "Redeem a single-use invite and create an individual member account.",
+        "operationId": "joinInstitution",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstitutionJoinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ActivityOrganizationRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "sector": {
+            "type": "string",
+            "title": "Sector"
+          },
+          "verification_status": {
+            "type": "string",
+            "title": "Verification Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "country",
+          "sector",
+          "verification_status"
+        ],
+        "title": "ActivityOrganizationRead"
+      },
       "AttentionStatus": {
         "type": "string",
         "enum": [
@@ -612,7 +1005,7 @@
             "type": "string",
             "title": "Service",
             "description": "Human-readable application service name.",
-            "default": "Geo-Prioridad Vulnerable API"
+            "default": "FirstSpot API"
           },
           "version": {
             "type": "string",
@@ -722,6 +1115,448 @@
         ],
         "title": "HeatmapResponse",
         "description": "Combined heatmap points, compact [lat, lon, intensity] matrix, and KPIs."
+      },
+      "InstitutionAccountRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "title": "Role"
+          },
+          "institution": {
+            "$ref": "#/components/schemas/InstitutionPublicRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "email",
+          "role",
+          "institution"
+        ],
+        "title": "InstitutionAccountRead"
+      },
+      "InstitutionJoinRequest": {
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 20,
+            "title": "Invite Code"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Display Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invite_code",
+          "display_name",
+          "email",
+          "password"
+        ],
+        "title": "InstitutionJoinRequest"
+      },
+      "InstitutionPublicRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "sector": {
+            "type": "string",
+            "title": "Sector"
+          },
+          "registration_code": {
+            "type": "string",
+            "title": "Registration Code"
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "verified",
+              "rejected"
+            ],
+            "title": "Verification Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "country",
+          "sector",
+          "registration_code",
+          "verification_status",
+          "created_at",
+          "verified_at"
+        ],
+        "title": "InstitutionPublicRead"
+      },
+      "InstitutionRegistrationRead": {
+        "properties": {
+          "registration_code": {
+            "type": "string",
+            "title": "Registration Code"
+          },
+          "verification_status": {
+            "type": "string",
+            "const": "pending",
+            "title": "Verification Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registration_code",
+          "verification_status",
+          "message"
+        ],
+        "title": "InstitutionRegistrationRead"
+      },
+      "InstitutionRegistrationRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Country"
+          },
+          "sector": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Sector"
+          },
+          "contact_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Contact Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "country",
+          "sector",
+          "contact_name",
+          "email",
+          "password"
+        ],
+        "title": "InstitutionRegistrationRequest",
+        "description": "Request an organization listing; the generated code only tracks review."
+      },
+      "InviteCreateRead": {
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "title": "Invite Code"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invite_code",
+          "expires_at",
+          "message"
+        ],
+        "title": "InviteCreateRead"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          },
+          "account": {
+            "$ref": "#/components/schemas/InstitutionAccountRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in",
+          "account"
+        ],
+        "title": "LoginResponse"
+      },
+      "PlaceActivityCreate": {
+        "properties": {
+          "activity_type": {
+            "$ref": "#/components/schemas/PlaceActivityType",
+            "default": "update"
+          },
+          "attention_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttentionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "urgency_level": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Urgency Level"
+          },
+          "estimated_vulnerable_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Vulnerable Count"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "PlaceActivityCreate",
+        "description": "One new public timeline entry; entries are never edited in place."
+      },
+      "PlaceActivityRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "place_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Place Id"
+          },
+          "activity_type": {
+            "$ref": "#/components/schemas/PlaceActivityType"
+          },
+          "attention_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttentionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "urgency_level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Urgency Level"
+          },
+          "estimated_vulnerable_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Vulnerable Count"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/ActivityOrganizationRead"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "place_id",
+          "activity_type",
+          "attention_status",
+          "urgency_level",
+          "estimated_vulnerable_count",
+          "notes",
+          "actor_name",
+          "organization",
+          "created_at"
+        ],
+        "title": "PlaceActivityRead"
+      },
+      "PlaceActivityType": {
+        "type": "string",
+        "enum": [
+          "reported",
+          "en_route",
+          "on_scene",
+          "needs_support",
+          "resource_available",
+          "update",
+          "resolved"
+        ],
+        "title": "PlaceActivityType",
+        "description": "Operational activity labels shared by responders, hospitals, and NGOs."
       },
       "PlaceCategory": {
         "type": "string",
@@ -907,6 +1742,11 @@
             ],
             "title": "Institution Notes",
             "description": "Field notes entered by response coordinators."
+          },
+          "activity_type": {
+            "$ref": "#/components/schemas/PlaceActivityType",
+            "description": "Kind of attributed action to append to the public place timeline.",
+            "default": "update"
           }
         },
         "type": "object",
@@ -928,7 +1768,13 @@
           "department": {
             "type": "string",
             "title": "Department",
-            "description": "Department in El Salvador."
+            "description": "Department, province, or region."
+          },
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "description": "Country name in Latin America.",
+            "default": "El Salvador"
           },
           "latitude": {
             "type": "number",
@@ -1128,6 +1974,42 @@
         ],
         "title": "ValidationError"
       },
+      "VerificationDecision": {
+        "properties": {
+          "registration_code": {
+            "type": "string",
+            "maxLength": 24,
+            "minLength": 8,
+            "title": "Registration Code"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "verify",
+              "reject"
+            ],
+            "title": "Decision"
+          },
+          "reviewer_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registration_code",
+          "decision"
+        ],
+        "title": "VerificationDecision"
+      },
       "VulnerabilityGroup": {
         "type": "string",
         "enum": [
@@ -1138,6 +2020,12 @@
         ],
         "title": "VulnerabilityGroup",
         "description": "High-level vulnerability axis for institutional triage."
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

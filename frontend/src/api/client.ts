@@ -7,7 +7,6 @@ import {
   OPENAPI_OPERATION_IDS,
   OPENAPI_VERSION,
   syncPlacesFromOverpass,
-  updatePlaceTriage,
 } from "./generated";
 import type {
   AttentionStatus,
@@ -25,6 +24,14 @@ import type {
   SyncPlacesResponse,
   SyncZoneRequest,
   VulnerabilityGroup,
+  InstitutionAccountRead,
+  InstitutionJoinRequest,
+  InstitutionRegistrationRead,
+  InstitutionRegistrationRequest,
+  InviteCreateRead,
+  LoginRequest,
+  LoginResponse,
+  PlaceActivityRead,
 } from "./generated";
 
 export {
@@ -36,7 +43,6 @@ export {
   OPENAPI_OPERATION_IDS,
   OPENAPI_VERSION,
   syncPlacesFromOverpass,
-  updatePlaceTriage,
 };
 
 export type {
@@ -55,7 +61,86 @@ export type {
   SyncPlacesResponse,
   SyncZoneRequest,
   VulnerabilityGroup,
+  InstitutionAccountRead,
+  InstitutionJoinRequest,
+  InstitutionRegistrationRead,
+  InstitutionRegistrationRequest,
+  InviteCreateRead,
+  LoginRequest,
+  LoginResponse,
+  PlaceActivityRead,
 };
+
+async function requestInstitutionApi<T>(
+  path: string,
+  options: { method?: string; body?: unknown; token?: string } = {},
+): Promise<T> {
+  const baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "";
+  const response = await globalThis.fetch(`${baseUrl}/api/v1${path}`, {
+    method: options.method ?? "GET",
+    headers: {
+      Accept: "application/json",
+      ...(options.body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+    },
+    ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
+  });
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const payload = (await response.json()) as { detail?: unknown };
+      if (typeof payload.detail === "string") detail = payload.detail;
+      else if (Array.isArray(payload.detail)) {
+        detail = payload.detail
+          .map((item) => typeof item === "object" && item && "msg" in item ? String(item.msg) : "")
+          .filter(Boolean)
+          .join("; ") || detail;
+      }
+    } catch {
+      // Keep the HTTP status when the API returns a non-JSON error.
+    }
+    throw new Error(detail);
+  }
+  return (await response.json()) as T;
+}
+
+export function registerInstitution(
+  body: InstitutionRegistrationRequest,
+): Promise<InstitutionRegistrationRead> {
+  return requestInstitutionApi("/institutions/register", { method: "POST", body });
+}
+
+export function loginInstitution(body: LoginRequest): Promise<LoginResponse> {
+  return requestInstitutionApi("/institutions/login", { method: "POST", body });
+}
+
+export function joinInstitution(body: InstitutionJoinRequest): Promise<LoginResponse> {
+  return requestInstitutionApi("/institutions/join", { method: "POST", body });
+}
+
+export function getInstitutionAccount(token: string): Promise<InstitutionAccountRead> {
+  return requestInstitutionApi("/institutions/me", { token });
+}
+
+export function createInstitutionInvite(token: string): Promise<InviteCreateRead> {
+  return requestInstitutionApi("/institutions/invites", { method: "POST", token });
+}
+
+export function listPlaceActivities(placeId: string): Promise<PlaceActivityRead[]> {
+  return requestInstitutionApi(`/places/${encodeURIComponent(placeId)}/activities?limit=50`);
+}
+
+export function updatePlaceTriage(
+  placeId: string,
+  body: PlaceTriageUpdate,
+  token: string,
+): Promise<PlaceRead> {
+  return requestInstitutionApi(`/places/${encodeURIComponent(placeId)}`, {
+    method: "PATCH",
+    body,
+    token,
+  });
+}
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   hospital: "Hospital",
@@ -217,4 +302,10 @@ export const apiClient = {
   updatePlaceTriage,
   getActiveHazards,
   geocodeLocation,
+  registerInstitution,
+  loginInstitution,
+  joinInstitution,
+  getInstitutionAccount,
+  createInstitutionInvite,
+  listPlaceActivities,
 };

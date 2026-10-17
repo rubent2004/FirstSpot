@@ -1,0 +1,139 @@
+:root {
+  --gis-font: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --gis-mono: "JetBrains Mono", Consolas, monospace;
+
+  /* RustGIS Light Tokens */
+  --gis-header: #eef1f5;
+  --gis-ribbon: #ffffff;
+  --gis-tab-strip: #eef1f5;
+  --gis-canvas: #e4e8ee;
+  --gis-pane: #fbfcfd;
+  --gis-pane-header: #f3f5f8;
+  --gis-border: #dde2e9;
+  --gis-border-strong: #c3cad4;
+  --gis-text: #1f2630;
+  --gis-text-dim: #5e6977;
+  --gis-text-disabled: #a9b1bc;
+  --gis-icon: #3a4554;
+  --gis-hover: #e9f0fb;
+  --gis-pressed: #d4e2f8;
+  --gis-checked: #dce8fa;
+  --gis-accent: #2563eb;
+  --gis-accent-text: #1d4ec4;
+  --gis-on-accent: #ffffff;
+  --gis-input: #ffffff;
+  --gis-input-border: #c6cdd7;
+  --gis-group-label: #707a88;
+  --gis-status-bar: #f3f5f8;
+  --gis-selection: #cfe0fc;
+  --gis-menu: #ffffff;
+  --gis-shadow: rgba(0, 0, 0, 0.08);
+
+  /* Status Colors */
+  --gis-green: #169a5a;
+  --gis-red: #d13c3c;
+  --gis-amber: #e59e1a;
+  --gis-blue: #2563eb;
+
+  /* RustGIS Brand & Context */
+  --gis-brand: #b84a2c;
+  --gis-brand-dark: #963a22;
+  --gis-context: #0e9384;
+  --gis-context-tint: #e3f5f2;
+}
+
+.dark-theme {
+  --gis-header: #171b21;
+  --gis-ribbon: #242931;
+  --gis-tab-strip: #171b21;
+  --gis-canvas: #12151a;
+  --gis-pane: #1e232a;
+  --gis-pane-header: #242931;
+  --gis-border: #343b45;
+  --gis-border-strong: #48515d;
+  --gis-text: #e6eaef;
+  --gis-text-dim: #9aa4b1;
+  --gis-text-disabled: #5c6571;
+  --gis-icon: #c9d1db;
+  --gis-hover: #2b3340;
+  --gis-pressed: #374151;
+  --gis-checked: #2d3748;
+  --gis-accent: #3b82f6;
+  --gis-accent-text: #60a5fa;
+  --gis-on-accent: #ffffff;
+  --gis-input: #1a1f26;
+  --gis-input-border: #404854;
+  --gis-group-label: #8b95a5;
+  --gis-status-bar: #171b21;
+  --gis-selection: #1e3a5f;
+  --gis-menu: #242931;
+  --gis-shadow: rgba(0, 0, 0, 0.35);
+
+  --gis-brand: #c95434;
+  --gis-brand-dark: #b84a2c;
+  --gis-context: #14b8a6;
+  --gis-context-tint: #133330;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--gis-font);
+  font-size: 12px;
+  color: var(--gis-text);
+  background-color: var(--gis-canvas);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--gis-text);
+  background: var(--gis-input);
+  border: 1px solid var(--gis-input-border);
+  border-radius: 3px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gis-accent);
+}
+
+/* Custom Scrollbar styled for GIS apps */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gis-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gis-text-dim);
+}

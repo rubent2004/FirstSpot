@@ -50,12 +50,50 @@ up-bg: db-up
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p .logs
-    if [[ -f .logs/backend.pid ]] && kill -0 "$(<.logs/backend.pid)" 2>/dev/null; then
-        echo "Backend already running (PID $(<.logs/backend.pid))"
+    backend_health="http://127.0.0.1:8000/api/v1/health"
+    backend_ready=false
+
+    # Detect a manually-started API too, not just a PID file from a previous run.
+    for _ in {1..3}; do
+        if curl --silent --show-error --fail --max-time 2 "$backend_health" >/dev/null 2>&1; then
+            backend_ready=true
+            break
+        fi
+        sleep 1
+    done
+
+    if [[ "$backend_ready" == true ]]; then
+        echo "Backend is healthy at http://localhost:8000 (leaving it running)"
     else
+        if [[ -f .logs/backend.pid ]]; then
+            old_pid="$(<.logs/backend.pid)"
+            if kill -0 "$old_pid" 2>/dev/null; then
+                echo "Backend PID $old_pid is not healthy; restarting the tracked process..."
+                kill "$old_pid" 2>/dev/null || true
+                sleep 1
+            fi
+            rm -f .logs/backend.pid
+        fi
+
         nohup uv run --directory backend uvicorn app.main:app --host 0.0.0.0 --port 8000 > .logs/backend.log 2>&1 &
-        echo $! > .logs/backend.pid
-        echo "Started Backend in background (PID $(<.logs/backend.pid)) -> http://localhost:8000"
+        backend_pid=$!
+        echo "$backend_pid" > .logs/backend.pid
+        echo "Started Backend (PID $backend_pid); waiting for health check..."
+
+        for _ in {1..30}; do
+            if curl --silent --show-error --fail --max-time 2 "$backend_health" >/dev/null 2>&1; then
+                backend_ready=true
+                break
+            fi
+            sleep 1
+        done
+
+        if [[ "$backend_ready" != true ]]; then
+            echo "Backend did not become healthy. Recent log output:"
+            tail -n 40 .logs/backend.log || true
+            exit 1
+        fi
+        echo "Backend is healthy -> http://localhost:8000"
     fi
     if [[ -f .logs/frontend.pid ]] && kill -0 "$(<.logs/frontend.pid)" 2>/dev/null; then
         echo "Frontend already running (PID $(<.logs/frontend.pid))"
@@ -64,6 +102,12 @@ up-bg: db-up
         echo $! > .logs/frontend.pid
         echo "Started Frontend in background (PID $(<.logs/frontend.pid)) -> http://localhost:5173"
     fi
+
+# One-command quick start: launch PostGIS, migrations, API, and frontend in background
+up2: up-bg
+    @echo "FirstSpot is starting in the background. Open http://localhost:5173"
+    @echo "API health is checked before startup to avoid duplicate backend processes."
+    @echo "Use 'just status' to check services and 'just down' to stop them. Logs: .logs/"
 
 # Stop background Backend/Frontend processes and shut down PostGIS container
 down:

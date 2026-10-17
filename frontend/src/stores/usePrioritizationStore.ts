@@ -15,7 +15,32 @@ import {
   type SyncPlacesResponse,
   type VulnerabilityGroup,
   type WeatherConditionRead,
+  type InstitutionAccountRead,
+  type InstitutionJoinRequest,
+  type InstitutionRegistrationRead,
+  type InstitutionRegistrationRequest,
+  type InviteCreateRead,
+  type LoginRequest,
+  type PlaceActivityRead,
 } from "../api/client";
+
+interface InstitutionSession {
+  accessToken: string;
+  expiresAt: number;
+  account: InstitutionAccountRead;
+}
+
+function readStoredInstitutionSession(): InstitutionSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem("firstsopot.institution-session");
+    if (!raw) return null;
+    const session = JSON.parse(raw) as InstitutionSession;
+    return session.expiresAt > Date.now() ? session : null;
+  } catch {
+    return null;
+  }
+}
 
 function haversineKm(
   lat1: number,
@@ -106,6 +131,10 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
 
   const selectedPlace = ref<PlaceRead | null>(null);
   const isTriageDrawerOpen = ref<boolean>(false);
+  const institutionSession = ref<InstitutionSession | null>(readStoredInstitutionSession());
+  const placeActivities = ref<PlaceActivityRead[]>([]);
+  const arePlaceActivitiesLoading = ref(false);
+  const placeActivityError = ref<string | null>(null);
 
   const filters = reactive<PlaceFilters>({
     category: "",
@@ -134,6 +163,89 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
   const isRefreshingHazards = ref(false);
   const hazardRefreshError = ref<string | null>(null);
   let latestHazardRequest = 0;
+  let latestPlacesRequest = 0;
+  let latestActivityRequest = 0;
+
+  const hasVerifiedInstitution = computed(
+    () => institutionSession.value?.account.institution.verification_status === "verified",
+  );
+
+  function saveInstitutionSession(token: string, expiresIn: number, account: InstitutionAccountRead): void {
+    institutionSession.value = {
+      accessToken: token,
+      expiresAt: Date.now() + expiresIn * 1000,
+      account,
+    };
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(
+        "firstsopot.institution-session",
+        JSON.stringify(institutionSession.value),
+      );
+    }
+  }
+
+  function logoutInstitution(): void {
+    institutionSession.value = null;
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("firstsopot.institution-session");
+    }
+  }
+
+  async function restoreInstitutionSession(): Promise<void> {
+    const existing = institutionSession.value;
+    if (!existing) return;
+    try {
+      const account = await apiClient.getInstitutionAccount(existing.accessToken);
+      institutionSession.value = { ...existing, account };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (
+        message.includes("Invalid or expired institutional session") ||
+        message.includes("Institutional account is unavailable")
+      ) {
+        logoutInstitution();
+      }
+    }
+  }
+
+  async function loginInstitution(payload: LoginRequest): Promise<void> {
+    const response = await apiClient.loginInstitution(payload);
+    saveInstitutionSession(response.access_token, response.expires_in, response.account);
+  }
+
+  async function registerInstitution(
+    payload: InstitutionRegistrationRequest,
+  ): Promise<InstitutionRegistrationRead> {
+    return apiClient.registerInstitution(payload);
+  }
+
+  async function joinInstitution(payload: InstitutionJoinRequest): Promise<void> {
+    const response = await apiClient.joinInstitution(payload);
+    saveInstitutionSession(response.access_token, response.expires_in, response.account);
+  }
+
+  async function createInstitutionInvite(): Promise<InviteCreateRead> {
+    const session = institutionSession.value;
+    if (!session) throw new Error("Inicia sesión con una institución verificada.");
+    return apiClient.createInstitutionInvite(session.accessToken);
+  }
+
+  async function fetchPlaceActivities(placeId: string): Promise<void> {
+    const requestId = ++latestActivityRequest;
+    arePlaceActivitiesLoading.value = true;
+    placeActivityError.value = null;
+    try {
+      const activities = await apiClient.listPlaceActivities(placeId);
+      if (requestId === latestActivityRequest) placeActivities.value = activities;
+    } catch (err) {
+      if (requestId === latestActivityRequest) {
+        placeActivityError.value = err instanceof Error ? err.message : "No se pudo cargar la bitácora.";
+        placeActivities.value = [];
+      }
+    } finally {
+      if (requestId === latestActivityRequest) arePlaceActivitiesLoading.value = false;
+    }
+  }
 
   const currentZone = computed<PredefinedZoneRead | undefined>(() =>
     zones.value.find((z) => z.key === selectedZoneKey.value),
@@ -251,6 +363,7 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
   }
 
   async function fetchPlacesAndHeatmap(): Promise<void> {
+    const requestId = ++latestPlacesRequest;
     isLoading.value = true;
     error.value = null;
     try {
@@ -271,6 +384,8 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
         }),
       ]);
 
+      if (requestId !== latestPlacesRequest) return;
+
       for (const p of placesList) {
         baseScoreMap.set(p.id, Number(p.priority_score));
       }
@@ -289,10 +404,12 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
         }
       }
     } catch (err) {
-      error.value =
-        err instanceof Error ? err.message : "Failed to load geospatial data";
+      if (requestId === latestPlacesRequest) {
+        error.value =
+          err instanceof Error ? err.message : "Failed to load geospatial data";
+      }
     } finally {
-      isLoading.value = false;
+      if (requestId === latestPlacesRequest) isLoading.value = false;
     }
   }
 
@@ -376,6 +493,7 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
     isLoading.value = true;
     error.value = null;
     try {
+      await restoreInstitutionSession();
       await loadZones();
       await fetchPlacesAndHeatmap();
       if (kpis.value.total_places === 0) {
@@ -405,9 +523,15 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
     payload: PlaceTriageUpdate,
   ): Promise<PlaceRead | null> {
     error.value = null;
+    const session = institutionSession.value;
+    if (!session || !hasVerifiedInstitution.value) {
+      error.value = "Inicia sesión con una organización verificada para registrar una acción.";
+      return null;
+    }
     try {
-      const updated = await apiClient.updatePlaceTriage(placeId, payload);
+      const updated = await apiClient.updatePlaceTriage(placeId, payload, session.accessToken);
       selectedPlace.value = updated;
+      await fetchPlaceActivities(placeId);
       await fetchPlacesAndHeatmap();
       return updated;
     } catch (err) {
@@ -445,6 +569,11 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
     isSyncing,
     lastSyncSummary,
     error,
+    institutionSession,
+    hasVerifiedInstitution,
+    placeActivities,
+    arePlaceActivitiesLoading,
+    placeActivityError,
     hazardScenario,
     activeHazards,
     hazardLastCheckedAt,
@@ -458,6 +587,13 @@ export const usePrioritizationStore = defineStore("prioritization", () => {
     syncZone,
     syncCustomRadius,
     initializeDashboard,
+    restoreInstitutionSession,
+    loginInstitution,
+    registerInstitution,
+    joinInstitution,
+    createInstitutionInvite,
+    logoutInstitution,
+    fetchPlaceActivities,
     selectPlace,
     savePlaceTriage,
     resetFilters,

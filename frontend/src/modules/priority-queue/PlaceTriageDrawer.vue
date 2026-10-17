@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
 import {
+  ElAlert,
   ElButton,
   ElDialog,
   ElForm,
@@ -9,6 +10,7 @@ import {
   ElInputNumber,
   ElOption,
   ElSelect,
+  ElTag,
 } from "element-plus";
 import {
   type AttentionStatus,
@@ -16,6 +18,8 @@ import {
   type PlaceRead,
   type PlaceTriageUpdate,
   type VulnerabilityGroup,
+  type PlaceActivityRead,
+  type InstitutionAccountRead,
 } from "../../api/client";
 import Icon0 from "../../components/Icon0.vue";
 import {
@@ -23,14 +27,24 @@ import {
 } from "../../components/icons0Registry";
 import { useI18n } from "../../i18n/useI18n";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean;
   place: PlaceRead | null;
-}>();
+  account?: InstitutionAccountRead | null;
+  activities?: PlaceActivityRead[];
+  activitiesLoading?: boolean;
+  activitiesError?: string | null;
+}>(), {
+  account: null,
+  activities: () => [],
+  activitiesLoading: false,
+  activitiesError: null,
+});
 
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
   (e: "save-triage", placeId: string, payload: PlaceTriageUpdate): void;
+  (e: "request-access"): void;
 }>();
 
 const { t, locale, localizePlaceName } = useI18n();
@@ -45,6 +59,11 @@ const copy = computed(() => locale.value === "es" ? {
   pending: "Pendiente", progress: "En atención", attended: "Atendido",
   noteTemplates: "Añadir una nota rápida", reduction: "Atendido: se aplica un factor de 0.20.",
   scoreHint: "Se actualiza al ajustar la evaluación.", reset: "Restablecer", points: "puntos",
+  activity: "Acción de coordinación", timeline: "Bitácora de coordinación", noActivity: "Aún no hay acciones registradas.",
+  actionTypes: { reported: "Reportar condición", en_route: "Unidad en camino", on_scene: "Unidad en el lugar", needs_support: "Solicitar apoyo", resource_available: "Recurso disponible", update: "Actualizar evaluación", resolved: "Atención resuelta" },
+  accessRequired: "Inicia sesión para registrar una acción.", verificationRequired: "La organización todavía debe ser verificada para publicar reportes oficiales.",
+  openAccess: "Acceso institucional", verified: "Organización verificada", verifiedBy: "Registrado por", noSensitive: "No incluyas datos personales de pacientes o personas afectadas.",
+  verificationDisclaimer: "La verificación identifica a la organización, no confirma la exactitud del reporte. El estado del mapa refleja la última actualización, no un consenso multiagencia.",
 } : {
   title: "Assessment & dispatch", subtitle: "Update this location’s status and support needs.",
   status: "Response status", urgency: "Urgency level", population: "People needing support",
@@ -54,6 +73,11 @@ const copy = computed(() => locale.value === "es" ? {
   pending: "Pending", progress: "In progress", attended: "Attended",
   noteTemplates: "Add a quick note", reduction: "Attended: a 0.20 factor is applied.",
   scoreHint: "Updates as you adjust the assessment.", reset: "Reset", points: "points",
+  activity: "Coordination action", timeline: "Coordination log", noActivity: "No actions have been recorded yet.",
+  actionTypes: { reported: "Report a condition", en_route: "Unit en route", on_scene: "Unit on scene", needs_support: "Request support", resource_available: "Resource available", update: "Update assessment", resolved: "Response resolved" },
+  accessRequired: "Sign in to record an action.", verificationRequired: "The organization must be verified before it can publish official reports.",
+  openAccess: "Institutional access", verified: "Verified organization", verifiedBy: "Recorded by", noSensitive: "Do not include personal data about patients or affected people.",
+  verificationDisclaimer: "Verification confirms the organization’s identity, not report accuracy. The map status is the latest update, not multi-agency consensus.",
 });
 
 const statusOptions = computed(() => [
@@ -67,11 +91,13 @@ const formState = reactive<{
   urgency_level: number;
   estimated_vulnerable_count: number;
   institution_notes: string;
+  activity_type: "reported" | "en_route" | "on_scene" | "needs_support" | "resource_available" | "update" | "resolved";
 }>({
   attention_status: "pending",
   urgency_level: 3,
   estimated_vulnerable_count: 0,
   institution_notes: "",
+  activity_type: "update",
 });
 
 watch(
@@ -82,10 +108,19 @@ watch(
       formState.urgency_level = place.urgency_level;
       formState.estimated_vulnerable_count = place.estimated_vulnerable_count;
       formState.institution_notes = place.institution_notes ?? "";
+      formState.activity_type = "update";
     }
   },
   { immediate: true },
 );
+
+watch(() => formState.activity_type, (activityType) => {
+  if (["en_route", "on_scene", "needs_support"].includes(activityType)) {
+    formState.attention_status = "in_progress";
+  } else if (activityType === "resolved") {
+    formState.attention_status = "attended";
+  }
+});
 
 const urgencyMultipliers: Record<number, number> = {
   1: 0.6,
@@ -221,10 +256,15 @@ function openWaze(): void {
 
 function handleSave(): void {
   if (!props.place) return;
+  if (props.account?.institution.verification_status !== "verified") {
+    emit("request-access");
+    return;
+  }
   isSaving.value = true;
   try {
     emit("save-triage", props.place.id, {
       attention_status: formState.attention_status,
+      activity_type: formState.activity_type,
       urgency_level: formState.urgency_level,
       estimated_vulnerable_count: formState.estimated_vulnerable_count,
       institution_notes: formState.institution_notes.trim() || null,
@@ -265,6 +305,11 @@ function handleSave(): void {
 
       <div class="assessment-layout">
         <ElForm label-position="top" class="assessment-form" @submit.prevent="handleSave">
+          <ElFormItem :label="copy.activity">
+            <ElSelect v-model="formState.activity_type" :aria-label="copy.activity" data-testid="triage-activity-select">
+              <ElOption v-for="(label, value) in copy.actionTypes" :key="value" :label="label" :value="value" />
+            </ElSelect>
+          </ElFormItem>
           <ElFormItem :label="copy.status">
             <div class="status-options" role="radiogroup" :aria-label="copy.status" data-testid="triage-status-group">
               <label v-for="option in statusOptions" :key="option.value" class="status-option" :class="{ selected: formState.attention_status === option.value }">
@@ -329,6 +374,40 @@ function handleSave(): void {
         </aside>
       </div>
 
+      <section class="activity-log" aria-labelledby="activity-log-title" data-testid="place-activity-log">
+        <div class="activity-log-heading">
+          <div><h3 id="activity-log-title">{{ copy.timeline }}</h3><p>{{ localizePlaceName(props.place) }}</p></div>
+          <span class="activity-count">{{ props.activities.length }}</span>
+        </div>
+        <p class="activity-disclaimer">{{ copy.verificationDisclaimer }}</p>
+        <ElAlert v-if="!props.account" :title="copy.accessRequired" type="info" show-icon :closable="false" class="access-hint">
+          <template #default><button type="button" class="access-hint-link" @click="emit('request-access')">{{ copy.openAccess }}</button></template>
+        </ElAlert>
+        <ElAlert v-else-if="props.account.institution.verification_status !== 'verified'" :title="copy.verificationRequired" type="warning" show-icon :closable="false" class="access-hint" />
+        <ElAlert v-if="props.activitiesError" :title="props.activitiesError" type="warning" :closable="false" />
+        <div v-else-if="props.activitiesLoading" class="activity-loading">{{ locale === 'es' ? 'Cargando bitácora…' : 'Loading activity…' }}</div>
+        <div v-else-if="props.activities.length === 0" class="activity-empty">{{ copy.noActivity }}</div>
+        <ol v-else class="activity-list">
+          <li v-for="item in props.activities" :key="item.id" class="activity-entry">
+            <span class="activity-marker" aria-hidden="true"></span>
+            <div class="activity-main">
+              <div class="activity-title-row">
+                <strong>{{ copy.actionTypes[item.activity_type] }}</strong>
+                <time :datetime="item.created_at">{{ new Intl.DateTimeFormat(locale === 'es' ? 'es-SV' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.created_at)) }}</time>
+              </div>
+              <div class="activity-byline"><b>{{ item.organization.name }}</b><span>·</span>{{ copy.verifiedBy }} {{ item.actor_name }}<ElTag v-if="item.organization.verification_status === 'verified'" size="small" type="success" effect="plain">{{ copy.verified }}</ElTag></div>
+              <p v-if="item.notes" class="activity-notes">{{ item.notes }}</p>
+              <div v-if="item.attention_status || item.urgency_level || item.estimated_vulnerable_count !== null" class="activity-snapshot">
+                <span v-if="item.attention_status">{{ statusOptions.find((option) => option.value === item.attention_status)?.label ?? item.attention_status }}</span>
+                <span v-if="item.urgency_level">{{ locale === 'es' ? 'Urgencia' : 'Urgency' }} N{{ item.urgency_level }}</span>
+                <span v-if="item.estimated_vulnerable_count != null">{{ item.estimated_vulnerable_count }} {{ locale === 'es' ? 'personas' : 'people' }}</span>
+              </div>
+            </div>
+          </li>
+        </ol>
+        <div v-if="props.account?.institution.verification_status === 'verified'" class="activity-compose-note">{{ copy.noSensitive }}</div>
+      </section>
+
       <details class="quiet-details technical-details">
         <summary>{{ copy.details }}<Icon0 name="chevron_down" :size="14" /></summary>
         <div class="technical-content">
@@ -343,7 +422,8 @@ function handleSave(): void {
         <span class="footer-context"><Icon0 name="shield_alert" :size="14" />{{ locale === 'es' ? 'Registro de atención institucional' : 'Institutional response record' }}</span>
         <div class="footer-buttons">
           <ElButton @click="emit('update:visible', false)">{{ copy.close }}</ElButton>
-          <ElButton type="primary" :loading="isSaving" data-testid="save-triage-btn" @click="handleSave">{{ copy.save }}</ElButton>
+          <ElButton v-if="props.account?.institution.verification_status === 'verified'" type="primary" :loading="isSaving" data-testid="save-triage-btn" @click="handleSave">{{ copy.save }}</ElButton>
+          <ElButton v-else type="primary" data-testid="institution-access-btn" @click="emit('request-access')">{{ copy.openAccess }}</ElButton>
         </div>
       </div>
     </template>
@@ -414,6 +494,29 @@ function handleSave(): void {
 .coordinates-button, .phone-link { display: inline-flex; align-items: center; gap: 7px; color: var(--eoc-text-secondary); font: inherit; font-size: 11px; border: 0; background: transparent; padding: 0; text-decoration: none; cursor: pointer; margin-top: 14px; }
 .coordinates-button:hover, .phone-link:hover { color: var(--eoc-accent); }
 .coordinates { display: block; color: var(--eoc-text-secondary); font-family: ui-monospace, monospace; font-size: 10px; margin-top: 5px; }
+.activity-log { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--eoc-border-subtle); }
+.activity-log-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.activity-log-heading h3 { margin: 0; color: var(--eoc-text-primary); font-size: 14px; }
+.activity-log-heading p { margin: 3px 0 0; color: var(--eoc-text-secondary); font-size: 11px; }
+.activity-disclaimer { margin: -4px 0 11px; color: var(--eoc-text-secondary); font-size: 10px; line-height: 1.4; }
+.activity-count { min-width: 26px; height: 24px; display: grid; place-items: center; border: 1px solid var(--eoc-border-subtle); border-radius: 4px; color: var(--eoc-text-secondary); font-size: 11px; }
+.activity-list { list-style: none; margin: 0; padding: 0 0 0 4px; }
+.activity-entry { position: relative; display: flex; gap: 11px; padding: 7px 0 12px; }
+.activity-entry:not(:last-child)::before { content: ''; position: absolute; left: 4px; top: 17px; bottom: -1px; width: 1px; background: var(--eoc-border-subtle); }
+.activity-marker { position: relative; z-index: 1; flex: 0 0 9px; width: 9px; height: 9px; margin-top: 4px; border: 2px solid var(--eoc-accent); border-radius: 50%; background: var(--eoc-bg-panel); }
+.activity-main { flex: 1; min-width: 0; }
+.activity-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.activity-title-row strong { color: var(--eoc-text-primary); font-size: 12px; }
+.activity-title-row time { flex: none; color: var(--eoc-text-secondary); font-size: 10px; }
+.activity-byline { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 4px; color: var(--eoc-text-secondary); font-size: 10px; }
+.activity-byline b { color: var(--eoc-text-primary); font-weight: 650; }
+.activity-notes { margin: 6px 0 0; color: var(--eoc-text-secondary); font-size: 11px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.activity-snapshot { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.activity-snapshot span { padding: 2px 6px; color: #475569; background: #edf2f7; border: 1px solid #d8e1ea; border-radius: 3px; font-size: 10px; }
+.activity-empty, .activity-loading { padding: 18px 12px; border: 1px dashed var(--eoc-border-subtle); color: var(--eoc-text-secondary); text-align: center; font-size: 12px; }
+.activity-compose-note { margin-top: 5px; color: var(--eoc-text-secondary); font-size: 10px; }
+.access-hint { margin-bottom: 10px; }
+.access-hint-link { padding: 0; border: 0; color: var(--eoc-accent); background: transparent; font: inherit; font-weight: 650; cursor: pointer; }
 .technical-details { border-top: 1px solid var(--eoc-border-subtle); margin-top: 24px; padding-top: 14px; }
 .technical-content { padding-top: 8px; font-size: 11px; color: var(--eoc-text-secondary); overflow-wrap: anywhere; }
 .technical-content dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }

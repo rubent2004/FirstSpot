@@ -5,8 +5,10 @@ from typing import Any
 
 from httpx import ASGITransport, AsyncClient
 import pytest
-from sqlalchemy import delete
+from sqlalchemy import delete, select, text
+from sqlalchemy.exc import DBAPIError
 
+from app.core.config import settings
 from app.core.database import async_session_factory
 from app.main import app, export_openapi_schema
 from app.modules.ingestion.domain.classifier import (
@@ -25,7 +27,12 @@ from app.modules.places.domain.entities import (
     PlaceCategory,
     VulnerabilityGroup,
 )
-from app.modules.places.infrastructure.models import VulnerablePlaceModel
+from app.modules.places.infrastructure.models import PlaceActivityModel, VulnerablePlaceModel
+from app.modules.institutions.infrastructure.models import (
+    InstitutionInviteModel,
+    InstitutionModel,
+    InstitutionUserModel,
+)
 from app.modules.places.infrastructure.repository import PlaceRepository
 from app.modules.places.infrastructure.router import get_geospatial_provider
 
@@ -274,9 +281,17 @@ class TestFastAPIEndpointsAndOpenAPIContract:
     async def test_rest_endpoints_workflow_and_openapi_operation_ids(
         self,
         tmp_path: Any,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Verify /zones, /places/sync, /places, /places/{id}, /places/heatmap, and OpenAPI schema."""
-        test_zone = "Sonsonate_API_Test"
+        import uuid
+
+        test_zone = f"Sonsonate_API_Test_{uuid.uuid4().hex[:8]}"
+        test_email = f"field-{uuid.uuid4().hex}@example.org"
+        member_email = f"member-{uuid.uuid4().hex}@example.org"
+        admin_key = "test-platform-admin-key-32-characters-long"
+        monkeypatch.setattr(settings, "jwt_secret", "test-institution-jwt-secret-32-characters-long")
+        monkeypatch.setattr(settings, "platform_admin_key", admin_key)
         fake_provider = FakeOverpassProvider(
             elements=SONSONATE_FALLBACK_ELEMENTS,
             used_fallback=True,
@@ -328,10 +343,109 @@ class TestFastAPIEndpointsAndOpenAPIContract:
                 top_place = places_data[0]
                 place_id = top_place["id"]
 
+                # Organization-created codes track requests but do not authenticate them.
+                registration = await client.post(
+                    "/api/v1/institutions/register",
+                    json={
+                        "name": "Unidad de Bomberos de Prueba",
+                        "country": "El Salvador",
+                        "sector": "Bomberos",
+                        "contact_name": "Ana Respuesta",
+                        "email": test_email,
+                        "password": "FieldOps-Response-2026!",
+                    },
+                )
+                assert registration.status_code == 201
+                registration_code = registration.json()["registration_code"]
+                assert registration.json()["verification_status"] == "pending"
+                assert "does not prove" in registration.json()["message"]
+
+                pending_login = await client.post(
+                    "/api/v1/institutions/login",
+                    json={"email": test_email, "password": "FieldOps-Response-2026!"},
+                )
+                assert pending_login.status_code == 200
+                pending_headers = {"Authorization": f"Bearer {pending_login.json()['access_token']}"}
+                blocked_activity = await client.post(
+                    f"/api/v1/places/{place_id}/activities",
+                    headers=pending_headers,
+                    json={"activity_type": "reported", "notes": "Cannot publish before verification"},
+                )
+                assert blocked_activity.status_code == 403
+                unauthorized_patch = await client.patch(
+                    f"/api/v1/places/{place_id}", json={"attention_status": "in_progress"}
+                )
+                assert unauthorized_patch.status_code == 401
+
+                verification = await client.post(
+                    "/api/v1/institutions/verification",
+                    headers={"X-Platform-Admin-Key": admin_key},
+                    json={"registration_code": registration_code, "decision": "verify"},
+                )
+                assert verification.status_code == 200
+                assert verification.json()["verification_status"] == "verified"
+                login = await client.post(
+                    "/api/v1/institutions/login",
+                    json={"email": test_email, "password": "FieldOps-Response-2026!"},
+                )
+                assert login.status_code == 200
+                owner_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+                invite = await client.post("/api/v1/institutions/invites", headers=owner_headers)
+                assert invite.status_code == 201
+                join_payload = {
+                    "invite_code": invite.json()["invite_code"],
+                    "display_name": "Equipo de Respuesta",
+                    "email": member_email,
+                    "password": "Member-Response-2026!",
+                }
+                member_join = await client.post("/api/v1/institutions/join", json=join_payload)
+                assert member_join.status_code == 201
+                assert member_join.json()["account"]["role"] == "member"
+                repeated_join = await client.post(
+                    "/api/v1/institutions/join",
+                    json={**join_payload, "email": f"other-{uuid.uuid4().hex}@example.org"},
+                )
+                assert repeated_join.status_code == 400
+
+                action = await client.post(
+                    f"/api/v1/places/{place_id}/activities",
+                    headers=owner_headers,
+                    json={
+                        "activity_type": "reported",
+                        "attention_status": "in_progress",
+                        "urgency_level": 5,
+                        "estimated_vulnerable_count": 180,
+                        "notes": "Unidad de bomberos inicia evaluación en el sitio",
+                    },
+                )
+                assert action.status_code == 201
+                assert action.json()["actor_name"] == "Ana Respuesta"
+                assert action.json()["organization"]["name"] == "Unidad de Bomberos de Prueba"
+                assert "email" not in action.json()
+                en_route = await client.post(
+                    f"/api/v1/places/{place_id}/activities",
+                    headers=owner_headers,
+                    json={"activity_type": "en_route", "notes": "Unidad despachada"},
+                )
+                assert en_route.status_code == 201
+                assert en_route.json()["attention_status"] == "in_progress"
+                async with async_session_factory() as audit_session:
+                    audit_entry = await audit_session.get(
+                        PlaceActivityModel, action.json()["id"]
+                    )
+                    assert audit_entry is not None
+                    audit_entry.notes = "Attempted rewrite"
+                    with pytest.raises(DBAPIError, match="append-only audit log"):
+                        await audit_session.commit()
+                    await audit_session.rollback()
+
                 # 4. PATCH /api/v1/places/{place_id}
                 patch_resp = await client.patch(
                     f"/api/v1/places/{place_id}",
+                    headers=owner_headers,
                     json={
+                        "activity_type": "on_scene",
                         "attention_status": "in_progress",
                         "urgency_level": 5,
                         "estimated_vulnerable_count": 180,
@@ -345,6 +459,15 @@ class TestFastAPIEndpointsAndOpenAPIContract:
                 assert patched["estimated_vulnerable_count"] == 180
                 assert patched["institution_notes"] == "Evacuation bus assigned"
                 assert patched["priority_score"] > top_place["priority_score"]
+
+                activity_list = await client.get(f"/api/v1/places/{place_id}/activities")
+                assert activity_list.status_code == 200
+                assert [entry["activity_type"] for entry in activity_list.json()[:3]] == [
+                    "on_scene",
+                    "en_route",
+                    "reported",
+                ]
+                assert all("email" not in entry for entry in activity_list.json())
 
                 # 5. GET /api/v1/places/{place_id}
                 get_one_resp = await client.get(f"/api/v1/places/{place_id}")
@@ -379,11 +502,19 @@ class TestFastAPIEndpointsAndOpenAPIContract:
                 if isinstance(op, dict) and op.get("operationId")
             )
             assert operation_ids == [
+                "createInstitutionInvite",
+                "createPlaceActivity",
                 "getHealthStatus",
                 "getHeatmapData",
+                "getInstitutionAccount",
                 "getPlaceById",
+                "joinInstitution",
+                "listPlaceActivities",
                 "listPredefinedZones",
                 "listPrioritizedPlaces",
+                "loginInstitutionUser",
+                "registerInstitution",
+                "reviewInstitutionRegistration",
                 "syncPlacesFromOverpass",
                 "updatePlaceTriage",
             ]
@@ -393,10 +524,30 @@ class TestFastAPIEndpointsAndOpenAPIContract:
         finally:
             app.dependency_overrides.clear()
             async with async_session_factory() as cleanup_session:
+                place_ids = select(VulnerablePlaceModel.id).where(
+                    VulnerablePlaceModel.zone_name == test_zone
+                )
+                await cleanup_session.execute(text("ALTER TABLE place_activities DISABLE TRIGGER place_activities_immutable"))
+                await cleanup_session.execute(
+                    delete(PlaceActivityModel).where(PlaceActivityModel.place_id.in_(place_ids))
+                )
+                await cleanup_session.execute(text("ALTER TABLE place_activities ENABLE TRIGGER place_activities_immutable"))
                 await cleanup_session.execute(
                     delete(VulnerablePlaceModel).where(
                         VulnerablePlaceModel.zone_name == test_zone
                     )
+                )
+                organization_ids = select(InstitutionModel.id).where(
+                    InstitutionModel.contact_email == test_email
+                )
+                await cleanup_session.execute(
+                    delete(InstitutionInviteModel).where(InstitutionInviteModel.institution_id.in_(organization_ids))
+                )
+                await cleanup_session.execute(
+                    delete(InstitutionUserModel).where(InstitutionUserModel.institution_id.in_(organization_ids))
+                )
+                await cleanup_session.execute(
+                    delete(InstitutionModel).where(InstitutionModel.id.in_(organization_ids))
                 )
                 await cleanup_session.commit()
 

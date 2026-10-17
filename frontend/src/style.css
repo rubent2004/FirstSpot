@@ -1,34 +1,36 @@
 /* ==========================================================================
-   Tactical Operations Center & Oceanic Palette
-   Inspired by Uiverse bitter-panther-69, rotten-sloth-50 & chatty-walrus-78
+   FirstSpot identity: graphite, field green and the logo's signal lime.
+   Status hues remain semantic (red / amber / blue) for incident readability.
    ========================================================================== */
 
 :root,
 .theme-dark,
 html.dark {
-  /* Surfaces & Oceanic Dark Neutrals */
-  --eoc-bg-canvas: #090e17;
-  --eoc-bg-panel: #0e1724;
-  --eoc-bg-card: #142132;
-  --eoc-bg-hover: #1c2e44;
-  --eoc-bg-active: #233954;
+  /* Graphite / field-night surfaces */
+  --eoc-bg-canvas: #11140f;
+  --eoc-bg-panel: #191d16;
+  --eoc-bg-card: #22271d;
+  --eoc-bg-hover: #2b3521;
+  --eoc-bg-active: #344329;
   
   /* Borders & Rules */
-  --eoc-border: #23374d;
-  --eoc-border-subtle: rgba(148, 163, 184, 0.14);
-  --eoc-border-focus: #2dd4bf;
+  --eoc-border: #3a4633;
+  --eoc-border-subtle: rgba(190, 205, 176, 0.15);
+  --eoc-border-focus: #88d623;
   
   /* Typography */
-  --eoc-text-primary: #f8fafc;
-  --eoc-text-secondary: #94a3b8;
-  --eoc-text-muted: #64748b;
-  --eoc-text-inverse: #090e17;
+  --eoc-text-primary: #f3f5ee;
+  --eoc-text-secondary: #bac3b2;
+  --eoc-text-muted: #8c9782;
+  --eoc-text-inverse: #171b13;
 
-  /* Marine Accents & Atmospheric Glow */
-  --eoc-accent: #2dd4bf;
-  --eoc-accent-secondary: #38bdf8;
-  --eoc-accent-hover: #14b8a6;
-  --eoc-accent-glow: rgba(45, 212, 191, 0.16);
+  /* Logo signal lime on a deep graphite field */
+  --eoc-brand-lime: #88d623;
+  --eoc-brand-ink: #1e1e1e;
+  --eoc-accent: #88d623;
+  --eoc-accent-secondary: #d4e9bb;
+  --eoc-accent-hover: #a0eb42;
+  --eoc-accent-glow: rgba(136, 214, 35, 0.16);
   --eoc-card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
   
   /* Mission Critical Severity Tokens */
@@ -46,46 +48,49 @@ html.dark {
   --eoc-success-border: rgba(52, 211, 153, 0.35);
 
   /* Map Controls */
-  --eoc-map-ctrl-bg: rgba(14, 23, 36, 0.92);
-  --eoc-map-ctrl-border: #23374d;
+  --eoc-map-ctrl-bg: rgba(25, 29, 22, 0.96);
+  --eoc-map-ctrl-border: #3a4633;
 
   /* Global Element Plus Dark Overrides */
-  --el-bg-color: #0e1724;
-  --el-bg-color-overlay: #142132;
-  --el-text-color-primary: #f8fafc;
-  --el-text-color-regular: #cbd5e1;
-  --el-text-color-secondary: #94a3b8;
-  --el-border-color: #23374d;
-  --el-border-color-light: #1c2e44;
-  --el-fill-color-blank: #0e1724;
+  --el-bg-color: #191d16;
+  --el-bg-color-overlay: #22271d;
+  --el-text-color-primary: #f3f5ee;
+  --el-text-color-regular: #d4dbcd;
+  --el-text-color-secondary: #bac3b2;
+  --el-border-color: #3a4633;
+  --el-border-color-light: #2b3521;
+  --el-fill-color-blank: #191d16;
+  --el-color-primary: #88d623;
 }
 
 html:not(.dark),
 .theme-light {
-  /* Surfaces & Oceanic Light Neutrals */
-  --eoc-bg-canvas: #f0f7fa;
+  /* Bright cartographic paper; logo green is reserved for actions and focus. */
+  --eoc-bg-canvas: #edf0e9;
   --eoc-bg-panel: #ffffff;
-  --eoc-bg-card: #f8fafc;
-  --eoc-bg-hover: #e2eff5;
-  --eoc-bg-active: #cbe3ee;
+  --eoc-bg-card: #f3f5ef;
+  --eoc-bg-hover: #eef6e5;
+  --eoc-bg-active: #e2f0d2;
   
   /* Borders & Rules */
-  --eoc-border: #cbdfe8;
-  --eoc-border-subtle: rgba(15, 23, 42, 0.08);
-  --eoc-border-focus: #0d9488;
+  --eoc-border: #d4ddcd;
+  --eoc-border-subtle: rgba(30, 30, 30, 0.11);
+  --eoc-border-focus: #5c9716;
   
   /* Typography */
-  --eoc-text-primary: #0f172a;
-  --eoc-text-secondary: #475569;
-  --eoc-text-muted: #94a3b8;
+  --eoc-text-primary: #1e1e1e;
+  --eoc-text-secondary: #4c5747;
+  --eoc-text-muted: #6c7766;
   --eoc-text-inverse: #ffffff;
 
-  /* Marine Accents & Atmospheric Glow */
-  --eoc-accent: #0d9488;
-  --eoc-accent-secondary: #0284c7;
-  --eoc-accent-hover: #0f766e;
-  --eoc-accent-glow: rgba(13, 148, 136, 0.12);
-  --eoc-card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  /* Dark green is used for text contrast; signal lime remains the signature. */
+  --eoc-brand-lime: #88d623;
+  --eoc-brand-ink: #1e1e1e;
+  --eoc-accent: #4d850b;
+  --eoc-accent-secondary: #1e1e1e;
+  --eoc-accent-hover: #3d6d08;
+  --eoc-accent-glow: rgba(136, 214, 35, 0.18);
+  --eoc-card-shadow: 0 2px 7px rgba(15, 23, 42, 0.12);
   
   /* Mission Critical Severity Tokens */
   --eoc-critical: #e11d48;
@@ -102,23 +107,29 @@ html:not(.dark),
   --eoc-success-border: #a7f3d0;
 
   /* Map Controls */
-  --eoc-map-ctrl-bg: rgba(255, 255, 255, 0.94);
-  --eoc-map-ctrl-border: #cbdfe8;
+  --eoc-map-ctrl-bg: #ffffff;
+  --eoc-map-ctrl-border: #d4ddcd;
 
   /* Global Element Plus Light Overrides */
   --el-bg-color: #ffffff;
   --el-bg-color-overlay: #ffffff;
-  --el-text-color-primary: #0f172a;
-  --el-text-color-regular: #334155;
-  --el-text-color-secondary: #64748b;
-  --el-border-color: #cbdfe8;
-  --el-border-color-light: #e2eff5;
+  --el-text-color-primary: #1e1e1e;
+  --el-text-color-regular: #3f493b;
+  --el-text-color-secondary: #65705f;
+  --el-border-color: #cbd5c4;
+  --el-border-color-light: #e1e7dc;
   --el-fill-color-blank: #ffffff;
-  --el-color-primary: var(--eoc-accent);
+  --el-color-primary: #4d850b;
 }
 
 :root {
   --el-color-primary: var(--eoc-accent);
+}
+
+.dark .el-button--primary {
+  --el-button-text-color: #1e1e1e;
+  --el-button-hover-text-color: #1e1e1e;
+  --el-button-active-text-color: #1e1e1e;
 }
 
 * {

@@ -1,1 +1,1 @@
-"""Geo-Prioridad Vulnerable application package."""
+"""FirstSpot application package."""

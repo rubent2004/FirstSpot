@@ -20,6 +20,13 @@ from app.modules.places.domain.entities import (
     PlaceCategory,
     VulnerabilityGroup,
 )
+from app.modules.institutions.infrastructure.models import InstitutionUserModel
+from app.modules.institutions.infrastructure.security import require_verified_institution
+from app.modules.places.infrastructure.activity_router import (
+    PlaceActivityCreate,
+    PlaceActivityType,
+    _write_activity,
+)
 from app.modules.places.infrastructure.repository import (
     PlaceRepository,
     PlaceWithNeighbors,
@@ -163,6 +170,23 @@ class PlaceTriageUpdate(BaseModel):
         max_length=2000,
         description="Field notes entered by response coordinators.",
     )
+    activity_type: PlaceActivityType = Field(
+        default=PlaceActivityType.UPDATE,
+        description="Kind of attributed action to append to the public place timeline.",
+    )
+
+    @model_validator(mode="after")
+    def require_changed_field(self) -> "PlaceTriageUpdate":
+        if not self.model_fields_set.intersection(
+            {
+                "attention_status",
+                "urgency_level",
+                "estimated_vulnerable_count",
+                "institution_notes",
+            }
+        ):
+            raise ValueError("At least one operational field must be supplied.")
+        return self
 
 
 class HeatmapPointRead(BaseModel):
@@ -492,18 +516,23 @@ async def update_place_triage(
     place_id: uuid.UUID,
     payload: PlaceTriageUpdate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    actor: Annotated[InstitutionUserModel, Depends(require_verified_institution)],
 ) -> PlaceRead:
-    """Update attention status, urgency level, vulnerable population count, or notes."""
+    """Record authenticated triage and an immutable public activity entry."""
     repo = PlaceRepository(session)
-    fields_set = payload.model_fields_set
-    updated = await repo.update_place_triage(
+    await _write_activity(
         place_id=place_id,
-        attention_status=payload.attention_status,
-        urgency_level=payload.urgency_level,
-        estimated_vulnerable_count=payload.estimated_vulnerable_count,
-        institution_notes=payload.institution_notes,
-        update_notes="institution_notes" in fields_set,
+        session=session,
+        actor=actor,
+        payload=PlaceActivityCreate(
+            activity_type=payload.activity_type,
+            attention_status=payload.attention_status,
+            urgency_level=payload.urgency_level,
+            estimated_vulnerable_count=payload.estimated_vulnerable_count,
+            notes=payload.institution_notes,
+        ),
     )
+    updated = await repo.get_place_by_id(place_id)
     if updated is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

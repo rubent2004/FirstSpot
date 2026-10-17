@@ -192,7 +192,7 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
   es: {
     header: {
       badge: "PROTECCIÓN CIVIL • EL SALVADOR",
-      title: "Geo-Prioridad Vulnerable",
+      title: "FirstSpot",
       subtitle:
         "Centro de Mando Geoespacial para Triaje Humanitario y Despacho Institucional",
       zoneLabel: "Zona Operativa (El Salvador)",
@@ -398,7 +398,7 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
   en: {
     header: {
       badge: "CIVIL DEFENSE • EL SALVADOR",
-      title: "Geo-Prioridad Vulnerable",
+      title: "FirstSpot",
       subtitle:
         "Humanitarian Geospatial Prioritization & Institutional Dispatch Command",
       zoneLabel: "Target Zone (El Salvador)",

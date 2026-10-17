@@ -14,7 +14,7 @@ DEFAULT_OVERPASS_MIRRORS: tuple[str, ...] = (
     "https://overpass.kumi.systems/api/interpreter",
 )
 
-USER_AGENT_HEADER = "GeoPrioridadVulnerable/0.1 (Educational Demo)"
+USER_AGENT_HEADER = "FirstSpot/0.1 (Humanitarian Response El Salvador)"
 
 SONSONATE_FALLBACK_ELEMENTS: list[dict[str, Any]] = [
     {

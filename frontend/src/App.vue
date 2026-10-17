@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { ElAlert, ElConfigProvider } from "element-plus";
-import SyncHeaderBar from "./modules/sync-controls/SyncHeaderBar.vue";
 import HazardTelemetryStrip from "./modules/sync-controls/HazardTelemetryStrip.vue";
 import VulnerabilityHeatmapCanvas from "./modules/map-viewer/VulnerabilityHeatmapCanvas.vue";
 import PriorityQueuePanel from "./modules/priority-queue/PriorityQueuePanel.vue";
 import PlaceTriageDrawer from "./modules/priority-queue/PlaceTriageDrawer.vue";
+import GeoRibbon from "./components/GeoRibbon.vue";
+import InstitutionAccessDialog from "./modules/institutions/InstitutionAccessDialog.vue";
 import { usePrioritizationStore } from "./stores/usePrioritizationStore";
 import { useI18n } from "./i18n/useI18n";
+import { useTheme } from "./composables/useTheme";
 import type {
-  AttentionStatus,
   HazardScenarioPreset,
   PlaceRead,
   PlaceTriageUpdate,
@@ -17,12 +18,29 @@ import type {
 } from "./api/client";
 
 const store = usePrioritizationStore();
-const { elementLocale } = useI18n();
+const { elementLocale, locale, toggleLocale } = useI18n();
+const { isDark, toggleTheme } = useTheme();
 const HAZARD_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+const showHeatmapLayer = ref(true);
+const showMarkersLayer = ref(true);
+const showHazardsLayer = ref(true);
+const showInstitutionAccess = ref(false);
+const tacticalBasemap = ref(isDark.value);
 const geocodeTarget = ref<{ lat: number; lon: number; label: string } | null>(
   null,
 );
 let hazardRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+watch(isDark, (value) => {
+  tacticalBasemap.value = value;
+});
+
+watch(
+  () => [store.selectedPlace?.id, store.isTriageDrawerOpen] as const,
+  ([placeId, isOpen]) => {
+    if (placeId && isOpen) void store.fetchPlaceActivities(placeId);
+  },
+);
 
 onMounted(async () => {
   await store.initializeDashboard();
@@ -82,15 +100,6 @@ async function handleResetFilters(): Promise<void> {
   await store.fetchPlacesAndHeatmap();
 }
 
-async function handleQuickKpiFilter(payload: {
-  status: AttentionStatus | "";
-  minUrgency: number | null;
-}): Promise<void> {
-  store.filters.attentionStatus = payload.status;
-  store.filters.minUrgency = payload.minUrgency;
-  await store.fetchPlacesAndHeatmap();
-}
-
 async function handleToggleGroupFilter(
   group: VulnerabilityGroup,
 ): Promise<void> {
@@ -112,43 +121,69 @@ function handleFlyToCoordinates(
 ): void {
   geocodeTarget.value = { lat, lon, label };
 }
+
+function handleCenterMap(): void {
+  window.dispatchEvent(new CustomEvent("geo-priority:center-zone"));
+}
+
+function handleFitMap(): void {
+  window.dispatchEvent(new CustomEvent("geo-priority:fit-data"));
+}
 </script>
 
 <template>
   <ElConfigProvider :locale="elementLocale">
     <div class="dashboard-shell">
-      <SyncHeaderBar
+      <GeoRibbon
         :zones="store.zones"
         :selected-zone-key="store.selectedZoneKey"
         :active-zone-name="store.activeZoneName"
-        :kpis="store.kpis"
         :is-syncing="store.isSyncing"
-        :custom-radius-enabled="store.customRadiusMode.enabled"
-        :custom-radius-meters="store.customRadiusMode.radiusMeters"
-        :last-sync-summary="store.lastSyncSummary"
-        :active-status-filter="store.filters.attentionStatus"
-        :active-min-urgency="store.filters.minUrgency"
-        @update:selected-zone-key="(val) => (store.selectedZoneKey = val)"
+        :is-loading="store.isLoading"
+        :has-error="Boolean(store.error)"
+        :radius-enabled="store.customRadiusMode.enabled"
+        :radius-meters="store.customRadiusMode.radiusMeters"
+        :is-dark="isDark"
+        :locale="locale"
+        :show-heatmap-layer="showHeatmapLayer"
+        :show-markers-layer="showMarkersLayer"
+        :show-hazards-layer="showHazardsLayer"
+        :tactical-basemap="tacticalBasemap"
+        :filters="store.filters"
+        :institution-account="store.institutionSession?.account ?? null"
         @change-zone="handleZoneChange"
-        @sync-zone="handleZoneSync"
-        @update:custom-radius-enabled="
+        @sync-zone="handleZoneSync(store.selectedZoneKey || 'sonsonate')"
+        @update:radius-enabled="
           (val) => (store.customRadiusMode.enabled = val)
         "
-        @update:custom-radius-meters="
+        @update:radius-meters="
           (val) => (store.customRadiusMode.radiusMeters = val)
         "
-        @quick-kpi-filter="handleQuickKpiFilter"
-      />
-
-      <HazardTelemetryStrip
-        :active-hazards="store.activeHazards"
-        :scenario="store.hazardScenario"
-        :last-checked-at="store.hazardLastCheckedAt"
-        :is-refreshing="store.isRefreshingHazards"
-        :refresh-error="store.hazardRefreshError"
-        @change-scenario="handleScenarioChange"
-        @fly-to-coordinates="handleFlyToCoordinates"
-      />
+        @reset-filters="handleResetFilters"
+        @filter-change="store.fetchPlacesAndHeatmap"
+        @refresh-hazards="handleScenarioChange(store.hazardScenario)"
+        @center-map="handleCenterMap"
+        @fit-map="handleFitMap"
+        @toggle-theme="toggleTheme"
+        @toggle-locale="toggleLocale"
+        @update:show-heatmap-layer="showHeatmapLayer = $event"
+        @update:show-markers-layer="showMarkersLayer = $event"
+        @update:show-hazards-layer="showHazardsLayer = $event"
+        @update:tactical-basemap="tacticalBasemap = $event"
+        @open-institution-access="showInstitutionAccess = true"
+      >
+        <template #workspace-status>
+          <HazardTelemetryStrip
+            :active-hazards="store.activeHazards"
+            :scenario="store.hazardScenario"
+            :last-checked-at="store.hazardLastCheckedAt"
+            :is-refreshing="store.isRefreshingHazards"
+            :refresh-error="store.hazardRefreshError"
+            @change-scenario="handleScenarioChange"
+            @fly-to-coordinates="handleFlyToCoordinates"
+          />
+        </template>
+      </GeoRibbon>
 
       <ElAlert
         v-if="store.error"
@@ -172,30 +207,49 @@ function handleFlyToCoordinates(
             :active-group-filter="store.filters.vulnerabilityGroup"
             :hazard-events="store.activeHazards?.events ?? []"
             :geocode-target="geocodeTarget"
+            :show-heatmap-layer="showHeatmapLayer"
+            :show-markers-layer="showMarkersLayer"
+            :show-hazards-layer="showHazardsLayer"
+            :tactical-basemap="tacticalBasemap"
             @select-place="handleSelectPlace"
             @map-radius-sync="handleMapRadiusSync"
             @toggle-group-filter="handleToggleGroupFilter"
           />
         </div>
 
-        <div class="workspace-queue-col">
+        <aside class="workspace-queue-col" :aria-label="locale === 'es' ? 'Lugares priorizados' : 'Prioritized places'">
           <PriorityQueuePanel
             :places="store.places"
             :selected-place="store.selectedPlace"
-            :filters="store.filters"
             :is-loading="store.isLoading"
-            @filter-change="store.fetchPlacesAndHeatmap"
-            @reset-filters="handleResetFilters"
             @select-place="handleSelectPlace"
           />
-        </div>
+        </aside>
       </main>
+
+      <footer class="geo-statusbar">
+        <span class="status-connection"><i></i>{{ locale === "es" ? "Fuentes operativas" : "Operational feeds" }}</span>
+        <span class="status-separator"></span>
+        <span>{{ store.activeZoneName || (locale === "es" ? "Área personalizada" : "Custom area") }}</span>
+        <span class="status-stat">{{ store.kpis.total_places }} {{ locale === "es" ? "lugares" : "places" }}</span>
+        <span class="status-stat status-critical">{{ store.kpis.critical_urgency_count }} {{ locale === "es" ? "críticos" : "critical" }}</span>
+        <span class="status-spacer"></span>
+        <span>{{ locale === "es" ? "Coordenadas" : "Coordinates" }} · {{ store.currentZone?.latitude.toFixed(4) ?? "—" }}, {{ store.currentZone?.longitude.toFixed(4) ?? "—" }}</span>
+        <span class="status-separator"></span>
+        <span>FirstSpot</span>
+      </footer>
 
       <PlaceTriageDrawer
         v-model:visible="store.isTriageDrawerOpen"
         :place="store.selectedPlace"
+        :account="store.institutionSession?.account ?? null"
+        :activities="store.placeActivities"
+        :activities-loading="store.arePlaceActivitiesLoading"
+        :activities-error="store.placeActivityError"
         @save-triage="handleSaveTriage"
+        @request-access="showInstitutionAccess = true"
       />
+      <InstitutionAccessDialog v-model:visible="showInstitutionAccess" />
     </div>
   </ElConfigProvider>
 </template>
@@ -204,12 +258,11 @@ function handleFlyToCoordinates(
 .dashboard-shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  width: 100%;
   overflow: hidden;
   background: var(--eoc-bg-canvas);
   color: var(--eoc-text-primary);
-  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .error-banner {
@@ -219,28 +272,63 @@ function handleFlyToCoordinates(
 .dashboard-workspace {
   flex: 1;
   display: grid;
-  grid-template-columns: 56% 44%;
+  grid-template-areas: "queue map";
+  grid-template-columns: minmax(420px, min(42%, 600px)) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
+  border-top: 1px solid var(--eoc-border);
 }
 
 .workspace-map-col,
 .workspace-queue-col {
   height: 100%;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
+.workspace-map-col { grid-area: map; }
+.workspace-queue-col { grid-area: queue; }
+.workspace-map-col :deep(.map-panel-wrapper) { min-height: 0; }
+
+.geo-statusbar {
+  height: 24px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 10px;
+  background: var(--eoc-bg-card);
+  border-top: 1px solid var(--eoc-border);
+  color: var(--eoc-text-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.status-connection { display: inline-flex; align-items: center; gap: 5px; }
+.status-connection i { width: 6px; height: 6px; border-radius: 50%; background: var(--eoc-accent); }
+.status-separator { height: 12px; width: 1px; background: var(--eoc-border); }
+.status-stat { color: var(--eoc-text-primary); font-weight: 600; }
+.status-critical { color: #bd3836; }
+.status-spacer { flex: 1; }
+
+:global(.dark) .dashboard-shell { background: var(--eoc-bg-canvas); }
+:global(.dark) .geo-statusbar { background: var(--eoc-bg-panel); border-color: var(--eoc-border); color: var(--eoc-text-secondary); }
+:global(.dark) .status-stat { color: var(--eoc-text-primary); }
+:global(.dark) .workspace-map-col { border-color: var(--eoc-border); }
+
 @media (max-width: 1024px) {
   .dashboard-shell {
-    height: auto;
-    min-height: 100vh;
-    overflow: auto;
+    height: 100dvh;
   }
 
   .dashboard-workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: 520px 640px;
+    grid-template-columns: minmax(420px, min(48%, 520px)) minmax(280px, 1fr);
   }
+}
+
+@media (max-width: 700px) {
+  .dashboard-workspace { grid-template-areas: "map" "queue"; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(300px, 45dvh) minmax(320px, 1fr); overflow-y: auto; }
+  .workspace-queue-col { min-height: 320px; }
+  .geo-statusbar { overflow-x: auto; }
 }
 </style>

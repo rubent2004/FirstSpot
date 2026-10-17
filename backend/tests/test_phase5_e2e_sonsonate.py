@@ -2,7 +2,9 @@
 
 from httpx import ASGITransport, AsyncClient
 import pytest
+import uuid
 
+from app.core.config import settings
 from app.main import app
 from app.modules.ingestion.infrastructure.overpass_client import (
     OverpassSyncPayload,
@@ -31,11 +33,17 @@ class SonsonateSeedProvider:
 class TestPhase5SonsonateEndToEnd:
     """Full-stack backend verification of the Sonsonate humanitarian prioritization workflow."""
 
-    async def test_complete_sonsonate_sync_heatmap_and_triage_workflow(self) -> None:
+    async def test_complete_sonsonate_sync_heatmap_and_triage_workflow(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         """Verify Sonsonate ingestion, 500m PostGIS clustering, heatmap matrix, and triage recalculation."""
         app.dependency_overrides[get_geospatial_provider] = (
             lambda: SonsonateSeedProvider()
         )
+        monkeypatch.setattr(settings, "jwt_secret", "test-institution-jwt-secret-32-characters-long")
+        admin_key = "test-platform-admin-key-32-characters-long"
+        monkeypatch.setattr(settings, "platform_admin_key", admin_key)
         try:
             transport = ASGITransport(app=app)
             async with AsyncClient(
@@ -86,10 +94,41 @@ class TestPhase5SonsonateEndToEnd:
                     assert -90.5 < lon < -88.0
                     assert 0.15 <= intensity <= 1.0
 
+                # Set up an independently verified responder account before any write.
+                test_email = f"sonsonate-{uuid.uuid4().hex}@example.org"
+                registration = await client.post(
+                    "/api/v1/institutions/register",
+                    json={
+                        "name": "Brigada Médica Sonsonate",
+                        "country": "El Salvador",
+                        "sector": "Salud",
+                        "contact_name": "Coordinación de campo",
+                        "email": test_email,
+                        "password": "FieldOps-Response-2026!",
+                    },
+                )
+                assert registration.status_code == 201
+                await client.post(
+                    "/api/v1/institutions/verification",
+                    headers={"X-Platform-Admin-Key": admin_key},
+                    json={
+                        "registration_code": registration.json()["registration_code"],
+                        "decision": "verify",
+                    },
+                )
+                login = await client.post(
+                    "/api/v1/institutions/login",
+                    json={"email": test_email, "password": "FieldOps-Response-2026!"},
+                )
+                assert login.status_code == 200
+                action_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
                 # 4. Perform institutional triage on the hospital (L5 urgency + 300 vulnerable people)
                 triage_resp = await client.patch(
                     f"/api/v1/places/{hospital['id']}",
+                    headers=action_headers,
                     json={
+                        "activity_type": "on_scene",
                         "attention_status": "in_progress",
                         "urgency_level": 5,
                         "estimated_vulnerable_count": 300,
@@ -105,6 +144,10 @@ class TestPhase5SonsonateEndToEnd:
                     triaged_hospital["priority_score"]
                     > hospital["priority_score"]
                 )
+                timeline = await client.get(f"/api/v1/places/{hospital['id']}/activities")
+                assert timeline.status_code == 200
+                assert timeline.json()[0]["organization"]["name"] == "Brigada Médica Sonsonate"
+                assert timeline.json()[0]["actor_name"] == "Coordinación de campo"
 
                 # 5. Mark a place as attended and verify 20% score attenuation
                 pharmacy = next(
@@ -112,6 +155,7 @@ class TestPhase5SonsonateEndToEnd:
                 )
                 attended_resp = await client.patch(
                     f"/api/v1/places/{pharmacy['id']}",
+                    headers=action_headers,
                     json={"attention_status": "attended"},
                 )
                 assert attended_resp.status_code == 200
@@ -125,6 +169,7 @@ class TestPhase5SonsonateEndToEnd:
                 # 6. Reset demo state back to clean pending defaults for Sonsonate
                 await client.patch(
                     f"/api/v1/places/{hospital['id']}",
+                    headers=action_headers,
                     json={
                         "attention_status": "pending",
                         "urgency_level": 3,
@@ -134,6 +179,7 @@ class TestPhase5SonsonateEndToEnd:
                 )
                 await client.patch(
                     f"/api/v1/places/{pharmacy['id']}",
+                    headers=action_headers,
                     json={"attention_status": "pending"},
                 )
         finally:

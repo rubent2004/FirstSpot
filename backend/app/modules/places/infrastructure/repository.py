@@ -297,6 +297,7 @@ class PlaceRepository:
         estimated_vulnerable_count: int | None = None,
         institution_notes: str | None = None,
         update_notes: bool = False,
+        commit: bool = True,
     ) -> PlaceWithNeighbors | None:
         """Update institutional triage fields and recalculate priority_score with PostGIS density."""
         existing = await self.get_place_by_id(place_id)
@@ -322,7 +323,9 @@ class PlaceRepository:
             attention_status=AttentionStatus(model.attention_status),
         )
 
-        await self.session.commit()
+        await self.session.flush()
+        if commit:
+            await self.session.commit()
         await self.session.refresh(model)
         return PlaceWithNeighbors(
             model=model,

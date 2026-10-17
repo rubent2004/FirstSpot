@@ -20,7 +20,7 @@ from app.modules.hazards.domain.entities import (
     classify_weather_alert,
 )
 
-USER_AGENT = "GeoPrioridadVulnerable/0.2 (Humanitarian Response El Salvador)"
+USER_AGENT = "FirstSpot/0.2 (Humanitarian Response El Salvador)"
 
 USGS_QUERY_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"

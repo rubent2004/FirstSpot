@@ -12,6 +12,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.core.config import settings
 from app.core.database import Base
 from app.modules.places.infrastructure.models import VulnerablePlaceModel  # noqa: F401
+from app.modules.places.infrastructure.models import PlaceActivityModel  # noqa: F401
+from app.modules.institutions.infrastructure.models import (  # noqa: F401
+    InstitutionInviteModel,
+    InstitutionModel,
+    InstitutionUserModel,
+)
 
 config = context.config
 

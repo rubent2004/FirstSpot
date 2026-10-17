@@ -12,6 +12,8 @@ import {
   type PlaceRead,
   type PredefinedZoneRead,
   type SyncPlacesResponse,
+  type InstitutionAccountRead,
+  type PlaceActivityRead,
 } from "../api/client";
 import { usePrioritizationStore } from "../stores/usePrioritizationStore";
 import { setAppLocale } from "../i18n/useI18n";
@@ -61,6 +63,23 @@ const sampleHospital: PlaceRead = {
   priority_score: 120.0,
   last_osm_sync_at: "2026-10-16T11:00:00Z",
   updated_at: "2026-10-16T11:00:00Z",
+};
+
+const sampleInstitutionAccount: InstitutionAccountRead = {
+  id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  display_name: "Ana Respuesta",
+  email: "ana@example.org",
+  role: "owner",
+  institution: {
+    id: "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+    name: "Bomberos de Sonsonate",
+    country: "El Salvador",
+    sector: "Bomberos",
+    registration_code: "FSP-ABCDEF123456",
+    verification_status: "verified",
+    created_at: "2026-10-16T11:00:00Z",
+    verified_at: "2026-10-16T12:00:00Z",
+  },
 };
 
 const sampleHeatmapResponse: HeatmapResponse = {
@@ -131,14 +150,22 @@ const sampleHazardsResponse: ActiveHazardsResponse = {
 };
 
 describe("OpenAPI 3.1 Generated Contract & SDK", () => {
-  it("exposes OpenAPI 3.1 version and all 7 backend operationIds", () => {
+  it("exposes OpenAPI 3.1 version and inter-agency operations", () => {
     expect(OPENAPI_VERSION).toMatch(/^3\.1/);
     expect([...OPENAPI_OPERATION_IDS]).toEqual([
+      "createInstitutionInvite",
+      "createPlaceActivity",
       "getHealthStatus",
       "getHeatmapData",
+      "getInstitutionAccount",
       "getPlaceById",
+      "joinInstitution",
+      "listPlaceActivities",
       "listPredefinedZones",
       "listPrioritizedPlaces",
+      "loginInstitutionUser",
+      "registerInstitution",
+      "reviewInstitutionRegistration",
       "syncPlacesFromOverpass",
       "updatePlaceTriage",
     ]);
@@ -207,6 +234,71 @@ describe("usePrioritizationStore (Pinia)", () => {
     expect(store.computeHazardBonusForPlace(sampleHospital)).toBeGreaterThan(20);
   });
 
+  it("keeps the newest response when filter requests finish out of order", async () => {
+    let resolveStalePlaces!: (places: PlaceRead[]) => void;
+    let resolveStaleHeatmap!: (response: HeatmapResponse) => void;
+    const stalePlaces = new Promise<PlaceRead[]>((resolve) => {
+      resolveStalePlaces = resolve;
+    });
+    const staleHeatmap = new Promise<HeatmapResponse>((resolve) => {
+      resolveStaleHeatmap = resolve;
+    });
+    const latestPlace = { ...sampleHospital, name: "Latest filtered hospital" };
+    const latestHeatmap = {
+      ...sampleHeatmapResponse,
+      kpis: { ...sampleHeatmapResponse.kpis, total_places: 7 },
+    };
+    const listSpy = vi
+      .spyOn(apiClient, "listPrioritizedPlaces")
+      .mockReturnValueOnce(stalePlaces)
+      .mockResolvedValueOnce([latestPlace]);
+    vi.spyOn(apiClient, "getHeatmapData")
+      .mockReturnValueOnce(staleHeatmap)
+      .mockResolvedValueOnce(latestHeatmap);
+
+    const store = usePrioritizationStore();
+    store.filters.search = "older query";
+    const staleRequest = store.fetchPlacesAndHeatmap();
+    store.filters.search = "latest query";
+    const latestRequest = store.fetchPlacesAndHeatmap();
+    await latestRequest;
+
+    expect(listSpy.mock.calls.map(([params]) => params?.search)).toEqual([
+      "older query",
+      "latest query",
+    ]);
+    expect(store.places[0].name).toBe("Latest filtered hospital");
+    expect(store.kpis.total_places).toBe(7);
+    expect(store.isLoading).toBe(false);
+
+    resolveStalePlaces([sampleHospital]);
+    resolveStaleHeatmap(sampleHeatmapResponse);
+    await staleRequest;
+    expect(store.places[0].name).toBe("Latest filtered hospital");
+    expect(store.kpis.total_places).toBe(7);
+  });
+
+  it("resets every queue and heatmap filter to its default", () => {
+    const store = usePrioritizationStore();
+    store.filters.category = "hospital";
+    store.filters.vulnerabilityGroup = "health";
+    store.filters.attentionStatus = "pending";
+    store.filters.minUrgency = 4;
+    store.filters.search = "clinic";
+    store.filters.includeAttendedInHeatmap = false;
+
+    store.resetFilters();
+
+    expect(store.filters).toEqual({
+      category: "",
+      vulnerabilityGroup: "",
+      attentionStatus: "",
+      minUrgency: null,
+      search: "",
+      includeAttendedInHeatmap: true,
+    });
+  });
+
   it("updates institutional triage and refreshes prioritized queue", async () => {
     const updatedHospital: PlaceRead = {
       ...sampleHospital,
@@ -234,6 +326,12 @@ describe("usePrioritizationStore (Pinia)", () => {
     });
 
     const store = usePrioritizationStore();
+    store.institutionSession = {
+      accessToken: "test-access-token",
+      expiresAt: Date.now() + 60_000,
+      account: sampleInstitutionAccount,
+    };
+    vi.spyOn(apiClient, "listPlaceActivities").mockResolvedValue([]);
     const res = await store.savePlaceTriage(sampleHospital.id, {
       attention_status: "in_progress",
       urgency_level: 5,
@@ -246,6 +344,20 @@ describe("usePrioritizationStore (Pinia)", () => {
     expect(store.selectedPlace?.priority_score).toBe(261.0);
     expect(store.kpis.in_progress_count).toBe(1);
     expect(store.kpis.total_estimated_vulnerable).toBe(220);
+  });
+
+  it("requires a verified institutional session before saving a public field action", async () => {
+    const updateSpy = vi.spyOn(apiClient, "updatePlaceTriage");
+    const store = usePrioritizationStore();
+
+    const result = await store.savePlaceTriage(sampleHospital.id, {
+      activity_type: "on_scene",
+      institution_notes: "Unit is on site",
+    });
+
+    expect(result).toBeNull();
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(store.error).toContain("organización verificada");
   });
 
   it("switches zone instantly with selectZone without triggering Overpass sync if places exist", async () => {
@@ -343,7 +455,7 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Geo-Prioridad Vulnerable");
+    expect(wrapper.text()).toContain("FirstSpot");
     expect(wrapper.text()).toContain("Sonsonate");
     expect(wrapper.text()).toContain("Sincronizar con Overpass");
 
@@ -409,16 +521,13 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
   });
 
   it("renders PriorityQueuePanel with prioritized places in Spanish and English", async () => {
-    setActivePinia(createPinia());
     setAppLocale("es");
-    const store = usePrioritizationStore();
 
     const wrapper = mount(PriorityQueuePanel, {
       global: { plugins: [ElementPlus] },
       props: {
         places: [sampleHospital],
         selectedPlace: null,
-        filters: store.filters,
         isLoading: false,
       },
     });
@@ -435,13 +544,76 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     setAppLocale("es");
   });
 
+  it("labels the selected place explicitly instead of relying only on row color", async () => {
+    setAppLocale("es");
+    const places = Array.from({ length: 12 }, (_, index) => ({
+      ...sampleHospital,
+      id: `${sampleHospital.id}-${index + 1}`,
+      name: `Hospital prioritario ${index + 1}`,
+    }));
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: {
+        places,
+        selectedPlace: places[11],
+        isLoading: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll("tbody tr")).toHaveLength(2);
+    expect(wrapper.text()).toContain("11–12 de 12");
+    const selectedRow = wrapper
+      .findAll("tbody tr")
+      .find((row) => row.find('[data-testid="selected-place-indicator"]').exists());
+    expect(selectedRow).toBeDefined();
+    expect(selectedRow!.classes()).toContain("is-selected-place-row");
+    expect(wrapper.get('[data-testid="selected-place-indicator"]').text()).toContain(
+      "En el mapa",
+    );
+    wrapper.unmount();
+  });
+
+  it("paginates the prioritized queue without losing the global rank", async () => {
+    setAppLocale("es");
+    const places = Array.from({ length: 12 }, (_, index) => ({
+      ...sampleHospital,
+      id: `${sampleHospital.id}-${index + 1}`,
+      name: `Hospital prioritario ${index + 1}`,
+    }));
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: { places, selectedPlace: null, isLoading: false },
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll("tbody tr")).toHaveLength(10);
+    expect(wrapper.text()).toContain("1–10 de 12");
+
+    const secondPage = wrapper
+      .findAll(".el-pager li")
+      .find((page) => page.text() === "2");
+    expect(secondPage).toBeDefined();
+    await secondPage!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.findAll("tbody tr")).toHaveLength(2);
+    expect(wrapper.text()).toContain("11–12 de 12");
+    expect(wrapper.text()).toContain("Hospital prioritario 11");
+    expect(wrapper.findAll(".rank-badge").map((rank) => rank.text())).toEqual([
+      "11",
+      "12",
+    ]);
+    wrapper.unmount();
+  });
+
   it("renders a centered triage dialog and saves the edited evaluation", async () => {
     setAppLocale("es");
     const view = new DOMWrapper(document.body);
     const wrapper = mount(PlaceTriageDrawer, {
       global: { plugins: [ElementPlus] },
       attachTo: document.body,
-      props: { visible: true, place: sampleHospital },
+      props: { visible: true, place: sampleHospital, account: sampleInstitutionAccount },
     });
     await flushPromises();
 
@@ -466,6 +638,7 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
       sampleHospital.id,
       {
         attention_status: "in_progress",
+        activity_type: "update",
         urgency_level: sampleHospital.urgency_level,
         estimated_vulnerable_count: sampleHospital.estimated_vulnerable_count + 25,
         institution_notes: "Brigada asignada",
@@ -497,6 +670,58 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     setAppLocale("es");
   });
 
+  it("shows public activity attribution and routes anonymous users to institutional access", async () => {
+    setAppLocale("es");
+    const activity: PlaceActivityRead = {
+      id: "cccccccc-dddd-eeee-ffff-000000000000",
+      place_id: sampleHospital.id,
+      activity_type: "on_scene",
+      attention_status: "in_progress",
+      urgency_level: 4,
+      estimated_vulnerable_count: 12,
+      notes: "Unidad en el lugar evaluando daños",
+      actor_name: "Ana Respuesta",
+      organization: {
+        id: sampleInstitutionAccount.institution.id,
+        name: sampleInstitutionAccount.institution.name,
+        country: "El Salvador",
+        sector: "Bomberos",
+        verification_status: "verified",
+      },
+      created_at: "2026-10-16T12:30:00Z",
+    };
+    const view = new DOMWrapper(document.body);
+    const verified = mount(PlaceTriageDrawer, {
+      global: { plugins: [ElementPlus] },
+      attachTo: document.body,
+      props: {
+        visible: true,
+        place: sampleHospital,
+        account: sampleInstitutionAccount,
+        activities: [activity],
+      },
+    });
+    await flushPromises();
+    expect(view.text()).toContain("Bitácora de coordinación");
+    expect(view.text()).toContain("Bomberos de Sonsonate");
+    expect(view.text()).toContain("Ana Respuesta");
+    expect(view.text()).toContain("Unidad en el lugar evaluando daños");
+    verified.unmount();
+
+    const anonymous = mount(PlaceTriageDrawer, {
+      global: { plugins: [ElementPlus] },
+      attachTo: document.body,
+      props: { visible: true, place: sampleHospital },
+    });
+    await flushPromises();
+    const anonymousView = new DOMWrapper(document.body);
+    expect(anonymousView.find('[data-testid="institution-access-btn"]').exists()).toBe(true);
+    await anonymousView.find('[data-testid="institution-access-btn"]').trigger("click");
+    expect(anonymous.emitted("request-access")).toHaveLength(1);
+    anonymous.unmount();
+    setAppLocale("es");
+  });
+
   it("supports dark and light mode theme toggling via useTheme composable", () => {
     const { isDark, toggleTheme, setTheme } = useTheme();
 
@@ -510,14 +735,14 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     expect(isDark.value).toBe(true);
   });
 
-  it("renders VulnerabilityHeatmapCanvas with layer toggles including hazards and map panel", async () => {
+  it("renders the map canvas without duplicating ribbon layer controls", async () => {
     setAppLocale("es");
     const wrapper = mount(VulnerabilityHeatmapCanvas, {
       global: { plugins: [ElementPlus] },
       props: {
         places: [sampleHospital],
         heatmapPoints: sampleHeatmapResponse.points,
-        selectedPlace: null,
+        selectedPlace: sampleHospital,
         currentZone: sampleZones[0],
         customRadiusEnabled: false,
         customRadiusMeters: 3000,
@@ -527,10 +752,12 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="map-panel"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain("Mapa de Calor");
-    expect(wrapper.text()).toContain("Marcadores Tácticos");
-    expect(wrapper.text()).toContain("Amenazas y Desastres");
+    expect(wrapper.find(".map-layer-toggles").exists()).toBe(false);
     expect(wrapper.find('[data-testid="map-legend"]').exists()).toBe(true);
+    expect(wrapper.find(".tactical-map-pin.tactical-pin-selected").exists()).toBe(true);
+    expect(wrapper.find(".leaflet-tooltip.selected-place-tooltip").text()).toContain(
+      "LUGAR SELECCIONADO",
+    );
   });
 });
 

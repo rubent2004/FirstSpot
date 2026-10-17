@@ -1,1 +1,1 @@
-"""Test suite for Geo-Prioridad Vulnerable backend."""
+"""Test suite for the FirstSpot backend."""
