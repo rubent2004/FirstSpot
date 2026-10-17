@@ -92,7 +92,10 @@ describe("Estimated exposed population in the dispatch queue", () => {
     await flushPromises();
 
     const readout = wrapper.get('[data-testid="row-exposed-population"]');
-    expect(readout.text()).toBe("12.480 pob. estimada");
+    // The unit moved into the column header: 288 rows do not each need to say
+    // "pob. estimada", and repeating it was what clipped the cell.
+    expect(readout.text()).toBe("12.480");
+    expect(wrapper.text()).toContain("Pob. estimada");
     expect(readout.classes()).toContain("eoc-numeric");
     expect(readout.classes()).not.toContain("is-unknown");
     // The method travels with the figure, never implying a count of presence.
@@ -101,8 +104,9 @@ describe("Estimated exposed population in the dispatch queue", () => {
     setAppLocale("en");
     await flushPromises();
     expect(wrapper.get('[data-testid="row-exposed-population"]').text()).toBe(
-      "12,480 est. population",
+      "12,480",
     );
+    expect(wrapper.text()).toContain("Exposed pop.");
     wrapper.unmount();
   });
 
@@ -164,7 +168,7 @@ describe("Estimated exposed population in the dispatch queue", () => {
       .map((node) => node.text());
     // Uniform density inside a unit is the documented assumption, not a bug:
     // the estimate must not be jittered to look more precise than it is.
-    expect(readouts).toEqual(["12.480 pob. estimada", "12.480 pob. estimada"]);
+    expect(readouts).toEqual(["12.480", "12.480"]);
     wrapper.unmount();
   });
 
@@ -177,7 +181,7 @@ describe("Estimated exposed population in the dispatch queue", () => {
 
     // The census estimate replaced the readout; it did not overwrite the field.
     expect(wrapper.get('[data-testid="row-exposed-population"]').text()).toBe(
-      "12.480 pob. estimada",
+      "12.480",
     );
     expect(wrapper.props("places")[0].estimated_vulnerable_count).toBe(220);
     wrapper.unmount();

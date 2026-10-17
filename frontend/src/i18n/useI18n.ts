@@ -135,9 +135,9 @@ export interface I18nMessages {
     colScore: string;
     colPlace: string;
     colUrgency: string;
+    colExposed: string;
     colStatus: string;
     colAction: string;
-    clusterBadge: string;
     triageAction: string;
     quickDispatch: string;
     showingCount: string;
@@ -145,6 +145,17 @@ export interface I18nMessages {
     priorityHint: string;
     /** Completes an urgency reading for assistive technology, e.g. "4 of 5". */
     urgencyScaleSuffix: string;
+    /** Narrows the queue that is already on screen, without a round trip. */
+    filterPlaceholder: string;
+    clearFilter: string;
+    filterEmpty: string;
+    /** Reveals the next slice of the queue. */
+    revealMore: string;
+    updating: string;
+    /** Nearby vulnerable places, said in words rather than as "+16 en 500m". */
+    nearbyOne: string;
+    nearbyMany: string;
+    nearbyHint: string;
   };
   exposure: {
     queueLabel: string;
@@ -323,15 +334,24 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       colScore: "Prioridad",
       colPlace: "Lugar y Categoría",
       colUrgency: "Urgencia",
+      colExposed: "Pob. estimada",
       colStatus: "Estado",
       colAction: "Acción",
-      clusterBadge: "en 500m",
       triageAction: "Evaluar",
       quickDispatch: "Despachar",
       showingCount: "lugares priorizados",
       priorityHint:
         "Puntaje de prioridad, comparado con el más alto de la cola actual.",
       urgencyScaleSuffix: "de 5",
+      filterPlaceholder: "Filtrar esta cola",
+      clearFilter: "Limpiar el filtro",
+      filterEmpty: "Ningún lugar de la cola coincide con ese filtro.",
+      revealMore: "Mostrar más lugares",
+      updating: "Actualizando…",
+      nearbyOne: "lugar cerca",
+      nearbyMany: "lugares cerca",
+      nearbyHint:
+        "Otros lugares vulnerables a menos de 500 metros de este punto: una sola salida puede cubrirlos.",
     },
     exposure: {
       queueLabel: "pob. estimada",
@@ -548,15 +568,24 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       colScore: "Priority",
       colPlace: "Place & Category",
       colUrgency: "Urgency",
+      colExposed: "Exposed pop.",
       colStatus: "Status",
       colAction: "Action",
-      clusterBadge: "in 500m",
       triageAction: "Triage",
       quickDispatch: "Dispatch",
       showingCount: "prioritized places",
       priorityHint:
         "Priority score, compared with the highest in the current queue.",
       urgencyScaleSuffix: "of 5",
+      filterPlaceholder: "Filter this queue",
+      clearFilter: "Clear the filter",
+      filterEmpty: "No place in the queue matches that filter.",
+      revealMore: "Show more places",
+      updating: "Updating…",
+      nearbyOne: "place nearby",
+      nearbyMany: "places nearby",
+      nearbyHint:
+        "Other vulnerable places within 500 metres of this point: one trip can cover them.",
     },
     exposure: {
       queueLabel: "est. population",

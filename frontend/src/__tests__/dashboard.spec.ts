@@ -536,13 +536,37 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
 
     expect(wrapper.text()).toContain("Cola de Despacho Institucional");
     expect(wrapper.text()).toContain("Sonsonate Regional National Hospital");
-    expect(wrapper.text()).toContain("+4 en 500m");
+    // "+4 en 500m" was unexplained notation; the badge now says it in words.
+    expect(wrapper.get('[data-testid="row-nearby-places"]').text()).toBe(
+      "4 lugares cerca",
+    );
+    expect(wrapper.get('[data-testid="row-nearby-places"]').attributes("title")).toContain(
+      "500 metros",
+    );
 
     setAppLocale("en");
     await flushPromises();
     expect(wrapper.text()).toContain("Institutional Dispatch Queue");
-    expect(wrapper.text()).toContain("+4 in 500m");
+    expect(wrapper.get('[data-testid="row-nearby-places"]').text()).toBe(
+      "4 places nearby",
+    );
     setAppLocale("es");
+  });
+
+  it("hides the nearby badge when a place has no vulnerable neighbours", async () => {
+    setAppLocale("es");
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: {
+        places: [{ ...sampleHospital, nearby_places_count: 0 }],
+        selectedPlace: null,
+        isLoading: false,
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="row-nearby-places"]').exists()).toBe(false);
+    wrapper.unmount();
   });
 
   it("encodes priority as a whole number plus a relative bar, and urgency as a level meter", async () => {
@@ -600,8 +624,8 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     });
     await flushPromises();
 
-    expect(wrapper.findAll("tbody tr")).toHaveLength(2);
-    expect(wrapper.text()).toContain("11–12 de 12");
+    // No pages to turn: all twelve places are on screen at once.
+    expect(wrapper.findAll("tbody tr")).toHaveLength(12);
     const selectedRow = wrapper
       .findAll("tbody tr")
       .find((row) => row.find('[data-testid="selected-place-indicator"]').exists());
@@ -613,12 +637,13 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     wrapper.unmount();
   });
 
-  it("paginates the prioritized queue without losing the global rank", async () => {
+  it("replaces pagination with one deep queue revealed in slices", async () => {
     setAppLocale("es");
-    const places = Array.from({ length: 12 }, (_, index) => ({
+    const places = Array.from({ length: 120 }, (_, index) => ({
       ...sampleHospital,
       id: `${sampleHospital.id}-${index + 1}`,
       name: `Hospital prioritario ${index + 1}`,
+      priority_score: 300 - index,
     }));
     const wrapper = mount(PriorityQueuePanel, {
       global: { plugins: [ElementPlus] },
@@ -626,23 +651,124 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     });
     await flushPromises();
 
-    expect(wrapper.findAll("tbody tr")).toHaveLength(10);
-    expect(wrapper.text()).toContain("1–10 de 12");
+    // Twenty-nine pages of ten became one list, bounded on first paint.
+    expect(wrapper.find('[data-testid="places-pagination"]').exists()).toBe(false);
+    expect(wrapper.find(".el-pagination").exists()).toBe(false);
+    expect(wrapper.findAll("tbody tr")).toHaveLength(50);
+    expect(wrapper.get('[data-testid="queue-count"]').text()).toContain("120");
 
-    const secondPage = wrapper
-      .findAll(".el-pager li")
-      .find((page) => page.text() === "2");
-    expect(secondPage).toBeDefined();
-    await secondPage!.trigger("click");
+    await wrapper.get('[data-testid="queue-reveal-more"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(100);
+
+    await wrapper.get('[data-testid="queue-reveal-more"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(120);
+    expect(wrapper.find('[data-testid="queue-reveal-more"]').exists()).toBe(false);
+
+    // Rank is the position in the whole queue, which is what gets said aloud.
+    expect(wrapper.findAll(".rank-badge").at(119)!.text()).toBe("120");
+    wrapper.unmount();
+  });
+
+  it("reveals the next slice when the operator scrolls toward the bottom", async () => {
+    setAppLocale("es");
+    const places = Array.from({ length: 120 }, (_, index) => ({
+      ...sampleHospital,
+      id: `${sampleHospital.id}-${index + 1}`,
+      name: `Hospital prioritario ${index + 1}`,
+    }));
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      attachTo: document.body,
+      props: { places, selectedPlace: null, isLoading: false },
+    });
     await flushPromises();
 
-    expect(wrapper.findAll("tbody tr")).toHaveLength(2);
-    expect(wrapper.text()).toContain("11–12 de 12");
-    expect(wrapper.text()).toContain("Hospital prioritario 11");
-    expect(wrapper.findAll(".rank-badge").map((rank) => rank.text())).toEqual([
-      "11",
-      "12",
-    ]);
+    // The scroll host is reached by class name, so the coupling is asserted.
+    const scrollHost = wrapper.element.querySelector(
+      ".el-table__body-wrapper .el-scrollbar__wrap",
+    );
+    expect(scrollHost).not.toBeNull();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(50);
+
+    scrollHost!.dispatchEvent(new Event("scroll"));
+    await flushPromises();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(100);
+    wrapper.unmount();
+  });
+
+  it("keeps a selected place on screen even past the revealed slice", async () => {
+    setAppLocale("es");
+    const places = Array.from({ length: 120 }, (_, index) => ({
+      ...sampleHospital,
+      id: `${sampleHospital.id}-${index + 1}`,
+      name: `Hospital prioritario ${index + 1}`,
+    }));
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: { places, selectedPlace: places[99], isLoading: false },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Hospital prioritario 100");
+    expect(wrapper.find('[data-testid="selected-place-indicator"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("narrows the queue in place instead of making the operator page for it", async () => {
+    setAppLocale("es");
+    const places = [
+      { ...sampleHospital, id: "q-1", name: "Hospital Nacional de Sonsonate" },
+      {
+        ...sampleHospital,
+        id: "q-2",
+        name: "Clínica Comunal Acajutla",
+        category: "clinic" as const,
+      },
+      { ...sampleHospital, id: "q-3", name: "Centro Escolar Izalco", category: "school" as const },
+    ];
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: { places, selectedPlace: null, isLoading: false },
+    });
+    await flushPromises();
+
+    // Accent-insensitive, so a radio spelling still finds the place.
+    await wrapper.get('[data-testid="queue-filter-input"]').setValue("clinica");
+    await flushPromises();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Clínica Comunal Acajutla");
+    expect(wrapper.get('[data-testid="queue-count"]').text()).toContain("1 de 3");
+
+    await wrapper.get('[data-testid="queue-filter-input"]').setValue("maternidad");
+    await flushPromises();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(0);
+    expect(wrapper.text()).toContain("Ningún lugar de la cola coincide");
+
+    await wrapper.get('[data-testid="queue-filter-clear"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll("tbody tr")).toHaveLength(3);
+    wrapper.unmount();
+  });
+
+  it("shows queue structure while the first result set is still loading", async () => {
+    setAppLocale("es");
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: { places: [], selectedPlace: null, isLoading: true },
+    });
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="queue-skeleton"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="places-table"]').exists()).toBe(false);
+
+    // A refresh keeps the previous rows visible rather than blanking the queue.
+    await wrapper.setProps({ places: [sampleHospital], isLoading: true });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="queue-skeleton"]').exists()).toBe(false);
+    expect(wrapper.findAll("tbody tr")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Actualizando");
     wrapper.unmount();
   });
 

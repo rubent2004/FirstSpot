@@ -2,7 +2,8 @@
 import { computed, ref, watch } from "vue";
 import {
   ElButton,
-  ElPagination,
+  ElInput,
+  ElSkeleton,
   ElTable,
   ElTableColumn,
   ElTag,
@@ -36,31 +37,140 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale, describePlace } = useI18n();
-const currentPage = ref(1);
-const pageSize = 10;
-const visiblePlaces = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return props.places.slice(start, start + pageSize);
-});
-const pageSummary = computed(() => {
-  const total = props.places.length;
-  if (total === 0) return "0";
-  const first = (currentPage.value - 1) * pageSize + 1;
-  const last = Math.min(currentPage.value * pageSize, total);
-  return locale.value === "es"
-    ? `${first}–${last} de ${total}`
-    : `${first}–${last} of ${total}`;
+
+/**
+ * How many rows reach the DOM before the operator asks for more.
+ *
+ * Twenty-nine pages of ten rows was unusable: nobody pages through a disaster.
+ * A deep single list is the right shape, but an unbounded one is a liability on
+ * the hardware this runs on, so the queue reveals itself in slices as the
+ * operator scrolls, with an explicit control for keyboard and screen-reader
+ * users who never fire a scroll event.
+ */
+const REVEAL_CHUNK = 50;
+
+/** Distance from the bottom, in pixels, at which the next slice is revealed. */
+const REVEAL_TRIGGER_PX = 280;
+
+/** Steps in the urgency meter; mirrors the 1..5 scale the API accepts. */
+const URGENCY_STEPS = [1, 2, 3, 4, 5] as const;
+
+const queueFilter = ref<string>("");
+const revealLimit = ref<number>(REVEAL_CHUNK);
+const panelRoot = ref<HTMLElement | null>(null);
+
+/** Accent-insensitive comparison key, so "clinica" finds "Clínica". */
+function searchKey(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * Every string a row shows that an operator might type to find it again.
+ * Matching the rendered label rather than the stored name means an unnamed
+ * place is findable by the wording actually on screen.
+ */
+function rowSearchKey(place: PlaceRead): string {
+  const described = describePlace(place);
+  return searchKey(
+    [
+      described.label,
+      described.hint ?? "",
+      t.value.categories[place.category as PlaceCategory] ?? place.category,
+      t.value.groups[place.vulnerability_group as VulnerabilityGroup] ?? "",
+      place.zone_name,
+    ].join(" "),
+  );
+}
+
+const filteredPlaces = computed<PlaceRead[]>(() => {
+  const needle = searchKey(queueFilter.value.trim());
+  if (needle.length === 0) return props.places;
+  return props.places.filter((place) => rowSearchKey(place).includes(needle));
 });
 
+const visiblePlaces = computed<PlaceRead[]>(() =>
+  filteredPlaces.value.slice(0, revealLimit.value),
+);
+
+const hasMoreToReveal = computed(
+  () => revealLimit.value < filteredPlaces.value.length,
+);
+
+const isFilterActive = computed(() => queueFilter.value.trim().length > 0);
+
+/** Nothing has arrived yet, so structure is more useful than a spinner. */
+const isFirstLoad = computed(() => props.isLoading && props.places.length === 0);
+
+/**
+ * Rank in the whole queue, not in the filtered view.
+ *
+ * "#7" has to mean the same thing before and after someone narrows the list,
+ * because it is what one coordinator says to another over the radio.
+ */
+const rankByPlaceId = computed(
+  () => new Map(props.places.map((place, index) => [place.id, index + 1])),
+);
+
+const countSummary = computed(() => {
+  const total = props.places.length;
+  if (!isFilterActive.value) return String(total);
+  return locale.value === "es"
+    ? `${filteredPlaces.value.length} de ${total}`
+    : `${filteredPlaces.value.length} of ${total}`;
+});
+
+function revealMore(): void {
+  if (!hasMoreToReveal.value) return;
+  revealLimit.value = Math.min(
+    revealLimit.value + REVEAL_CHUNK,
+    filteredPlaces.value.length,
+  );
+}
+
+/**
+ * The scrolling element Element Plus puts inside the table body.
+ *
+ * Reaching for it by class is a soft coupling, so a miss degrades to the
+ * explicit "show more" control rather than to a queue that cannot grow.
+ */
+function queueScrollElement(): HTMLElement | null {
+  return (
+    panelRoot.value?.querySelector<HTMLElement>(
+      ".el-table__body-wrapper .el-scrollbar__wrap",
+    ) ?? null
+  );
+}
+
+function handleQueueScroll(): void {
+  const host = queueScrollElement();
+  if (!host) {
+    revealMore();
+    return;
+  }
+  const remaining = host.scrollHeight - host.scrollTop - host.clientHeight;
+  if (remaining <= REVEAL_TRIGGER_PX) revealMore();
+}
+
+// A new result set or a new filter starts the queue at its top again.
 watch(
-  () => [props.places, props.selectedPlace?.id] as const,
+  () => [props.places, queueFilter.value] as const,
+  () => {
+    revealLimit.value = REVEAL_CHUNK;
+  },
+);
+
+// The selected place must always be on screen, even deep in a long queue.
+watch(
+  () => [filteredPlaces.value, props.selectedPlace?.id] as const,
   ([places, selectedPlaceId]) => {
-    const selectedIndex = selectedPlaceId
-      ? places.findIndex((place) => place.id === selectedPlaceId)
-      : -1;
-    currentPage.value = selectedIndex >= 0
-      ? Math.floor(selectedIndex / pageSize) + 1
-      : 1;
+    if (!selectedPlaceId) return;
+    const index = places.findIndex((place) => place.id === selectedPlaceId);
+    if (index >= revealLimit.value) {
+      revealLimit.value = Math.min(index + REVEAL_CHUNK, places.length);
+    }
   },
   { immediate: true },
 );
@@ -72,9 +182,6 @@ function getStatusTagType(
   if (status === "in_progress") return "primary";
   return "warning";
 }
-
-/** Steps in the urgency meter; mirrors the 1..5 scale the API accepts. */
-const URGENCY_STEPS = [1, 2, 3, 4, 5] as const;
 
 /**
  * Severity tone for an urgency level.
@@ -116,16 +223,27 @@ function priorityShare(score: number): number {
   return Math.min(1, Math.max(0.05, Number(score) / top));
 }
 
+/** How many other vulnerable places sit inside the same 500 m. */
+function nearbyLabel(count: number): string {
+  return `${count} ${count === 1 ? t.value.queue.nearbyOne : t.value.queue.nearbyMany}`;
+}
+
 /** False while the census figure is unknown, which is never the same as zero. */
 function isExposureKnown(place: PlaceRead): boolean {
   return exposedPopulationState(place).kind === "estimate";
 }
 
-/** Estimated exposed residents, or the reason the figure is unavailable. */
+/**
+ * Estimated exposed residents, or the reason the figure is unavailable.
+ *
+ * The unit lives in the column header rather than in all 288 cells; the three
+ * readings an operator must keep apart — a figure, a withheld figure and no
+ * census coverage at all — each keep their own wording.
+ */
 function exposureText(place: PlaceRead): string {
   const state = exposedPopulationState(place);
   if (state.kind === "estimate") {
-    return `${formatExposureValue(state.value, locale.value)} ${t.value.exposure.queueLabel}`;
+    return formatExposureValue(state.value, locale.value);
   }
   const reason =
     state.kind === "withheld"
@@ -134,6 +252,7 @@ function exposureText(place: PlaceRead): string {
   return `— ${reason}`;
 }
 
+/** Selecting a row moves the map; opening the name opens the record. */
 function handleRowClick(row: PlaceRead): void {
   emit("select-place", row, false);
 }
@@ -147,14 +266,25 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 </script>
 
 <template>
-  <section class="priority-queue-panel" data-testid="priority-queue-panel">
+  <section
+    ref="panelRoot"
+    class="priority-queue-panel"
+    data-testid="priority-queue-panel"
+  >
     <div class="queue-header">
       <div class="queue-title-block">
         <div class="queue-title-row">
           <Icon0 name="activity" :size="18" class="title-icon" />
           <h2 class="queue-title">{{ t.queue.title }}</h2>
-          <span class="queue-count-badge eoc-numeric">
-            {{ props.places.length }} {{ t.queue.showingCount }}
+          <span class="queue-count-badge eoc-numeric" data-testid="queue-count">
+            {{ countSummary }} {{ t.queue.showingCount }}
+          </span>
+          <span
+            v-if="props.isLoading && props.places.length > 0"
+            class="queue-updating"
+            role="status"
+          >
+            {{ t.queue.updating }}
           </span>
         </div>
         <p class="queue-subtitle">
@@ -163,33 +293,68 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
       </div>
     </div>
 
+    <ElInput
+      v-model="queueFilter"
+      class="queue-filter"
+      size="small"
+      clearable
+      :placeholder="t.queue.filterPlaceholder"
+      :aria-label="t.queue.filterPlaceholder"
+      data-testid="queue-filter-input"
+    >
+      <template #prefix>
+        <Icon0 name="search" :size="12" />
+      </template>
+    </ElInput>
+
     <div class="table-container">
+      <ElSkeleton
+        v-if="isFirstLoad"
+        class="queue-skeleton"
+        animated
+        :rows="8"
+        data-testid="queue-skeleton"
+      />
       <ElTable
+        v-else
         :data="visiblePlaces"
-        v-loading="props.isLoading"
         stripe
         highlight-current-row
         row-key="id"
         :row-class-name="tableRowClassName"
         height="100%"
-        :empty-text="t.queue.emptyText"
         data-testid="places-table"
         @row-click="handleRowClick"
+        @scroll="handleQueueScroll"
       >
-        <ElTableColumn :label="t.queue.colRank" width="46" align="center">
-          <template #default="{ $index }">
+        <template #empty>
+          <div class="queue-empty">
+            <p>{{ isFilterActive ? t.queue.filterEmpty : t.queue.emptyText }}</p>
+            <ElButton
+              v-if="isFilterActive"
+              size="small"
+              data-testid="queue-filter-clear"
+              @click="queueFilter = ''"
+            >
+              {{ t.queue.clearFilter }}
+            </ElButton>
+          </div>
+        </template>
+
+        <ElTableColumn :label="t.queue.colRank" width="34" align="center">
+          <template #default="{ row }">
             <span
               class="rank-badge eoc-numeric"
-              :class="{ 'rank-top-three': $index < 3 }"
+              :class="{ 'rank-top-three': (rankByPlaceId.get(row.id) ?? 99) <= 3 }"
             >
-              {{ (currentPage - 1) * pageSize + $index + 1 }}
+              {{ rankByPlaceId.get(row.id) ?? "—" }}
             </span>
           </template>
         </ElTableColumn>
 
         <ElTableColumn
           :label="t.queue.colScore"
-          width="78"
+          width="72"
           sortable
           prop="priority_score"
         >
@@ -213,7 +378,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colPlace" min-width="210">
+        <ElTableColumn :label="t.queue.colPlace" min-width="170">
           <template #default="{ row }">
             <div class="place-cell">
               <div class="place-title-line">
@@ -233,9 +398,15 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                     :size="13"
                   />
                 </span>
-                <strong class="place-name">
+                <button
+                  type="button"
+                  class="place-name"
+                  :title="t.queue.triageAction"
+                  data-testid="open-triage-btn"
+                  @click.stop="emit('select-place', row as PlaceRead, true)"
+                >
                   {{ describePlace(row as PlaceRead).label }}
-                </strong>
+                </button>
               </div>
               <p
                 v-if="describePlace(row as PlaceRead).hint"
@@ -260,54 +431,61 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                     t.categories[row.category as PlaceCategory] ?? row.category
                   }}
                 </ElTag>
-                <span class="cluster-badge eoc-numeric" :title="t.drawer.clusterNeighborsText">
+                <span
+                  v-if="row.nearby_places_count > 0"
+                  class="nearby-badge eoc-numeric"
+                  :title="t.queue.nearbyHint"
+                  data-testid="row-nearby-places"
+                >
                   <Icon0 name="layers" :size="11" />
-                  +{{ row.nearby_places_count }} {{ t.queue.clusterBadge }}
+                  {{ nearbyLabel(row.nearby_places_count) }}
                 </span>
               </div>
             </div>
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colUrgency" width="142">
+        <ElTableColumn :label="t.queue.colUrgency" width="80">
           <template #default="{ row }">
-            <div class="urgency-cell">
-              <div
-                class="urgency-reading"
-                :class="getUrgencyTone(row.urgency_level)"
-                role="img"
-                :aria-label="`${t.urgency[row.urgency_level] ?? ''} · ${row.urgency_level} ${t.queue.urgencyScaleSuffix}`"
-                data-testid="row-urgency"
-              >
-                <span class="urgency-meter" aria-hidden="true">
-                  <i
-                    v-for="step in URGENCY_STEPS"
-                    :key="step"
-                    :class="{ 'is-reached': step <= row.urgency_level }"
-                  ></i>
-                </span>
-                <span class="urgency-word">
-                  {{ t.urgency[row.urgency_level] ?? row.urgency_level }}
-                </span>
-              </div>
-              <span
-                class="exposed-population eoc-numeric"
-                :class="{ 'is-unknown': !isExposureKnown(row as PlaceRead) }"
-                :title="
-                  isExposureKnown(row as PlaceRead)
-                    ? t.exposure.methodNote
-                    : t.exposure.unknownHint
-                "
-                data-testid="row-exposed-population"
-              >
-                <Icon0 name="community_centre" :size="11" />
-                {{ exposureText(row as PlaceRead) }}
+            <div
+              class="urgency-reading"
+              :class="getUrgencyTone(row.urgency_level)"
+              role="img"
+              :aria-label="`${t.urgency[row.urgency_level] ?? ''} · ${row.urgency_level} ${t.queue.urgencyScaleSuffix}`"
+              data-testid="row-urgency"
+            >
+              <span class="urgency-meter" aria-hidden="true">
+                <i
+                  v-for="step in URGENCY_STEPS"
+                  :key="step"
+                  :class="{ 'is-reached': step <= row.urgency_level }"
+                ></i>
+              </span>
+              <span class="urgency-word">
+                {{ t.urgency[row.urgency_level] ?? row.urgency_level }}
               </span>
             </div>
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colStatus" width="122">
+        <ElTableColumn :label="t.queue.colExposed" width="112">
+          <template #default="{ row }">
+            <span
+              class="exposed-population eoc-numeric"
+              :class="{ 'is-unknown': !isExposureKnown(row as PlaceRead) }"
+              :title="
+                isExposureKnown(row as PlaceRead)
+                  ? t.exposure.methodNote
+                  : t.exposure.unknownHint
+              "
+              data-testid="row-exposed-population"
+            >
+              {{ exposureText(row as PlaceRead) }}
+            </span>
+          </template>
+        </ElTableColumn>
+
+        <ElTableColumn :label="t.queue.colStatus" width="92">
           <template #default="{ row }">
             <ElTag
               size="small"
@@ -329,38 +507,20 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
             </ElTag>
           </template>
         </ElTableColumn>
-
-        <ElTableColumn :label="t.queue.colAction" width="108" fixed="right">
-          <template #default="{ row }">
-            <ElButton
-              type="primary"
-              plain
-              size="small"
-              class="triage-cta-btn"
-              data-testid="open-triage-btn"
-              @click.stop="emit('select-place', row as PlaceRead, true)"
-            >
-              <span>{{ t.queue.triageAction }}</span>
-              <Icon0 name="chevron_right" :size="13" />
-            </ElButton>
-          </template>
-        </ElTableColumn>
       </ElTable>
     </div>
-    <div class="queue-pagination">
-      <span class="queue-page-range eoc-numeric">{{ pageSummary }}</span>
-      <ElPagination
-        v-model:current-page="currentPage"
-        :page-size="pageSize"
-        :total="props.places.length"
-        :pager-count="5"
-        layout="prev, pager, next"
-        background
+
+    <div v-if="hasMoreToReveal" class="queue-reveal">
+      <ElButton
         size="small"
-        :hide-on-single-page="true"
-        :aria-label="locale === 'es' ? 'Paginación de lugares priorizados' : 'Prioritized places pagination'"
-        data-testid="places-pagination"
-      />
+        data-testid="queue-reveal-more"
+        @click="revealMore"
+      >
+        {{ t.queue.revealMore }}
+      </ElButton>
+      <span class="queue-reveal-count eoc-numeric">
+        {{ visiblePlaces.length }} / {{ filteredPlaces.length }}
+      </span>
     </div>
   </section>
 </template>
@@ -419,9 +579,24 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   border-radius: var(--eoc-radius-pill);
 }
 
+/* A refresh keeps the previous rows on screen, so it only needs a quiet word */
+.queue-updating {
+  font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-muted);
+}
+
 .queue-subtitle {
   margin: 0;
   font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-muted);
+}
+
+.queue-filter :deep(.el-input__wrapper) {
+  background-color: var(--eoc-bg-sunken) !important;
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border) !important;
+}
+
+.queue-filter :deep(.el-input__prefix-inner svg) {
   color: var(--eoc-text-muted);
 }
 
@@ -436,7 +611,25 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   background: var(--eoc-bg-panel);
 }
 
-.queue-pagination {
+.queue-skeleton {
+  padding: var(--eoc-pad-panel);
+}
+
+.queue-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--eoc-gap-x);
+  padding: var(--eoc-pad-panel);
+}
+
+.queue-empty p {
+  margin: 0;
+  font-size: var(--eoc-fs-body);
+  color: var(--eoc-text-secondary);
+}
+
+.queue-reveal {
   min-height: var(--eoc-icon-btn);
   display: flex;
   align-items: center;
@@ -445,30 +638,19 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   padding: 0 2px;
 }
 
-.queue-page-range {
+.queue-reveal-count {
   color: var(--eoc-text-muted);
   font-size: var(--eoc-fs-micro);
   white-space: nowrap;
-}
-
-.queue-pagination :deep(.el-pagination) {
-  --el-pagination-button-bg-color: var(--eoc-bg-card);
-  --el-pagination-hover-color: var(--eoc-accent);
-  --el-pagination-text-color: var(--eoc-text-secondary);
-  padding: 0;
-}
-
-.queue-pagination :deep(.el-pager li.is-active) {
-  background-color: var(--eoc-accent) !important;
-  color: var(--eoc-on-accent) !important;
 }
 
 .rank-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
+  min-width: 20px;
   height: 20px;
+  padding: 0 3px;
   border-radius: var(--eoc-radius-pill);
   font-size: var(--eoc-fs-micro);
   font-weight: var(--eoc-fw-semibold);
@@ -538,11 +720,26 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   flex-shrink: 0;
 }
 
+/* The name is the way into a place's record: one target, no extra column of
+   288 repeated buttons, and focusable so the queue stays keyboard-operable */
 .place-name {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
   font-size: var(--eoc-fs-body);
+  font-weight: var(--eoc-fw-semibold);
   color: var(--eoc-text-primary);
   line-height: 1.3;
-  font-weight: var(--eoc-fw-semibold);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.place-name:hover {
+  color: var(--eoc-accent-text);
+  text-decoration: underline;
 }
 
 /* A locating hint only exists for a place with no name, so it carries the
@@ -566,7 +763,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   padding-left: 26px;
 }
 
-.cluster-badge {
+.nearby-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -577,13 +774,6 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   border: var(--eoc-border-width) solid var(--eoc-border);
   padding: 0 5px;
   border-radius: var(--eoc-radius-control);
-}
-
-.urgency-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
 }
 
 /* Five steps read as a level at a glance; the word keeps it from being a
@@ -663,24 +853,6 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   gap: 4px;
 }
 
-.triage-cta-btn {
-  font-weight: var(--eoc-fw-semibold);
-  font-size: var(--eoc-fs-micro);
-  height: var(--eoc-control-h);
-  border-radius: var(--eoc-radius-button);
-  background: var(--eoc-bg-card) !important;
-  border-color: var(--eoc-border) !important;
-  color: var(--eoc-text-primary) !important;
-  transition: background-color var(--eoc-transition),
-    border-color var(--eoc-transition), color var(--eoc-transition);
-}
-
-.triage-cta-btn:hover {
-  background: var(--eoc-accent) !important;
-  border-color: var(--eoc-accent) !important;
-  color: var(--eoc-on-accent) !important;
-}
-
 :deep(.el-table) {
   --el-table-bg-color: var(--eoc-bg-panel);
   --el-table-tr-bg-color: var(--eoc-bg-panel);
@@ -742,33 +914,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   white-space: nowrap;
 }
 
-:deep(.el-input__wrapper),
-:deep(.el-select__wrapper) {
-  background-color: var(--eoc-bg-sunken) !important;
-  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border) !important;
-  color: var(--eoc-text-primary) !important;
-}
-
 :deep(.el-input__inner) {
   color: var(--eoc-text-primary) !important;
-}
-
-:deep(.el-pagination button:focus-visible),
-:deep(.el-pager li:focus-visible) {
-  outline: 2px solid var(--eoc-accent);
-  outline-offset: 1px;
-}
-
-:deep(.el-radio-button__inner) {
-  background-color: var(--eoc-bg-card) !important;
-  border-color: var(--eoc-border) !important;
-  color: var(--eoc-text-secondary) !important;
-}
-
-:deep(.el-radio-button.is-active .el-radio-button__inner) {
-  background-color: var(--eoc-accent) !important;
-  color: var(--eoc-on-accent) !important;
-  border-color: var(--eoc-accent) !important;
-  box-shadow: none !important;
 }
 </style>
