@@ -186,6 +186,17 @@ test: db-up
     pnpm --dir frontend run test
     pnpm --dir frontend run build
 
+# End-to-end Playwright suite against the REAL running stack (start it with `just up2`).
+# Artifacts (exports, PDFs, screenshots, axe results, HTML report) land in frontend/e2e-artifacts/.
+e2e *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! curl --silent --fail --max-time 3 http://127.0.0.1:8000/api/v1/health >/dev/null; then
+        echo "The API is not healthy on :8000. Start the stack first: just up2" >&2
+        exit 1
+    fi
+    pnpm --dir frontend exec playwright test {{args}}
+
 # Check status of PostGIS container, database records, and active dev ports
 status:
     #!/usr/bin/env bash

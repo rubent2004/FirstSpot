@@ -19,3 +19,6 @@ data/**/*.zip
 # Raw OpenStreetMap country extract (~35 MB, regenerable by `just osm-download`).
 data/osm/raw/
 data/**/*.osm.pbf
+
+# Playwright end-to-end run output (reports, downloads, screenshots, PDFs).
+frontend/e2e-artifacts/
