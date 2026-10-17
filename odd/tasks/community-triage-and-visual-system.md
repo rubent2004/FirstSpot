@@ -411,9 +411,60 @@ and `hogar_parentesco` (which carries the `Monoparentales` variable).
 
 ### Phase C — PRIO-SV index
 
-- [ ] **C1** Vulnerability dimension in SQL: CDC SVI percentile pipeline over
-  census indicators. Regression-test geometric means against the INFORM
-  Honduras workbook.
+- [x] **C1** Vulnerability dimension. **Commits `8363739`, `dcf81cb`,
+  `4877b2a`, `dcae80b`.** Verified: 304 tests pass (207 pre-existing + 97 new),
+  `alembic check` clean. No migration needed — the index recomputes per
+  request (66 ms query + 36 ms pipeline over 262 districts).
+
+  **Validated against real geography, which is the check that mattered.**
+  Top: Cacaopera, Victoria, Yamabal, Lislique — Morazán, Cabañas and La Unión,
+  the poorest departments in every published Salvadoran poverty map. Bottom:
+  Nuevo Cuscatlán and Antiguo Cuscatlán, the wealthiest districts in the
+  country. The index is not inverted.
+
+  Fully auditable: every score exposes its per-variable `E`, `universe`, `EP`
+  and `EPL`, plus theme `SPL`/`RPL` and both the CDC and INFORM compositions.
+
+  Index variables, built from inspected `category` values — vulnerable groups:
+  `EP_AGE65`, `EP_AGE5`, `EP_DISABL`, `EP_SNGPNT`, `EP_CROWD`. Socioeconomic:
+  `EP_RURAL` alone. Published but deliberately outside the index:
+  `EP_DISPERSED` (nested inside `EP_RURAL`, would double-weight) and
+  `EP_VACANT` (direction indefensible — empty dwellings mark both no local
+  livelihood and remittance income).
+
+### C1 limitations that must be stated whenever these scores are shown
+
+1. **Urban poverty is invisible.** Apopa ranks 258 and Delgado 255 despite
+   documented deprivation, because they are not rural. This is the direct cost
+   of having no published socioeconomic variables at district level.
+2. **No district can reach 10.** 102 of 262 districts share a rural share of
+   exactly 1.0, so the single-variable socioeconomic theme saturates at
+   RPL 0.8065. Observed maximum is 9.27. **Pinned as a test**, so ingesting a
+   real socioeconomic variable will fail it — that failure is the wanted signal.
+3. **No construction quality anywhere in V.** Adobe and reinforced concrete
+   score identically. For a seismic prioritization tool this is the most
+   consequential gap.
+4. **Ageing wealthy districts rank low.** Antiguo Cuscatlán has the country's
+   highest 65+ share (17.72%) and ranks 261. Correct for a relative index, but
+   it conceals a real evacuation-assistance need.
+5. **57 districts have at least one input summed over a withheld cell.** Worst
+   relative case: San Isidro Labrador, `EP_AGE65` short by at most 12 of 586
+   (2.048%). Zero districts withheld entirely. Published as lower bounds.
+6. **Relative rank only.** A 10 means "ranked most vulnerable of 262 by this
+   method" — not poverty, not damage, not casualties, and not comparable to
+   another country.
+
+### New data defect found during C1
+
+**`estructuras` is unusable as a structure count.** Values are near-constant
+per district (35,816-94,223) across districts whose population ranges
+586-330,543, and sum to **17,215,235 nationally against 1,839,322 private
+dwellings**. Excluded from the index.
+
+Also excluded: crowding by rooms (rooms not published; proxied by persons per
+household) and homeless/collective dwellings (withheld in 82 and 27 districts
+respectively — ranking 180 districts against a variable 82 cannot report would
+be dishonest).
 - [ ] **C2** Lack-of-coping-capacity dimension from OSM via PostGIS/pgRouting.
 - [ ] **C3** Hazard & exposure dimension: USGS ShakeMap client, zonal statistics,
   fixed-bound normalization.
