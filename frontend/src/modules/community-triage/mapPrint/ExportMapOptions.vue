@@ -134,7 +134,10 @@ const isOn = (id: SectionId) => selected.value.includes(id);
                 <input
                   type="checkbox"
                   name="print-place-column"
-                  :checked="prefs.placeColumns.includes(column)"
+                  :checked="
+                    prefs.placeColumns.includes(column) &&
+                    !(column === 'population' && !availability.placePopulation.available)
+                  "
                   :disabled="column === 'population' && !availability.placePopulation.available"
                   :aria-describedby="
                     column === 'population' && !availability.placePopulation.available

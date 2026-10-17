@@ -15,7 +15,7 @@ import {
 import type { MapSnapshot } from "../modules/community-triage/mapPrint/mapSnapshot";
 import PrintSheet from "../modules/community-triage/PrintSheet.vue";
 import { baselineIndex, eventIndex, redDistrict } from "./fixtures/prioFixtures";
-import { escuintlaSnapshot, sonsonateSnapshot } from "./fixtures/mapPrintFixtures";
+import { SONSONATE_PLACES, escuintlaSnapshot, sonsonateSnapshot } from "./fixtures/mapPrintFixtures";
 
 const NOW = new Date("2026-10-17T12:30:00Z");
 const mounted: VueWrapper[] = [];
@@ -108,10 +108,22 @@ describe("printed map of the current view", () => {
     // Salvadoran emergency numbers are not printed for a Guatemalan area
     expect(body().querySelector('[data-testid="section-contacts"]')).toBeNull();
     expect(text()).not.toContain("2281-0888");
-    // population is the plain absence, never a made-up zero
+    // no population column at all outside the census: not a zero, not a made-up figure
     const places = body().querySelector('[data-testid="section-places"]')!.textContent!;
-    expect(places).toContain("no census coverage");
+    expect(places).not.toContain("Est. population");
     expect(places).not.toMatch(/\b0\b/);
+  });
+
+  it("prints no population even if stale data carries estimates while the view is outside El Salvador", async () => {
+    const stale = escuintlaSnapshot({ places: SONSONATE_PLACES, selectedPlace: SONSONATE_PLACES[1] });
+    sheet(stale, ["map", "places", "placeDetail", "limits"], { prefs: { placeColumns: ["category", "population"] } });
+    await flushPromises();
+    const places = body().querySelector('[data-testid="section-places"]')!.textContent!;
+    expect(places).not.toContain("12,480");
+    expect(places).not.toContain("Est. population");
+    const detail = body().querySelector('[data-testid="section-place-detail"]')!.textContent!;
+    expect(detail).not.toContain("12,480");
+    expect(detail).not.toContain("Exposed population");
   });
 
   it("inside El Salvador says why the district ranking is not on the map", async () => {

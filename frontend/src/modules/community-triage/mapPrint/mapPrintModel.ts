@@ -75,12 +75,23 @@ export interface PrintContext {
 const on = (locked = false): SectionState => ({ available: true, reason: null, locked });
 const off = (reason: string): SectionState => ({ available: false, reason, locked: false });
 
+/**
+ * Whether any population figure may be printed for this view: only inside El
+ * Salvador, and only if at least one place actually carries an estimate or a
+ * withheld marker. Outside the census there is nothing to print, whatever the data says.
+ */
+export function populationAvailable(snapshot: MapSnapshot): boolean {
+  return (
+    coverageOf(snapshot.view.center) === "in" &&
+    snapshot.places.some((p) => exposedPopulationState(p).kind !== "no-coverage")
+  );
+}
+
 export function computeAvailability(ctx: PrintContext, m: MapPrintMessages): Availability {
   const { snapshot, selectedDistrict } = ctx;
   const inCoverage = coverageOf(snapshot.view.center) === "in";
   const hasPlaces = snapshot.places.length > 0;
-  const hasPopulation =
-    inCoverage && snapshot.places.some((p) => exposedPopulationState(p).kind !== "no-coverage");
+  const hasPopulation = populationAvailable(snapshot);
 
   return {
     map: on(true),

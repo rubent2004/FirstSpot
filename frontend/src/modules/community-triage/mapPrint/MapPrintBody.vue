@@ -4,7 +4,13 @@ import type { DistrictPrioRead } from "../../../api/client";
 import { fillMessage } from "../../../i18n/communityMessages";
 import type { AppLocale } from "../../../i18n/useI18n";
 import type { ReportModel } from "../exportModel";
-import { coverageOf, SECTION_ORDER, type MapPrintPrefs, type SectionId } from "./mapPrintModel";
+import {
+  coverageOf,
+  populationAvailable,
+  SECTION_ORDER,
+  type MapPrintPrefs,
+  type SectionId,
+} from "./mapPrintModel";
 import type { MapSnapshot } from "./mapSnapshot";
 import PrintViewMap from "./PrintViewMap.vue";
 import SectionContacts from "./sections/SectionContacts.vue";
@@ -34,6 +40,13 @@ const props = defineProps<{
 const { m, c, number } = usePrintCopy(toRef(props, "lang"));
 const coverage = computed(() => coverageOf(props.snapshot.view.center));
 const has = (id: SectionId): boolean => props.sections.includes(id);
+
+/** Outside the census no place gets a population column, even if one was ticked before. */
+const placeColumns = computed(() =>
+  props.prefs.placeColumns.filter(
+    (column) => column !== "population" || populationAvailable(props.snapshot),
+  ),
+);
 
 /** The title says what is printed: the open district, else the work zone. */
 const title = computed(() => {
@@ -126,7 +139,7 @@ const orderedSections = computed(() => SECTION_ORDER.filter((id) => id === "limi
           v-if="id === 'places' && snapshot.places.length > 0"
           :places="snapshot.places"
           :top-n="prefs.topPlaces"
-          :columns="prefs.placeColumns"
+          :columns="placeColumns"
           :lang="lang"
         />
         <SectionPlaceDetail
