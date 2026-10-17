@@ -69,7 +69,7 @@ function onModeChange(value: string | number | boolean): void {
 </script>
 
 <template>
-  <section class="mode-bar" :aria-label="t.community.mode.label">
+  <section class="mode-bar" data-tour="mode" :aria-label="t.community.mode.label">
     <ElSegmented
       size="small"
       class="mode-switch"

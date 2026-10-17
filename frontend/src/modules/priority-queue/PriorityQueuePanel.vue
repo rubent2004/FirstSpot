@@ -267,6 +267,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
     ref="panelRoot"
     class="priority-queue-panel"
     data-testid="priority-queue-panel"
+    data-tour="places-queue"
   >
     <div class="queue-header">
       <div class="queue-title-block">

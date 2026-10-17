@@ -327,7 +327,7 @@ function handleSave(): void {
         </div>
       </section>
 
-      <div class="assessment-layout">
+      <div class="assessment-layout" data-tour="place-summary">
         <ElForm label-position="top" class="assessment-form" @submit.prevent="handleSave">
           <ElFormItem :label="copy.activity">
             <ElSelect v-model="formState.activity_type" size="small" :aria-label="copy.activity" data-testid="triage-activity-select">
@@ -415,7 +415,7 @@ function handleSave(): void {
         </aside>
       </div>
 
-      <section class="activity-log" aria-labelledby="activity-log-title" data-testid="place-activity-log">
+      <section class="activity-log" aria-labelledby="activity-log-title" data-testid="place-activity-log" data-tour="place-log">
         <div class="activity-log-heading">
           <div><h3 id="activity-log-title">{{ copy.timeline }}</h3><p>{{ placeName.label }}</p></div>
           <span class="activity-count eoc-numeric">{{ props.activities.length }}</span>
@@ -467,7 +467,7 @@ function handleSave(): void {
     </div>
 
     <template v-if="props.place" #footer>
-      <div class="modal-footer">
+      <div class="modal-footer" data-tour="place-access">
         <span class="footer-context"><Icon0 name="shield_alert" :size="14" />{{ locale === 'es' ? 'Registro de atención institucional' : 'Institutional response record' }}</span>
         <div class="footer-buttons">
           <ElButton @click="emit('update:visible', false)">{{ copy.close }}</ElButton>

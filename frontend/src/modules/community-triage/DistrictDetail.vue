@@ -150,7 +150,7 @@ const informReference = computed(() =>
         <p v-for="line in zeroLines" :key="line">{{ line }}</p>
       </section>
 
-      <section class="block">
+      <section class="block" data-tour="detail-drivers">
         <h4 class="eoc-label">{{ c.detail.driversTitle }}</h4>
         <ul class="dims">
           <li v-for="line in drivers" :key="line.key">
@@ -183,10 +183,10 @@ const informReference = computed(() =>
     </section>
 
     <!-- 3. Raw indicators, Sphere needs and sources: folded -->
-    <details v-if="!district.withheld" class="fold">
+    <details v-if="!district.withheld" class="fold" data-tour="detail-technical">
       <summary>{{ c.detail.technicalTitle }}</summary>
 
-      <section v-if="view.sphere" class="block" data-testid="sphere-block">
+      <section v-if="view.sphere" class="block" data-testid="sphere-block" data-tour="sphere">
         <h4 class="eoc-label">{{ c.detail.sphereTitle }}</h4>
         <dl class="sphere">
           <dt>{{ c.detail.waterPerDay }}</dt>

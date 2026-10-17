@@ -64,7 +64,7 @@ const isOn = (id: SectionId) => selected.value.includes(id);
 </script>
 
 <template>
-  <div class="map-options" data-testid="map-options">
+  <div class="map-options" data-testid="map-options" data-tour="export-map">
     <div class="controls">
       <div class="presets" role="group" :aria-label="m.presetsLabel">
         <button

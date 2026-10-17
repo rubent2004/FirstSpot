@@ -159,7 +159,7 @@ defineExpose({
 </script>
 
 <template>
-  <section class="rank-list" :aria-label="c.list.ariaLabel" :aria-busy="isLoading">
+  <section class="rank-list" data-tour="district-list" :aria-label="c.list.ariaLabel" :aria-busy="isLoading">
     <div class="controls">
       <div class="search-row">
         <ElInput
@@ -255,7 +255,12 @@ defineExpose({
           </button>
         </p>
 
-        <section v-for="group in visibleGroups" :key="group.key" class="group">
+        <section
+          v-for="(group, groupIndex) in visibleGroups"
+          :key="group.key"
+          class="group"
+          :data-tour="groupIndex === 0 ? 'district-top' : undefined"
+        >
           <h3
             v-if="grouped"
             class="group-head"

@@ -1,0 +1,137 @@
+/*
+ * Driver.js restyled with the console tokens, for projection in a room:
+ * flat surface, 1px border, dialog radius, accent blue for the primary action,
+ * never an alert colour, no gradients. Loaded only with the tour.
+ */
+.driver-popover.firstspot-tour {
+  box-sizing: border-box;
+  min-width: 360px;
+  max-width: 540px;
+  padding: 20px 24px 18px;
+  background-color: var(--eoc-bg-overlay);
+  color: var(--eoc-text-primary);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-dialog);
+  box-shadow: var(--eoc-shadow-dialog);
+  font-family: var(--eoc-font-sans);
+}
+
+.firstspot-tour .driver-popover-title {
+  padding-right: 32px;
+  font-size: 26px;
+  font-weight: var(--eoc-fw-semibold);
+  line-height: 1.25;
+  color: var(--eoc-text-primary);
+}
+
+.firstspot-tour .driver-popover-title[style*="block"] + .driver-popover-description {
+  margin-top: 10px;
+}
+
+.firstspot-tour .driver-popover-description {
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--eoc-text-primary);
+}
+
+/* A skipped step is a note, not a feature: secondary ink */
+.firstspot-tour.is-skipped .driver-popover-description {
+  color: var(--eoc-text-secondary);
+}
+
+.firstspot-tour .driver-popover-footer {
+  margin-top: 18px;
+  gap: 12px;
+}
+
+.firstspot-tour .driver-popover-progress-text {
+  font-family: var(--eoc-font-mono);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  color: var(--eoc-text-secondary);
+}
+
+.firstspot-tour .driver-popover-footer-btn {
+  min-height: 40px;
+  padding: 8px 16px;
+  background-color: transparent;
+  color: var(--eoc-text-primary);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-button);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: var(--eoc-fw-semibold);
+  text-shadow: none;
+}
+
+.firstspot-tour .driver-popover-footer-btn:hover,
+.firstspot-tour .driver-popover-footer-btn:focus {
+  background-color: var(--eoc-bg-hover);
+}
+
+.firstspot-tour .driver-popover-footer-btn:focus-visible,
+.firstspot-tour .driver-popover-close-btn:focus-visible {
+  outline: 2px solid var(--eoc-border-focus);
+  outline-offset: 2px;
+}
+
+.firstspot-tour .driver-popover-navigation-btns button + button {
+  margin-left: 8px;
+}
+
+.firstspot-tour .driver-popover-next-btn {
+  background-color: var(--eoc-accent);
+  color: var(--eoc-on-accent);
+  border-color: var(--eoc-accent);
+}
+
+.firstspot-tour .driver-popover-next-btn:hover,
+.firstspot-tour .driver-popover-next-btn:focus {
+  background-color: var(--eoc-accent-hover);
+  border-color: var(--eoc-accent-hover);
+}
+
+.firstspot-tour .driver-popover-close-btn {
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+  color: var(--eoc-text-secondary);
+}
+
+.firstspot-tour .driver-popover-close-btn:hover {
+  color: var(--eoc-text-primary);
+}
+
+/* The arrow takes the popover surface; driver.js draws it with borders */
+.firstspot-tour .driver-popover-arrow {
+  border-width: 8px;
+  border-color: var(--eoc-bg-overlay);
+}
+.firstspot-tour .driver-popover-arrow-side-left {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+}
+.firstspot-tour .driver-popover-arrow-side-right {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+.firstspot-tour .driver-popover-arrow-side-top {
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+.firstspot-tour .driver-popover-arrow-side-bottom {
+  border-top-color: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+/* The highlighted element reads clearly through the dimmed overlay: an accent ring, not a glow */
+.driver-active .driver-active-element {
+  outline: 2px solid var(--eoc-accent);
+  outline-offset: 3px;
+}

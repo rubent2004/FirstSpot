@@ -13,6 +13,7 @@ import type { InstitutionAccountRead, PredefinedZoneRead } from "../api/client";
 import type { PlaceFilters } from "../stores/usePrioritizationStore";
 import { useI18n } from "../i18n/useI18n";
 import { formatDistance } from "../utils/formatDistance";
+import { useTourActions } from "../modules/guided-tour/tourBridge";
 
 const props = defineProps<{
   zones: PredefinedZoneRead[];
@@ -114,6 +115,19 @@ function updateRadiusFromKilometers(value: number | number[] | undefined): void 
   const steppedKilometers = Math.round(clampedKilometers * 2) / 2;
   emit("update:radius-meters", Math.round(steppedKilometers * 1000));
 }
+
+/** The guided tour shows the work-zone picker even when the ribbon is collapsed. */
+useTourActions({
+  revealZoneSelector: () => {
+    const previous = { expanded: ribbonExpanded.value, tab: activeTab.value };
+    ribbonExpanded.value = true;
+    activeTab.value = 0;
+    return () => {
+      ribbonExpanded.value = previous.expanded;
+      activeTab.value = previous.tab;
+    };
+  },
+});
 
 function openRadiusSettings(): void {
   ribbonExpanded.value = true;
@@ -343,7 +357,7 @@ onBeforeUnmount(() => {
       <template v-if="activeTab === 0">
         <div class="geo-toolgroup geo-zone-group">
           <button class="geo-big-tool primary-tool" :disabled="props.isSyncing" @click="emit('sync-zone')"><span class="geo-tool-icon"><Refresh /></span><span>{{ props.isSyncing ? (props.locale === "es" ? "Sincronizando" : "Syncing") : (props.locale === "es" ? "Sincronizar" : "Sync places") }}</span></button>
-          <div class="geo-tool-stack">
+          <div class="geo-tool-stack" data-tour="zone-selector">
             <label class="eoc-label">{{ props.locale === "es" ? "ZONA DE TRABAJO" : "WORKING AREA" }}</label>
             <ElSelect :model-value="props.selectedZoneKey" filterable size="small" class="geo-zone-select" :aria-label="props.locale === 'es' ? 'Zona de trabajo' : 'Working area'" @update:model-value="emit('change-zone', String($event))">
               <ElOption v-for="zone in props.zones" :key="zone.key" :label="`${zone.name} · ${zone.department}`" :value="zone.key" />

@@ -37,6 +37,7 @@ import type { MapSnapshot } from "./mapPrint/mapSnapshot";
 import { runExport, type ExportRequest } from "./runExport";
 import { resolveMode } from "./triageModel";
 import { useDistrictFilters } from "./useDistrictFilters";
+import { useTourActions, type TourExportFormat } from "../guided-tour/tourBridge";
 
 export type TriageLevel = "list" | "places";
 
@@ -163,8 +164,14 @@ const exportOpen = ref(false);
 const isExporting = ref(false);
 const exportError = ref<string | null>(null);
 const prefs = ref<ExportPrefs>(loadPrefs(undefined, locale.value));
+/** The guided tour opens the dialog on a given format; nothing is saved unless the operator exports. */
+const tourFormat = ref<TourExportFormat | null>(null);
 /** The document language starts as the console's, whatever was remembered. */
-const livePrefs = computed<ExportPrefs>(() => ({ ...prefs.value, lang: locale.value }));
+const livePrefs = computed<ExportPrefs>(() => ({
+  ...prefs.value,
+  lang: locale.value,
+  ...(tourFormat.value ? { format: tourFormat.value } : {}),
+}));
 const hasSaved = ref(hasSavedPrefs());
 const exportNow = ref(new Date());
 const mapPrefs = ref<MapPrintPrefs>(loadMapPrefs());
@@ -174,6 +181,7 @@ const exportMenu = ref<InstanceType<typeof ExportMenu> | null>(null);
 
 /** Back to the button that opened the dialog, so keyboard focus is never lost. */
 watch(exportOpen, (open, wasOpen) => {
+  if (!open) tourFormat.value = null;
   if (wasOpen && !open) void nextTick(() => exportMenu.value?.focus());
 });
 
@@ -287,6 +295,31 @@ async function repeatLast(): Promise<void> {
 }
 
 const crumbParent = computed(() => t.value.community.nav.districts);
+
+// ---- Guided tour: the states it may show, never an export or a write ----
+useTourActions({
+  getListScope: () => filters.scope.value,
+  setListScope: (scope) => {
+    if (filters.scope.value === scope) return;
+    filters.scope.value = scope;
+    filters.resetReveal();
+  },
+  isPlacesOpen: () => placesOpen.value,
+  setPlacesOpen: (open) => {
+    if (open === placesOpen.value) return;
+    if (open) void openPlaces();
+    else void backToList();
+  },
+  isExportOpen: () => exportOpen.value,
+  setExportOpen: (open, format) => {
+    if (!open) {
+      exportOpen.value = false;
+      return;
+    }
+    tourFormat.value = format ?? null;
+    openExport();
+  },
+});
 
 </script>
 

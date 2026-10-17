@@ -12,6 +12,7 @@ import CommunityTriagePanel, {
 import PlaceTriageDrawer from "./modules/priority-queue/PlaceTriageDrawer.vue";
 import GeoRibbon from "./components/GeoRibbon.vue";
 import InstitutionAccessDialog from "./modules/institutions/InstitutionAccessDialog.vue";
+import GuidedTour from "./modules/guided-tour/GuidedTour.vue";
 import { usePrioritizationStore } from "./stores/usePrioritizationStore";
 import { useI18n } from "./i18n/useI18n";
 import { useTheme } from "./composables/useTheme";
@@ -351,6 +352,8 @@ function handleFitMap(): void {
           @fly-to-coordinates="handleFlyToCoordinates"
         />
       </ElDialog>
+      <!-- Presenter tour: idle unless ?tour=1 or Shift+Alt+T; no button in the operator UI -->
+      <GuidedTour />
     </div>
   </ElConfigProvider>
 </template>

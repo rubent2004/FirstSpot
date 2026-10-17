@@ -28,6 +28,7 @@ import type { MapSnapshot } from "./mapPrint/mapSnapshot";
 import { usePrintCopy } from "./mapPrint/usePrintCopy";
 import type { ExportRequest } from "./runExport";
 import type { TriageMode } from "./triageModel";
+import { useTourActions } from "../guided-tour/tourBridge";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -84,6 +85,13 @@ watch(
 );
 
 const isMap = computed(() => draft.value.format === "map");
+
+/** The guided tour switches the draft format to show each one; it never submits. */
+useTourActions({
+  setExportFormat: (format) => {
+    draft.value.format = format;
+  },
+});
 
 const mapAvailability = computed(() =>
   props.snapshot
@@ -205,7 +213,7 @@ const reasonId = (key: string) => `${uid}-${key}`;
     class="export-dialog"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
   >
-    <form class="form" novalidate @submit.prevent="submit">
+    <form class="form" data-tour="export-form" novalidate @submit.prevent="submit">
       <fieldset class="field">
         <legend class="eoc-label">{{ d.formatLegend }}</legend>
         <div class="cards">
