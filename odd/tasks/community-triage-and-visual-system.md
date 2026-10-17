@@ -109,8 +109,15 @@ El Salvador has an **active data protection law**: Decreto Legislativo 144,
 
 ## The PRIO-SV index
 
-Unit of analysis: **district (ADM3, ~262-266 units)**, aggregatable to
-municipality for command view.
+Unit of analysis: **DEGURBA sub-district polygon (902 units at level 2)**,
+aggregatable to district (263), municipality (45) and department (17) for the
+command view.
+
+Why not census segments: the 10,291 segment polygons carry official geometry
+but **zero population attributes**, and the microdata's finest geographic
+variable is `DISTO` (6-digit district). Populating segments would require
+dasymetric modeling, not a join. DEGURBA is the compromise — it carries real
+population, households and dwellings, and is 3.4× finer than district.
 
 ```
 PRIO = (H&E)^(1/3) × (V)^(1/3) × (LCC)^(1/3)        range 0-10
@@ -154,11 +161,51 @@ Presented as **"Sphere minimum requirement"**, never as "resources to deliver".
 | GHS-POP R2023A | Free | Outperformed WorldPop in 24-country validation |
 | MARN / DGPC | **No API** | HTML only; parameters explicitly preliminary |
 
-Census 2024 (ONEC/BCR): population 6,029,976; 2,270,170 dwellings;
-1,841,206 occupied; 1,920,668 households.
+### Census 2024 — acquired and verified
 
-**Raw downloads live in `data/census/raw/` (~570 MB) and are gitignored.**
-They must be regenerable by a documented script.
+VII Censo de Población y VI de Vivienda 2024 (ONEC/BCR). Population 6,029,976.
+
+**Access method:** `poblacion.bcr.gob.sv` is an **ArcGIS Hub site**, not a
+download page. Org `bcrsv`, orgId `xSn1Pefr3M9zkw7Z`, 600 public items
+(348 Feature Services) queryable through the ArcGIS REST API — no scraping,
+paginable, idempotent. Export with `outSR=4326`.
+
+Downloaded: 37 files, 570 MB in `data/census/raw/` (gitignored, must be
+regenerable by script).
+
+**Geographic key** — zero-padded nested strings, concatenated hierarchy:
+`id_depto "01"` (2) → `id_mun "0101"` (4) → `id_distrito "010101"` (6) →
+`idsegmento "0101010001"` (10). This is the DIGESTYC/BCR-CNR code, **not**
+ISO 3166-2:SV; a 14-row mapping table is needed to interoperate.
+
+Reconciliation verified: 5,922,921 georeferenced + 107,055 (`id_depto='15'`,
+"Otros", no geometry) = 6,029,976 exactly.
+
+#### Data gotchas — must be handled in ingestion
+
+- **`Total_Personas` in `distritos_poblacion_edad_sexo.geojson` is wrong**
+  (sums 5,843,393). Use `Hombre + Mujer` (5,922,921) or the age bands.
+- Filter sentinels: `id_depto='15'` ("Otros") and `'AAA'` / `'RRAA'`
+  aggregate-total rows.
+- **Construction quality exists only at department level** (14 rows) — the
+  single most relevant variable for seismic risk is the most aggregated one.
+  District-level requires processing the 1.66 GB microdata.
+- Geometry ships at full precision (DEGURBA 162 MB, segments 164 MB).
+  `ST_SimplifyPreserveTopology` and ~6-decimal rounding before serving.
+
+#### Statistical secrecy — binding constraint
+
+No license is published (`licenseInfo` empty on every item). The applicable
+regime is legal, not contractual: **Ley Especial de Estadística y Censos
+(D.L. 904), Arts. 24, 25, 33 and 35** — statistical secrecy, aggregate-only
+dissemination, and a **minimum threshold of 3 units per published cell**.
+
+Any derived cell with fewer than 3 units must be suppressed before exposure
+through an API. Attribute as "BCR/ONEC, CPV 2024".
+
+**Note the convergence:** this threshold and the k-anonymity suppression
+required for voluntary location (Phase D) are the same mechanism. Build one
+suppression layer and apply it to both.
 
 ---
 
@@ -195,10 +242,13 @@ verification.
 
 ### Phase A — Visual system
 
-- [ ] **A1** Rebuild `frontend/src/style.css` token system: neutral narrow-band
+- [x] **A1** Rebuild `frontend/src/style.css` token system: neutral narrow-band
   surfaces, brand/operational accent split, full geometry and typography scale.
   Keep existing token names (`--eoc-bg-canvas`, etc.) so no component breaks.
   *Route: inline (1 file, fully specified).*
+  **Commit `1316693`.** Verified: `pnpm build` (vue-tsc + vite) passes;
+  `pnpm vitest run` 34/34 passing. CSS 450→456 KB (overrides added),
+  JS unchanged at 1,332 KB — splitting is task E4.
 - [ ] **A2** Apply density overrides to Element Plus and the app shell
   (header 34px, status bar 26px, table header 24px, panel ranges).
   *Route: delegated writer (multi-file).*
@@ -208,13 +258,22 @@ verification.
 
 ### Phase B — Census ingestion
 
-- [ ] **B1** Document and script the raw download so `data/census/raw/` is
-  regenerable. *Blocked on: census agent inventory report.*
-- [ ] **B2** Alembic migration: `districts` (geometry from CNR SIRGAS),
-  `census_indicators`, `population_grid`. Join key audited against HDX COD-AB —
-  census 2024 uses 44 municipalities / 262 districts after the 2023 reform while
-  COD-AB reports 266. **Audit non-matching codes before demonstrating anything.**
-- [ ] **B3** Ingestion module with idempotent loaders and row-count assertions.
+- [ ] **B1** Download script against the ArcGIS REST API (org `bcrsv`,
+  orgId `xSn1Pefr3M9zkw7Z`, `outSR=4326`) so `data/census/raw/` is fully
+  regenerable. Idempotent, resumable, with per-layer row-count assertions.
+- [ ] **B2** Alembic migration `0003`: `census_admin_unit` (hierarchy, CNR
+  SIRGAS geometry, simplified), `census_population_unit` (DEGURBA, 902 rows,
+  GIST index), `census_indicator` (long/EAV so new releases need no migration),
+  `census_segment` (geometry-only context). Add `census_unit_id` FK to
+  `vulnerable_places`.
+- [ ] **B3** Ingestion loaders with the gotchas enforced: reject
+  `Total_Personas`, filter `id_depto='15'` and `'AAA'`/`'RRAA'` sentinels,
+  simplify geometry, assert the 5,922,921 + 107,055 = 6,029,976 reconciliation.
+- [ ] **B4** Spatial attachment of `vulnerable_places` to census units
+  (`ST_Intersects`, cached in a column — not computed per query) and
+  areal-weighted population estimate around each place. Use EPSG:5399
+  (SIRGAS-ES2007) for area math; `location` is `GEOGRAPHY`, so buffers are
+  already in meters.
 
 ### Phase C — PRIO-SV index
 
@@ -268,9 +327,26 @@ verification.
 
 ## Progress
 
-Nothing implemented yet. Research phase complete for legal, visual and
-methodological framing; census inventory pending.
+Research complete across all four lines: legal/privacy framing, visual
+language, prioritization methodology, and census inventory.
+
+- `6dc3957` — checkpoint of pre-existing uncommitted work on `main`
+- `1316693` — **A1 done**: design token system rebuilt and verified
+
+Census data acquired (37 files, 570 MB) with the access method, geographic key,
+data defects and statistical-secrecy constraint all documented above.
 
 ## Next step
 
-A1 — rebuild the token system.
+A2 + A3 — apply density and map treatment across the shell, as one delegated
+writer. Then B1-B4 for census ingestion.
+
+## Open decisions
+
+- **Chain strategy undecided.** Forecast across phases A-E far exceeds the
+  ~400 authored-line delivery budget. Before the branch grows further, choose
+  `stacked-to-main` or `feature-branch-chain`.
+- **`frontend-gis/`** — a second Vue 3 + Leaflet workspace exists, committed in
+  `6dc3957` but unexplained. Confirm whether it is the intended target of the
+  visual work or an abandoned experiment, before investing further in
+  `frontend/`.
