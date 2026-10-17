@@ -1,136 +1,270 @@
 /* ==========================================================================
-   FirstSpot identity: graphite, field green and the logo's signal lime.
-   Status hues remain semantic (red / amber / blue) for incident readability.
+   FirstSpot design tokens.
+
+   Matte emergency-operations look, translated from RustGIS
+   (crates/ui-egui/src/theme.rs). Four rules produce it:
+
+     1. Zero gradients. Every surface is one flat color.
+     2. Elevation is a 1px border, never a shadow. Shadows appear only on
+        genuinely floating elements: menus, dialogs, toasts, map popups.
+     3. Narrow lightness band. Dark surfaces span ~20 values. If two adjacent
+        surfaces are obviously different, the band is too wide.
+     4. Mute the basemap at the source, never with a CSS filter.
+
+   Color roles are strictly separated:
+     - Signal lime is BRAND only (logo, splash, header mark).
+     - Blue is the operational accent (selection, focus, active, primary).
+     - Green / amber / red are SEMANTIC only and never decorative, so an
+       operator never confuses "selected" with "all clear".
    ========================================================================== */
 
 :root,
 .theme-dark,
 html.dark {
-  /* Graphite / field-night surfaces */
-  --eoc-bg-canvas: #11140f;
-  --eoc-bg-panel: #191d16;
-  --eoc-bg-card: #22271d;
-  --eoc-bg-hover: #2b3521;
-  --eoc-bg-active: #344329;
-  
-  /* Borders & Rules */
-  --eoc-border: #3a4633;
-  --eoc-border-subtle: rgba(190, 205, 176, 0.15);
-  --eoc-border-focus: #88d623;
-  
-  /* Typography */
-  --eoc-text-primary: #f3f5ee;
-  --eoc-text-secondary: #bac3b2;
-  --eoc-text-muted: #8c9782;
-  --eoc-text-inverse: #171b13;
+  /* Surfaces — neutral graphite, narrow band (#12151A .. #2F3744) */
+  --eoc-bg-canvas: #12151a;
+  --eoc-bg-panel: #1e232a;
+  --eoc-bg-card: #242931;
+  --eoc-bg-overlay: #262c34;
+  --eoc-bg-sunken: #15191f;
+  --eoc-bg-hover: #2f3744;
+  --eoc-bg-active: #2a3d5e;
+  --eoc-bg-selected: #26406e;
+  --eoc-bg-header: #171b21;
+  --eoc-bg-statusbar: #1a1e24;
 
-  /* Logo signal lime on a deep graphite field */
+  /* Borders — one width (1px), two colors */
+  --eoc-border: #343b45;
+  --eoc-border-strong: #48515d;
+  --eoc-border-subtle: rgba(255, 255, 255, 0.07);
+  --eoc-border-focus: #5b8df6;
+
+  /* Typography colors */
+  --eoc-text-primary: #e6eaef;
+  --eoc-text-secondary: #9aa4b1;
+  --eoc-text-muted: #6e7884;
+  --eoc-text-label: #8c96a3;
+  --eoc-text-inverse: #12151a;
+  --eoc-icon: #c9d1db;
+
+  /* Brand — signal lime, reserved for identity surfaces only */
   --eoc-brand-lime: #88d623;
+  --eoc-brand-lime-dim: #6fae1e;
   --eoc-brand-ink: #1e1e1e;
-  --eoc-accent: #88d623;
-  --eoc-accent-secondary: #d4e9bb;
-  --eoc-accent-hover: #a0eb42;
-  --eoc-accent-glow: rgba(136, 214, 35, 0.16);
-  --eoc-card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-  
-  /* Mission Critical Severity Tokens */
-  --eoc-critical: #f43f5e;
-  --eoc-critical-bg: rgba(244, 63, 94, 0.15);
-  --eoc-critical-border: rgba(244, 63, 94, 0.35);
-  --eoc-warning: #fbbf24;
-  --eoc-warning-bg: rgba(251, 191, 36, 0.15);
-  --eoc-warning-border: rgba(251, 191, 36, 0.35);
-  --eoc-info: #38bdf8;
-  --eoc-info-bg: rgba(56, 189, 248, 0.15);
-  --eoc-info-border: rgba(56, 189, 248, 0.35);
-  --eoc-success: #34d399;
-  --eoc-success-bg: rgba(52, 211, 153, 0.15);
-  --eoc-success-border: rgba(52, 211, 153, 0.35);
 
-  /* Map Controls */
-  --eoc-map-ctrl-bg: rgba(25, 29, 22, 0.96);
-  --eoc-map-ctrl-border: #3a4633;
+  /* Operational accent — blue, never competes with status colors */
+  --eoc-accent: #5b8df6;
+  --eoc-accent-hover: #7aa4f8;
+  --eoc-accent-text: #8aaffa;
+  --eoc-accent-secondary: #cddcfd;
+  --eoc-accent-glow: rgba(91, 141, 246, 0.14);
+  --eoc-on-accent: #ffffff;
 
-  /* Global Element Plus Dark Overrides */
-  --el-bg-color: #191d16;
-  --el-bg-color-overlay: #22271d;
-  --el-text-color-primary: #f3f5ee;
-  --el-text-color-regular: #d4dbcd;
-  --el-text-color-secondary: #bac3b2;
-  --el-border-color: #3a4633;
-  --el-border-color-light: #2b3521;
-  --el-fill-color-blank: #191d16;
-  --el-color-primary: #88d623;
+  /* Semantic severity — DGPC alert levels map onto these */
+  --eoc-critical: #f06a6a;
+  --eoc-critical-bg: rgba(240, 106, 106, 0.14);
+  --eoc-critical-border: rgba(240, 106, 106, 0.34);
+  --eoc-warning: #f2b848;
+  --eoc-warning-bg: rgba(242, 184, 72, 0.14);
+  --eoc-warning-border: rgba(242, 184, 72, 0.34);
+  --eoc-success: #3fc282;
+  --eoc-success-bg: rgba(63, 194, 130, 0.14);
+  --eoc-success-border: rgba(63, 194, 130, 0.34);
+  /* Info is teal, not blue, so it never reads as "selected" */
+  --eoc-info: #2cc2ae;
+  --eoc-info-bg: rgba(44, 194, 174, 0.14);
+  --eoc-info-border: rgba(44, 194, 174, 0.34);
+
+  /* Elevation — borders carry it; shadows only float */
+  --eoc-shadow-color: rgba(0, 0, 0, 0.43);
+  --eoc-card-shadow: none;
+  --eoc-shadow-popup: 0 6px 18px var(--eoc-shadow-color);
+  --eoc-shadow-dialog: 0 10px 28px var(--eoc-shadow-color);
+
+  /* Map — basemap muted at source, chrome translucent over it */
+  --eoc-map-water: #1a1f26;
+  --eoc-map-land: #2e333a;
+  --eoc-map-outline: #474d55;
+  --eoc-map-graticule: rgba(128, 144, 160, 0.16);
+  --eoc-map-ctrl-bg: rgba(36, 41, 49, 0.88);
+  --eoc-map-ctrl-border: #48515d;
+
+  /* Element Plus dark overrides */
+  --el-bg-color: #1e232a;
+  --el-bg-color-overlay: #262c34;
+  --el-bg-color-page: #12151a;
+  --el-text-color-primary: #e6eaef;
+  --el-text-color-regular: #c4ccd6;
+  --el-text-color-secondary: #9aa4b1;
+  --el-text-color-placeholder: #6e7884;
+  --el-text-color-disabled: #5c6571;
+  --el-border-color: #343b45;
+  --el-border-color-light: #2f3744;
+  --el-border-color-lighter: #262c34;
+  --el-fill-color-blank: #15191f;
+  --el-fill-color-light: #242931;
+  --el-mask-color: rgba(18, 21, 26, 0.78);
+  --el-color-primary: #5b8df6;
+  --el-color-success: #3fc282;
+  --el-color-warning: #f2b848;
+  --el-color-danger: #f06a6a;
+  --el-color-error: #f06a6a;
+  --el-color-info: #2cc2ae;
 }
 
 html:not(.dark),
 .theme-light {
-  /* Bright cartographic paper; logo green is reserved for actions and focus. */
-  --eoc-bg-canvas: #edf0e9;
+  /* Surfaces — cool paper, equally narrow band */
+  --eoc-bg-canvas: #e4e8ee;
   --eoc-bg-panel: #ffffff;
-  --eoc-bg-card: #f3f5ef;
-  --eoc-bg-hover: #eef6e5;
-  --eoc-bg-active: #e2f0d2;
-  
-  /* Borders & Rules */
-  --eoc-border: #d4ddcd;
-  --eoc-border-subtle: rgba(30, 30, 30, 0.11);
-  --eoc-border-focus: #5c9716;
-  
-  /* Typography */
-  --eoc-text-primary: #1e1e1e;
-  --eoc-text-secondary: #4c5747;
-  --eoc-text-muted: #6c7766;
+  --eoc-bg-card: #f4f6f9;
+  --eoc-bg-overlay: #ffffff;
+  --eoc-bg-sunken: #ffffff;
+  --eoc-bg-hover: #e9f0fb;
+  --eoc-bg-active: #d4e2f8;
+  --eoc-bg-selected: #cfe0fc;
+  --eoc-bg-header: #eef1f5;
+  --eoc-bg-statusbar: #f3f5f8;
+
+  /* Borders */
+  --eoc-border: #dde2e9;
+  --eoc-border-strong: #c3cad4;
+  --eoc-border-subtle: rgba(31, 38, 48, 0.09);
+  --eoc-border-focus: #2563eb;
+
+  /* Typography colors */
+  --eoc-text-primary: #1f2630;
+  --eoc-text-secondary: #5e6977;
+  --eoc-text-muted: #808a98;
+  --eoc-text-label: #707a88;
   --eoc-text-inverse: #ffffff;
+  --eoc-icon: #3a4554;
 
-  /* Dark green is used for text contrast; signal lime remains the signature. */
+  /* Brand — lime stays the signature; a darker tone carries text contrast */
   --eoc-brand-lime: #88d623;
+  --eoc-brand-lime-dim: #4d850b;
   --eoc-brand-ink: #1e1e1e;
-  --eoc-accent: #4d850b;
-  --eoc-accent-secondary: #1e1e1e;
-  --eoc-accent-hover: #3d6d08;
-  --eoc-accent-glow: rgba(136, 214, 35, 0.18);
-  --eoc-card-shadow: 0 2px 7px rgba(15, 23, 42, 0.12);
-  
-  /* Mission Critical Severity Tokens */
-  --eoc-critical: #e11d48;
-  --eoc-critical-bg: #ffe4e6;
-  --eoc-critical-border: #fecdd3;
-  --eoc-warning: #d97706;
-  --eoc-warning-bg: #fef3c7;
-  --eoc-warning-border: #fde68a;
-  --eoc-info: #0284c7;
-  --eoc-info-bg: #e0f2fe;
-  --eoc-info-border: #bae6fd;
-  --eoc-success: #059669;
-  --eoc-success-bg: #d1fae5;
-  --eoc-success-border: #a7f3d0;
 
-  /* Map Controls */
-  --eoc-map-ctrl-bg: #ffffff;
-  --eoc-map-ctrl-border: #d4ddcd;
+  /* Operational accent */
+  --eoc-accent: #2563eb;
+  --eoc-accent-hover: #1d4ec4;
+  --eoc-accent-text: #1d4ec4;
+  --eoc-accent-secondary: #1f2630;
+  --eoc-accent-glow: rgba(37, 99, 235, 0.12);
+  --eoc-on-accent: #ffffff;
 
-  /* Global Element Plus Light Overrides */
+  /* Semantic severity */
+  --eoc-critical: #d13c3c;
+  --eoc-critical-bg: #fdeaea;
+  --eoc-critical-border: #f5c9c9;
+  --eoc-warning: #b97309;
+  --eoc-warning-bg: #fdf3e0;
+  --eoc-warning-border: #f3dcae;
+  --eoc-success: #169a5a;
+  --eoc-success-bg: #e4f6ed;
+  --eoc-success-border: #b8e3cd;
+  --eoc-info: #0e9384;
+  --eoc-info-bg: #e3f5f2;
+  --eoc-info-border: #b3e0da;
+
+  /* Elevation */
+  --eoc-shadow-color: rgba(23, 31, 42, 0.11);
+  --eoc-card-shadow: none;
+  --eoc-shadow-popup: 0 6px 18px var(--eoc-shadow-color);
+  --eoc-shadow-dialog: 0 10px 28px var(--eoc-shadow-color);
+
+  /* Map */
+  --eoc-map-water: #dde4ea;
+  --eoc-map-land: #f6f5f1;
+  --eoc-map-outline: #c9c9c4;
+  --eoc-map-graticule: rgba(154, 168, 180, 0.24);
+  --eoc-map-ctrl-bg: rgba(255, 255, 255, 0.9);
+  --eoc-map-ctrl-border: #c3cad4;
+
+  /* Element Plus light overrides */
   --el-bg-color: #ffffff;
   --el-bg-color-overlay: #ffffff;
-  --el-text-color-primary: #1e1e1e;
-  --el-text-color-regular: #3f493b;
-  --el-text-color-secondary: #65705f;
-  --el-border-color: #cbd5c4;
-  --el-border-color-light: #e1e7dc;
+  --el-bg-color-page: #e4e8ee;
+  --el-text-color-primary: #1f2630;
+  --el-text-color-regular: #3f4955;
+  --el-text-color-secondary: #5e6977;
+  --el-text-color-placeholder: #808a98;
+  --el-text-color-disabled: #a9b1bc;
+  --el-border-color: #dde2e9;
+  --el-border-color-light: #e7ebf1;
+  --el-border-color-lighter: #eff2f6;
   --el-fill-color-blank: #ffffff;
-  --el-color-primary: #4d850b;
+  --el-fill-color-light: #f4f6f9;
+  --el-mask-color: rgba(255, 255, 255, 0.82);
+  --el-color-primary: #2563eb;
+  --el-color-success: #169a5a;
+  --el-color-warning: #b97309;
+  --el-color-danger: #d13c3c;
+  --el-color-error: #d13c3c;
+  --el-color-info: #0e9384;
 }
+
+/* --------------------------------------------------------------------------
+   Geometry, typography and motion — identical across themes.
+   Small radii stepped by altitude; a single 1px border width everywhere.
+   -------------------------------------------------------------------------- */
 
 :root {
-  --el-color-primary: var(--eoc-accent);
+  --eoc-radius-control: 5px;
+  --eoc-radius-button: 6px;
+  --eoc-radius-menu: 8px;
+  --eoc-radius-dialog: 10px;
+  --eoc-radius-callout: 14px;
+  --eoc-radius-pill: 999px;
+
+  --eoc-border-width: 1px;
+
+  --eoc-gap-x: 6px;
+  --eoc-gap-y: 5px;
+  --eoc-pad-button: 3px 8px;
+  --eoc-pad-panel: 10px;
+
+  /* Dense shell: these are what make it read as an operations console */
+  --eoc-control-h: 22px;
+  --eoc-header-h: 34px;
+  --eoc-tabstrip-h: 32px;
+  --eoc-statusbar-h: 26px;
+  --eoc-table-header-h: 24px;
+  --eoc-icon-btn: 26px;
+
+  --eoc-panel-left: 270px;
+  --eoc-panel-left-min: 200px;
+  --eoc-panel-left-max: 480px;
+  --eoc-panel-right: 320px;
+  --eoc-panel-right-min: 260px;
+  --eoc-panel-right-max: 560px;
+
+  --eoc-font-sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont,
+    "Noto Sans", "Open Sans", "DejaVu Sans", Roboto, Arial, sans-serif;
+  --eoc-font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Consolas,
+    "Liberation Mono", monospace;
+
+  --eoc-fs-micro: 10.5px;
+  --eoc-fs-body: 12.5px;
+  --eoc-fs-title: 13px;
+  --eoc-fs-heading: 17px;
+  --eoc-fw-regular: 400;
+  --eoc-fw-semibold: 600;
+
+  --eoc-transition: 140ms ease;
+
+  /* Element Plus geometry alignment */
+  --el-border-radius-base: var(--eoc-radius-control);
+  --el-border-radius-small: 4px;
+  --el-font-size-base: var(--eoc-fs-body);
+  --el-component-size-small: var(--eoc-control-h);
+  --el-box-shadow-light: var(--eoc-shadow-popup);
+  --el-box-shadow: var(--eoc-shadow-popup);
 }
 
-.dark .el-button--primary {
-  --el-button-text-color: #1e1e1e;
-  --el-button-hover-text-color: #1e1e1e;
-  --el-button-active-text-color: #1e1e1e;
-}
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
 
 * {
   box-sizing: border-box;
@@ -143,20 +277,49 @@ body,
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--eoc-font-sans);
+  font-size: var(--eoc-fs-body);
+  line-height: 1.45;
   background-color: var(--eoc-bg-canvas);
   color: var(--eoc-text-primary);
-  transition: background-color 0.25s ease, color 0.25s ease;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--eoc-transition), color var(--eoc-transition);
 }
 
-/* Accessible focus ring */
+/* Numeric data must not shift width as values update */
+.eoc-numeric,
+.eoc-metric,
+table td.eoc-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Uppercase micro-labels for group headers and legends */
+.eoc-label {
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--eoc-text-label);
+}
+
 :focus-visible {
-  outline: 2px solid var(--eoc-accent);
+  outline: 2px solid var(--eoc-border-focus);
   outline-offset: 2px;
+  border-radius: var(--eoc-radius-control);
 }
 
-/* Tactical Scrollbar */
+::selection {
+  background: var(--eoc-bg-selected);
+  color: var(--eoc-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbars — thin, border-colored, accent only on hover
+   -------------------------------------------------------------------------- */
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -167,17 +330,111 @@ body,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--eoc-border);
-  border-radius: 999px;
+  background: var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-pill);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--eoc-accent);
 }
 
-/* Shared Quiet Details Pattern */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--eoc-border-strong) transparent;
+}
+
+/* --------------------------------------------------------------------------
+   Element Plus — flatten and tighten.
+   Defaults are 32px tall with gradients and shadows; both are wrong here.
+   -------------------------------------------------------------------------- */
+
+.el-button {
+  font-size: var(--eoc-fs-body);
+  border-radius: var(--eoc-radius-button);
+  transition: background-color var(--eoc-transition),
+    border-color var(--eoc-transition), color var(--eoc-transition);
+}
+
+.el-button--small {
+  height: var(--eoc-control-h);
+  padding: var(--eoc-pad-button);
+}
+
+.el-card,
+.el-collapse-item__header,
+.el-table th.el-table__cell {
+  background-image: none;
+  box-shadow: none;
+}
+
+.el-card {
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-button);
+}
+
+.el-table th.el-table__cell {
+  height: var(--eoc-table-header-h);
+  background-color: var(--eoc-bg-card);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border-strong);
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--eoc-text-label);
+}
+
+/* Floating surfaces are the only things allowed a shadow */
+.el-dialog,
+.el-drawer {
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-dialog);
+  box-shadow: var(--eoc-shadow-dialog);
+}
+
+.el-popper,
+.el-select-dropdown,
+.el-dropdown-menu {
+  border-radius: var(--eoc-radius-menu);
+  box-shadow: var(--eoc-shadow-popup);
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  background-color: var(--eoc-bg-sunken);
+  border-radius: var(--eoc-radius-control);
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border);
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover {
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-border-strong);
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused {
+  box-shadow: inset 0 0 0 var(--eoc-border-width) var(--eoc-accent);
+}
+
+/* Primary buttons carry the operational accent, not the brand lime */
+.el-button--primary {
+  --el-button-bg-color: var(--eoc-accent);
+  --el-button-border-color: var(--eoc-accent);
+  --el-button-text-color: var(--eoc-on-accent);
+  --el-button-hover-bg-color: var(--eoc-accent-hover);
+  --el-button-hover-border-color: var(--eoc-accent-hover);
+  --el-button-hover-text-color: var(--eoc-on-accent);
+  --el-button-active-bg-color: var(--eoc-accent-hover);
+  --el-button-active-border-color: var(--eoc-accent-hover);
+  --el-button-active-text-color: var(--eoc-on-accent);
+}
+
+/* --------------------------------------------------------------------------
+   Shared patterns
+   -------------------------------------------------------------------------- */
+
 .quiet-details {
-  border-top: 1px solid var(--eoc-border-subtle);
+  border-top: var(--eoc-border-width) solid var(--eoc-border-subtle);
   padding-top: 10px;
 }
 
@@ -190,7 +447,7 @@ body,
   list-style: none;
   color: var(--eoc-text-secondary);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: var(--eoc-fw-semibold);
   user-select: none;
 }
 
@@ -203,5 +460,16 @@ body,
 }
 
 .quiet-details summary svg {
-  transition: transform 0.2s ease;
+  transition: transform var(--eoc-transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
