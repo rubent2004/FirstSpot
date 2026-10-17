@@ -33,6 +33,16 @@ import type {
   LoginRequest,
   LoginResponse,
   PlaceActivityRead,
+  AlertClassRead,
+  DimensionRead,
+  DistrictPrioRead,
+  EventCatalogueRead,
+  EventRead,
+  EventSummaryRead,
+  PagerRead,
+  PrioIndexAuditRead,
+  PrioIndexRead,
+  SphereRead,
 } from "./generated";
 
 export {
@@ -71,6 +81,16 @@ export type {
   LoginRequest,
   LoginResponse,
   PlaceActivityRead,
+  AlertClassRead,
+  DimensionRead,
+  DistrictPrioRead,
+  EventCatalogueRead,
+  EventRead,
+  EventSummaryRead,
+  PagerRead,
+  PrioIndexAuditRead,
+  PrioIndexRead,
+  SphereRead,
 };
 
 async function requestInstitutionApi<T>(
@@ -142,6 +162,40 @@ export function updatePlaceTriage(
     body,
     token,
   });
+}
+
+function eventQuery(eventId: string | null | undefined): string {
+  return eventId ? `?event_id=${encodeURIComponent(eventId)}` : "";
+}
+
+/** Ranked districts. No event id means BASELINE mode; an id means EVENT mode. */
+export function getPrioIndex(eventId?: string | null): Promise<PrioIndexRead> {
+  return requestInstitutionApi(
+    `/prioritization/index/districts${eventQuery(eventId)}`,
+  );
+}
+
+/** One district with its audit breakdown, in the same mode as the list. */
+export function getPrioAudit(
+  districtCode: string,
+  eventId?: string | null,
+): Promise<PrioIndexAuditRead> {
+  return requestInstitutionApi(
+    `/prioritization/index/districts/${encodeURIComponent(districtCode)}${eventQuery(eventId)}`,
+  );
+}
+
+/** Recent earthquakes the operator may switch the index to. */
+export function listHazardEvents(
+  params: { limit?: number; minMagnitude?: number } = {},
+): Promise<EventCatalogueRead> {
+  const qs = new URLSearchParams();
+  if (params.limit !== undefined) qs.set("limit", String(params.limit));
+  if (params.minMagnitude !== undefined) {
+    qs.set("min_magnitude", String(params.minMagnitude));
+  }
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return requestInstitutionApi(`/prioritization/hazard-exposure/events${suffix}`);
 }
 
 /**
@@ -291,4 +345,7 @@ export const apiClient = {
   getInstitutionAccount,
   createInstitutionInvite,
   listPlaceActivities,
+  getPrioIndex,
+  getPrioAudit,
+  listHazardEvents,
 };
