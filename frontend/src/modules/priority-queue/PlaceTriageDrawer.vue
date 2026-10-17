@@ -26,6 +26,7 @@ import {
   CATEGORY_ICON_MAP,
 } from "../../components/icons0Registry";
 import { useI18n } from "../../i18n/useI18n";
+import { operatorRelevantFacts } from "../../utils/placeFacts";
 import {
   exposedPopulationState,
   exposureRadiusMeters,
@@ -221,6 +222,13 @@ function exposureFigure(state: PopulationExposureState): string {
     ? formatExposureValue(state.value, locale.value)
     : "—";
 }
+
+/**
+ * Only the OSM facts a responder can act on. The raw tag dictionary that used
+ * to sit here was a developer's view of the record; `phone` is excluded because
+ * the sidebar already offers it as a dialable link.
+ */
+const placeFacts = computed(() => operatorRelevantFacts(props.place));
 
 const placePhone = computed<string | null>(() => {
   if (!props.place?.osm_tags) return null;
@@ -443,8 +451,17 @@ function handleSave(): void {
 
       <details class="quiet-details technical-details">
         <summary>{{ copy.details }}<Icon0 name="chevron_down" :size="14" /></summary>
-        <div class="technical-content">
-          <dl><div v-for="(value, key) in props.place.osm_tags" :key="key"><dt>{{ key }}</dt><dd>{{ value }}</dd></div></dl>
+        <div class="technical-content" data-testid="place-facts">
+          <p v-if="placeFacts.length === 0" class="facts-empty">{{ t.drawer.facts.empty }}</p>
+          <dl v-else>
+            <div v-for="fact in placeFacts" :key="fact.key">
+              <dt>{{ t.drawer.facts[fact.key] }}</dt>
+              <dd>
+                <a v-if="fact.href" :href="fact.href" target="_blank" rel="noopener noreferrer nofollow">{{ fact.text }}</a>
+                <template v-else>{{ fact.flag ? t.drawer.facts[fact.flag] : fact.text }}</template>
+              </dd>
+            </div>
+          </dl>
         </div>
       </details>
     </div>
@@ -563,8 +580,9 @@ function handleSave(): void {
 .technical-content { padding-top: var(--eoc-gap-x); font-size: var(--eoc-fs-micro); color: var(--eoc-text-secondary); overflow-wrap: anywhere; }
 .technical-content dl { display: grid; grid-template-columns: 1fr 1fr; gap: var(--eoc-gap-y) 24px; }
 .technical-content dl > div { display: grid; grid-template-columns: minmax(80px, .5fr) 1fr; gap: var(--eoc-gap-x); }
-.technical-content dd { margin: 0; }
-.technical-content code { font-family: var(--eoc-font-mono); }
+.technical-content dd { margin: 0; color: var(--eoc-text-primary); }
+.technical-content dd a { color: var(--eoc-accent-text); }
+.facts-empty { margin: 0; }
 .modal-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--eoc-pad-panel); }
 .footer-context { display: inline-flex; align-items: center; gap: var(--eoc-gap-x); font-size: var(--eoc-fs-micro); color: var(--eoc-text-secondary); }
 .footer-buttons { display: flex; gap: var(--eoc-gap-x); }

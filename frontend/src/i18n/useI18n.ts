@@ -201,7 +201,20 @@ export interface I18nMessages {
     quickNotes: string[];
     cancelBtn: string;
     saveBtn: string;
-    rawTagsTitle: string;
+    /** Labels for the whitelisted OSM facts a responder can act on. */
+    facts: {
+      operator: string;
+      address: string;
+      openingHours: string;
+      emergency: string;
+      capacity: string;
+      wheelchair: string;
+      website: string;
+      yes: string;
+      limited: string;
+      no: string;
+      empty: string;
+    };
     navigateMaps: string;
     navigateWaze: string;
     copyCoords: string;
@@ -407,7 +420,19 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       ],
       cancelBtn: "Cerrar",
       saveBtn: "Guardar Evaluación y Despacho",
-      rawTagsTitle: "Detalles Técnicos Adicionales (OSM)",
+      facts: {
+        operator: "Operado por",
+        address: "Dirección",
+        openingHours: "Horario",
+        emergency: "Atiende urgencias",
+        capacity: "Capacidad",
+        wheelchair: "Acceso en silla de ruedas",
+        website: "Sitio web",
+        yes: "Sí",
+        limited: "Limitado",
+        no: "No",
+        empty: "El mapa no tiene más datos de este lugar.",
+      },
       navigateMaps: "Google Maps",
       navigateWaze: "Waze",
       copyCoords: "Copiar GPS",
@@ -641,7 +666,19 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       ],
       cancelBtn: "Close",
       saveBtn: "Save Assessment & Dispatch",
-      rawTagsTitle: "Additional Technical Details (OSM)",
+      facts: {
+        operator: "Operated by",
+        address: "Address",
+        openingHours: "Opening hours",
+        emergency: "Takes emergencies",
+        capacity: "Capacity",
+        wheelchair: "Wheelchair access",
+        website: "Website",
+        yes: "Yes",
+        limited: "Limited",
+        no: "No",
+        empty: "The map carries no further details for this place.",
+      },
       navigateMaps: "Google Maps",
       navigateWaze: "Waze",
       copyCoords: "Copy GPS",

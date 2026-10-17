@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { flushPromises, mount } from "@vue/test-utils";
+import { DOMWrapper, flushPromises, mount } from "@vue/test-utils";
 import ElementPlus from "element-plus";
 
 import type { PlaceRead } from "../api/client";
@@ -9,7 +9,9 @@ import {
   isSynthesisedPlaceName,
   placeLocatingHint,
 } from "../utils/placeName";
+import { operatorRelevantFacts } from "../utils/placeFacts";
 import PriorityQueuePanel from "../modules/priority-queue/PriorityQueuePanel.vue";
+import PlaceTriageDrawer from "../modules/priority-queue/PlaceTriageDrawer.vue";
 
 const basePlace: PlaceRead = {
   id: "cccccccc-0000-0000-0000-000000000001",
@@ -179,6 +181,115 @@ describe("the dispatch queue never shows an OSM identifier", () => {
     expect(wrapper.text()).not.toMatch(/\(#\d+\)/);
     expect(wrapper.text()).not.toContain("398433965");
     expect(wrapper.text()).not.toContain("771");
+    wrapper.unmount();
+  });
+});
+
+describe("operator-relevant OSM facts", () => {
+  it("keeps only the facts that change what a responder does next", () => {
+    expect(
+      operatorRelevantFacts({
+        osm_tags: {
+          amenity: "hospital",
+          source: "survey 2019",
+          wikidata: "Q12345",
+          "ref:MINSAL": "SV-1142",
+          operator: "MINSAL",
+          "addr:street": "Calle Obrero Mundial",
+          "addr:housenumber": "214",
+          "addr:city": "Acajutla",
+          opening_hours: "24/7",
+          emergency: "yes",
+          "capacity:beds": "120",
+          wheelchair: "limited",
+        },
+      }),
+    ).toEqual([
+      { key: "operator", text: "MINSAL" },
+      { key: "address", text: "Calle Obrero Mundial 214, Acajutla" },
+      { key: "openingHours", text: "24/7" },
+      { key: "emergency", text: "", flag: "yes" },
+      { key: "capacity", text: "120" },
+      { key: "wheelchair", text: "", flag: "limited" },
+    ]);
+  });
+
+  it("returns nothing when the tags carry only cartographic bookkeeping", () => {
+    expect(
+      operatorRelevantFacts({ osm_tags: { amenity: "clinic", source: "bing" } }),
+    ).toEqual([]);
+    expect(operatorRelevantFacts(null)).toEqual([]);
+  });
+
+  it("refuses a website value that is not an http(s) address", () => {
+    expect(
+      operatorRelevantFacts({ osm_tags: { website: "hospitalsonsonate.sv" } }),
+    ).toEqual([
+      {
+        key: "website",
+        text: "hospitalsonsonate.sv",
+        href: "https://hospitalsonsonate.sv/",
+      },
+    ]);
+    // OSM values are contributor-entered free text, so a scripted scheme is
+    // dropped rather than rendered as something an operator might tap.
+    expect(
+      operatorRelevantFacts({ osm_tags: { website: "javascript:alert(1)" } }),
+    ).toEqual([]);
+  });
+});
+
+describe("the triage record shows facts, not a tag dump", () => {
+  it("labels each kept fact and never prints the OSM identifier", async () => {
+    setAppLocale("es");
+    const wrapper = mount(PlaceTriageDrawer, {
+      global: { plugins: [ElementPlus] },
+      attachTo: document.body,
+      props: {
+        visible: true,
+        place: placeWith({
+          name: "Hospital Nacional de Sonsonate",
+          osm_tags: {
+            amenity: "hospital",
+            wikidata: "Q12345",
+            operator: "MINSAL",
+            emergency: "yes",
+          },
+        }),
+      },
+    });
+    await flushPromises();
+
+    const facts = new DOMWrapper(document.body).get('[data-testid="place-facts"]');
+    expect(facts.text()).toContain("Operado por");
+    expect(facts.text()).toContain("MINSAL");
+    expect(facts.text()).toContain("Atiende urgencias");
+    expect(facts.text()).toContain("Sí");
+    expect(facts.text()).not.toContain("wikidata");
+    expect(facts.text()).not.toContain("amenity");
+    expect(facts.text()).not.toContain("way/398433965");
+    expect(facts.text()).not.toContain("398433965");
+    wrapper.unmount();
+  });
+
+  it("says so plainly when the map carries nothing further", async () => {
+    setAppLocale("es");
+    const wrapper = mount(PlaceTriageDrawer, {
+      global: { plugins: [ElementPlus] },
+      attachTo: document.body,
+      props: {
+        visible: true,
+        place: placeWith({
+          name: "Hospital Nacional de Sonsonate",
+          osm_tags: { amenity: "hospital" },
+        }),
+      },
+    });
+    await flushPromises();
+
+    expect(
+      new DOMWrapper(document.body).get('[data-testid="place-facts"]').text(),
+    ).toBe("El mapa no tiene más datos de este lugar.");
     wrapper.unmount();
   });
 });
