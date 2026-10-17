@@ -12,6 +12,9 @@ from app.modules.hazards.infrastructure.router import router as hazards_router
 from app.modules.institutions.infrastructure.router import router as institutions_router
 from app.modules.places.infrastructure.activity_router import router as activity_router
 from app.modules.places.infrastructure.router import router as places_router
+from app.modules.prioritization.infrastructure.coping_router import (
+    router as coping_router,
+)
 from app.modules.prioritization.infrastructure.router import (
     router as prioritization_router,
 )
@@ -76,6 +79,7 @@ def create_app() -> FastAPI:
     application.include_router(institutions_router, prefix=settings.api_v1_prefix)
     application.include_router(hazards_router, prefix=settings.api_v1_prefix)
     application.include_router(prioritization_router, prefix=settings.api_v1_prefix)
+    application.include_router(coping_router, prefix=settings.api_v1_prefix)
 
     return application
 

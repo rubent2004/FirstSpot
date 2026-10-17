@@ -170,6 +170,16 @@ census-ingest *args: db-up
 census-attach *args: db-up
     uv run --directory backend python -m scripts.attach_place_census {{args}}
 
+# Download the Geofabrik El Salvador OSM extract (~35 MB, ODbL 1.0, rebuilt daily)
+osm-download *args:
+    uv run --directory backend python -m scripts.ingest_osm_coping --download --dry-run {{args}}
+
+# Load the national OSM coping corpus and refresh the cached per-polygon access
+# measurements behind PRIO-SV's Lack of Coping Capacity dimension (idempotent).
+# Distances are GEODESIC: a lower bound on travel distance, never a route.
+osm-ingest *args: db-up
+    uv run --directory backend python -m scripts.ingest_osm_coping {{args}}
+
 # Run full verification suite (PostGIS + Backend pytest + Frontend Vitest + TypeScript build)
 test: db-up
     uv run --directory backend pytest -v

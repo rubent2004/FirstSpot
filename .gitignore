@@ -15,3 +15,7 @@ data/census/raw/
 data/**/*.geojson
 data/**/*.xlsx
 data/**/*.zip
+
+# Raw OpenStreetMap country extract (~35 MB, regenerable by `just osm-download`).
+data/osm/raw/
+data/**/*.osm.pbf

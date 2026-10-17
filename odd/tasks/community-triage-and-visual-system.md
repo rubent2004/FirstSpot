@@ -465,7 +465,160 @@ Also excluded: crowding by rooms (rooms not published; proxied by persons per
 household) and homeless/collective dwellings (withheld in 82 and 27 districts
 respectively — ranking 180 districts against a variable 82 cannot report would
 be dishonest).
-- [ ] **C2** Lack-of-coping-capacity dimension from OSM via PostGIS/pgRouting.
+- [x] **C2** Lack-of-coping-capacity dimension from OSM via PostGIS.
+  *Route: delegated writer (multi-file).*
+  Verified: 385 tests pass (304 pre-existing + 81 new), `alembic upgrade head`
+  applies, `alembic check` reports no drift, `0004 <-> 0005` round-trip clean.
+  Real national ingest: 2,072 facilities + 2,506 primary ways + 902 cached
+  polygons in 75s; re-run reported identical counts, so it is idempotent.
+  The index itself answers in **27 ms query + 17 ms pipeline** over 262
+  districts, because the geometry is cached at ingest, not per request.
+
+### C2: distance is geodesic, and that is declared everywhere
+
+**pgRouting was not installed and could not be, so no distance here is a route.**
+It is absent from `pg_available_extensions` in the pinned
+`postgis/postgis:16-3.4-alpine` image, Alpine's package repository does not
+carry it, and the image is declared in `docker-compose.yml` — outside the task's
+authorised edit surface. Every distance is therefore `ST_Distance` on the
+`GEOGRAPHY` column: **true metres on the WGS 84 ellipsoid, and a lower bound on
+travel distance.**
+
+That is carried in the names, not only in prose: columns are
+`geodesic_metres_to_nearest_*`, the measure string says "a LOWER BOUND on travel
+distance, never travel distance itself", `distance_basis` is a **top-level** API
+field rather than buried in the methodology block, and the methodology publishes
+`uses_network_routing: false` beside `uses_principal_components: false`.
+
+The understatement is **not a constant factor**: it is largest in mountainous and
+river-cut districts, which are exactly the districts this dimension exists to
+find. Network routing is recorded as open work and the road geometry is already
+stored for it.
+
+### C2 indicator list, each verified against the real extract
+
+| Variable | In index | Backing data |
+|---|---|---|
+| `LCC_HEALTHDIST` | **yes** | 184 hospitals + 518 clinics nationally; 262 distinct district values |
+| `LCC_ROADDIST` | **yes** | 2,506 motorway/trunk/primary ways, 2,043 km; 262 distinct values |
+| `LCC_HEALTHFAR` | no | share beyond 5 km; excluded as the same concept as `LCC_HEALTHDIST` |
+| `LCC_ROADFAR` | no | same concept as `LCC_ROADDIST` |
+| `LCC_SHELTER` | no | excluded on measured evidence (below) |
+| `LCC_FIREDIST` | no | excluded on measured evidence (below) |
+
+The two index variables correlate **0.18** over the 262 districts, so neither is
+a disguised copy of the other — two collinear variables would have been an
+undeclared double weight.
+
+### Why the national extract was not optional
+
+The existing Overpass corpus covers **24 of 262 districts, and 21 have a
+hospital or clinic**. Computing distance-to-care against it gives a national mean
+of **27.8 km and a maximum of 65.0 km**, against **3.8 km and 20.3 km** on the
+national extract. The 27.8 km figure measures how far a district is from the
+seven zones that were queried, and it would have ranked districts *plausibly* —
+worst for the remote ones — for entirely the wrong reason. The Geofabrik extract
+(ODbL 1.0, pinned file rather than live API) is what makes the dimension a
+measurement rather than a map of our own ingestion.
+
+### Two indicators rejected on measured evidence, not taste
+
+1. **Fire stations.** The extract holds **18 nationally**, and the departments of
+   **Santa Ana and Cabañas hold zero** — Santa Ana is the second city with about
+   a quarter of a million people and certainly has a station. Only 12 of 262
+   districts contain one, and the worst district measures 60 km. Including it
+   would have scored Santa Ana as having no fire response at all.
+2. **Shelter per capita.** 1,199 mapped schools against MINED's roughly 5,100
+   centros escolares (~23%); 32 districts show zero, and **25 of those 32 are in
+   the two most rural quartiles**, so the incompleteness is concentrated exactly
+   where the index would read it as a finding. Dividing by population then
+   *inverts* the direction: the density correlates **+0.18** with rural share
+   while the raw count correlates **−0.35**, so rural villages would score as
+   well sheltered because 1,900 people share one mapped school.
+
+Both are still computed, cached and published as context variables so the
+exclusions are checkable, and both carry their numbers in `exclusion_reason`.
+
+### C2: fire stations were deliberately NOT added to `PlaceCategory`
+
+The brief authorised extending the taxonomy if it stayed contained. It does not.
+A fire station is a **responder asset, not a vulnerable place**: it needs no
+`priority_score`, and it fits none of the four `VulnerabilityGroup` axes, so
+adding it would have required a fifth group, which cascades into `GROUP_COLORS`
+in `frontend/src/api/client.ts` — outside the authorised surface and already
+flagged in A3. Fire stations are therefore ingested into the new
+`osm_coping_facility` table, where they are nationally complete-as-mapped,
+available to the map, and depended on by no score.
+
+### C2 limitations that must be stated whenever these scores are shown
+
+1. **LCC is infrastructure only.** The institutional sub-dimension carries zero
+   variables because no published subnational DRR capacity indicator exists for
+   El Salvador. It is published with a null score rather than imputed at the
+   median, so INFORM's geometric mean reduces to the identity and **the LCC
+   score IS the infrastructure score**. Pinned as a test, so a real
+   institutional indicator will break it — that failure is the wanted signal.
+2. **Every distance is a lower bound on travel distance**, understating exactly
+   the districts the index is meant to find.
+3. **A short distance means a facility is NEARBY, never that care is
+   AVAILABLE.** OSM records the tag, not whether the hospital has power, staff
+   or a standing roof after the event.
+4. **Road classification is functional, not structural.** A district scores well
+   for being near a road that may be unpaved, or that may be the first road a
+   landslide closes.
+5. **Shelter capacity is unmeasured**, so Sphere shelter minimums in C4 compute
+   a *requirement* and must never be compared against an available-capacity
+   figure, because none exists.
+6. **Relative rank only**, among these 262 districts, by this method.
+
+### C2 ranking: validated, with one documented divergence
+
+Worst (rank 1 = worst coping capacity): **Jucuarán** (Usulután), **San Pablo
+Tacachico** (La Libertad), **Cinquera** (Cabañas), **San Fernando**
+(Chalatenango), **Jutiapa** (Cabañas), **Ojos de Agua** (Chalatenango),
+**Lislique** (La Unión), **Tejutepeque**, **Victoria** (Cabañas), **Tacuba**
+(Ahuachapán). Best: **Antiguo Cuscatlán**, **San Salvador**, **Colón**, El
+Refugio, Turín, Santo Tomás, Sonzacate, Soyapango, San Rafael Obrajuelo,
+Ilopango.
+
+Chalatenango dominates the worst 40 (10 districts, most of any department),
+La Unión contributes 4 and Cabañas 4 of the worst 10; San Salvador (8) and La
+Libertad (7) dominate the best 40. The index is not inverted.
+
+**The divergence: Morazán is NOT among the worst, contrary to the brief's
+expectation** — it places 5 districts in the best 40, mean rank 165 of 262. The
+cause is measurable: Morazán holds the **highest mapped primary-care density in
+the country, 2.36 hospitals or clinics per 10,000 inhabitants** against Cabañas's
+0.56, across 26 districts averaging only 50.6 km². Its mean population-weighted
+distance to care is **2.23 km — shorter than San Salvador's own 2.36 km**.
+
+So the index ranks Cabañas and Chalatenango worse than Morazán, and that
+differentiation among three poor rural departments is what an infrastructure
+-access measure *should* produce if the infrastructure genuinely differs. Morazán
+topping the **V** dimension while scoring mid-table on **LCC** is not a
+contradiction — it is the reason INFORM composes three dimensions instead of one.
+
+**Unverified:** the plausible real-world explanation is MINSAL's post-2009 ECOS
+Familiares / FOSALUD rural health-post expansion, which targeted Morazán
+heavily. I could not check that against a MINSAL establishment register, because
+none is published per district. Confirming it — or finding that Morazán is
+simply mapped more intensively — is open work and is pinned as a test so an
+inversion cannot be absorbed silently.
+
+### C2 open work
+
+- **Network routing.** Install pgRouting (needs `docker-compose.yml`, so the
+  image must change — Alpine does not carry it; the Debian `postgis/postgis:16-3.4`
+  image plus `postgresql-16-pgrouting` does), then
+  `pgr_createTopology` over the already-ingested `osm_road_segment` geometry and
+  republish the two distance variables as network distance. The extract reader
+  and the road table are built for it; nothing else has to change.
+- Verify Morazán's health-facility density against a MINSAL register.
+- Obtain the DGPC fire-station list to promote `LCC_FIREDIST` unchanged.
+- The three new tables are **migration-owned, not ORM-mapped**, matching the
+  prioritization module's existing raw-`text()` read paths. Registering them in
+  `alembic/env.py` needs that file in scope; `alembic check` is clean either way
+  because `include_object` skips reflected tables absent from the metadata.
 - [ ] **C3** Hazard & exposure dimension: USGS ShakeMap client, zonal statistics,
   fixed-bound normalization.
 - [ ] **C4** Index composition endpoint + Sphere resource translation.
@@ -526,6 +679,8 @@ Phase A visual work complete (A1-A3). Phase B ingestion complete (B1-B3).
 | `69d1337` | **B5** suppression policy in `app/core` | 207 tests |
 | `1c1c46b` | **B4** place-census attachment + exposure | 207 tests, alembic check, backfill |
 | `cc4190a` | **B6** census justfile recipes | `just census-download --dry-run` |
+| `b1aa8c5` | **C1** completion record | — |
+| _this_ | **C2** LCC dimension (geodesic, declared gaps) | 385 tests, alembic check, real ingest, ranking |
 
 ### What the exposure estimates actually look like
 

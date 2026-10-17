@@ -1053,6 +1053,129 @@
           }
         }
       }
+    },
+    "/api/v1/prioritization/coping-capacity/districts": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Rank every district by the PRIO-SV Lack of Coping Capacity dimension",
+        "description": "Rank the 262 districts by the Lack of Coping Capacity dimension of PRIO-SV.\n\nHigher is worse: 10 means \"worst placed of the 262 districts on this\nmethod\". The score is normalised by the CDC/ATSDR SVI 2022 percentile method\nwith equal weights at variable level and no PCA, then composed by INFORM\n2017's geometric mean.\n\nTwo things in the response are not optional reading. Every distance is a\n**geodesic straight line and a lower bound on travel distance** -- pgRouting\nis not installed, so nothing here is a route. And the **institutional\nsub-dimension is a declared gap**, because no published subnational DRR\ncapacity indicator exists for El Salvador, so this dimension is\ninfrastructure only and its score equals its infrastructure score.",
+        "operationId": "listDistrictCopingCapacity",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopingRankingRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/coping-capacity/population-units": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Per-polygon access measurements behind each district's LCC score",
+        "description": "Return the per-polygon distances a district's LCC figure averages.\n\nUnlike the Vulnerability dimension, LCC's underlying measurement really is\ntaken at this finer level: each DEGURBA Nivel 2 polygon has its own measured\ndistance, and the district figure is their population-weighted mean. A\ndistrict whose urban core sits 400 m from a clinic and whose rural fringe\nsits 12 km away publishes one number, and an operator deciding where to send\na brigade needs the spread rather than the average.\n\nThe attributed ``score`` is still the district's, under the uniformity\nassumption returned with the response.",
+        "operationId": "listPopulationUnitCopingAccess",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 6,
+                  "maxLength": 6
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict the result to one six-character district code.",
+              "title": "District Code"
+            },
+            "description": "Restrict the result to one six-character district code."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PopulationUnitAccessResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/coping-capacity/districts/{district_code}": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Retrieve every variable behind one district's LCC score",
+        "description": "Take one district's LCC score apart into the variables behind it.\n\nReturns every declared variable's raw estimate (``E``), rate (``EP``) and\npercentile rank (``EPL``), each sub-dimension's percentile sum (``SPL``) and\nrank (``RPL``), both composition rules, and the four context variables that\nare measured and published but deliberately excluded from the index, each\nwith the evidence that excluded it. A score nobody can take apart cannot be\ndefended in front of an emergency committee or a jury, which is the whole\nreason this endpoint exists.",
+        "operationId": "getDistrictCopingCapacityAudit",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 6,
+              "description": "Six-character DIGESTYC/BCR-CNR district code.",
+              "title": "District Code"
+            },
+            "description": "Six-character DIGESTYC/BCR-CNR district code."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistrictCopingAuditRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1100,6 +1223,436 @@
         ],
         "title": "AttentionStatus",
         "description": "Operational dispatch status managed by response institutions."
+      },
+      "CopingMethodologyRead": {
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "title": "Dimension",
+            "description": "PRIO dimension key this score belongs to."
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "description": "The normalisation and composition method."
+          },
+          "percentile_formula": {
+            "type": "string",
+            "title": "Percentile Formula",
+            "description": "The published percentile formula."
+          },
+          "tie_rule": {
+            "type": "string",
+            "title": "Tie Rule",
+            "description": "How tied values share a percentile."
+          },
+          "aggregation_rule": {
+            "type": "string",
+            "title": "Aggregation Rule",
+            "description": "How the sub-dimensions are composed into the dimension."
+          },
+          "population_weighting_rule": {
+            "type": "string",
+            "title": "Population Weighting Rule",
+            "description": "How per-polygon distances aggregate to a district figure."
+          },
+          "unit_of_analysis": {
+            "type": "string",
+            "title": "Unit Of Analysis",
+            "description": "The territorial unit scored."
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation",
+            "description": "The only reading this score supports."
+          },
+          "uses_principal_components": {
+            "type": "boolean",
+            "title": "Uses Principal Components",
+            "description": "Always false. PCA/SoVI rankings do not converge when the set of units changes (Spielman et al. 2020), so a district's score would move because an unrelated district was added.",
+            "default": false
+          },
+          "uses_network_routing": {
+            "type": "boolean",
+            "title": "Uses Network Routing",
+            "description": "Always false on this deployment. pgRouting is absent from the pinned postgis/postgis:16-3.4-alpine image, so every distance is a geodesic straight line and a lower bound on travel distance. Read `distance_basis` before using any distance here.",
+            "default": false
+          },
+          "scored_unit_count": {
+            "type": "integer",
+            "title": "Scored Unit Count",
+            "description": "Number of units the percentiles are relative to. A percentile is meaningless without its N, and two runs are only comparable at the same N."
+          },
+          "withheld_unit_count": {
+            "type": "integer",
+            "title": "Withheld Unit Count",
+            "description": "Units given no score because an input was not measurable."
+          },
+          "scored_sub_dimension_count": {
+            "type": "integer",
+            "title": "Scored Sub Dimension Count",
+            "description": "Sub-dimensions carrying at least one variable. Currently 1 of 2: the institutional sub-dimension is a declared gap, so INFORM's geometric mean reduces to the identity and this score IS the infrastructure score."
+          },
+          "declared_gap_sub_dimension_count": {
+            "type": "integer",
+            "title": "Declared Gap Sub Dimension Count",
+            "description": "Sub-dimensions carrying no variable at all."
+          },
+          "access_threshold_metres": {
+            "type": "integer",
+            "title": "Access Threshold Metres",
+            "description": "Fixed distance defining 'beyond reach on foot' for the published context shares, about one hour's walk per Sphere 2018. A FIXED bound, never derived from an event's observed range. The two index variables are mean distances and do not use it."
+          },
+          "suppression_threshold": {
+            "type": "integer",
+            "title": "Suppression Threshold",
+            "description": "Minimum statistical units in any published cell."
+          },
+          "suppression_reference": {
+            "type": "string",
+            "title": "Suppression Reference",
+            "description": "Legal basis for the suppression threshold."
+          },
+          "osm_source": {
+            "type": "string",
+            "title": "Osm Source",
+            "description": "Provenance of the facility and road data."
+          },
+          "osm_licence": {
+            "type": "string",
+            "title": "Osm Licence",
+            "description": "Licence the derived data inherits."
+          }
+        },
+        "type": "object",
+        "required": [
+          "dimension",
+          "method",
+          "percentile_formula",
+          "tie_rule",
+          "aggregation_rule",
+          "population_weighting_rule",
+          "unit_of_analysis",
+          "interpretation",
+          "scored_unit_count",
+          "withheld_unit_count",
+          "scored_sub_dimension_count",
+          "declared_gap_sub_dimension_count",
+          "access_threshold_metres",
+          "suppression_threshold",
+          "suppression_reference",
+          "osm_source",
+          "osm_licence"
+        ],
+        "title": "CopingMethodologyRead",
+        "description": "Everything a published LCC score cannot be interpreted without."
+      },
+      "CopingRankingRead": {
+        "properties": {
+          "districts": {
+            "items": {
+              "$ref": "#/components/schemas/DistrictCopingRead"
+            },
+            "type": "array",
+            "title": "Districts",
+            "description": "Districts ordered worst coping capacity first."
+          },
+          "scored_unit_count": {
+            "type": "integer",
+            "title": "Scored Unit Count",
+            "description": "Districts that received a score."
+          },
+          "withheld_unit_count": {
+            "type": "integer",
+            "title": "Withheld Unit Count",
+            "description": "Districts given no score because an input was unmeasurable."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/CopingMethodologyRead",
+            "description": "The method these scores were produced by."
+          },
+          "distance_basis": {
+            "type": "string",
+            "title": "Distance Basis",
+            "description": "What the distances are, and what they are not. Published at the top level rather than inside the methodology because a consumer that reads one field has to read this one."
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/CopingVariableRead"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "The declared variable catalogue with its definitions. Per-district estimates are null here; request a single district for those."
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/app__modules__prioritization__infrastructure__coping_router__DeclaredGapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps",
+            "description": "What the index cannot carry, with the consequences."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Census attribution."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "What these scores are not."
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When the scores were computed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "districts",
+          "scored_unit_count",
+          "withheld_unit_count",
+          "methodology",
+          "distance_basis",
+          "variables",
+          "declared_gaps",
+          "source",
+          "disclaimer",
+          "computed_at"
+        ],
+        "title": "CopingRankingRead",
+        "description": "Every district ranked from worst to best coping capacity."
+      },
+      "CopingThemeRead": {
+        "properties": {
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "description": "Sub-dimension key."
+          },
+          "variable_count": {
+            "type": "integer",
+            "title": "Variable Count",
+            "description": "Index variables summed into this theme, all equally weighted."
+          },
+          "declared_gap": {
+            "type": "boolean",
+            "title": "Declared Gap",
+            "description": "True for a sub-dimension carrying no variable at all. The institutional sub-dimension is such a gap, and it is published with a null score rather than imputed at the median."
+          },
+          "percentile_sum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile Sum",
+            "description": "CDC step SPL: unweighted sum of the theme's percentiles."
+          },
+          "percentile_rank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile Rank",
+            "description": "CDC step RPL: percentile rank of that sum, 0-1."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The RPL rescaled onto 0-10."
+          }
+        },
+        "type": "object",
+        "required": [
+          "theme",
+          "variable_count",
+          "declared_gap",
+          "percentile_sum",
+          "percentile_rank",
+          "score"
+        ],
+        "title": "CopingThemeRead",
+        "description": "One sub-dimension's CDC ``SPL`` and ``RPL`` with its 0-10 score."
+      },
+      "CopingVariableRead": {
+        "properties": {
+          "variable": {
+            "type": "string",
+            "title": "Variable",
+            "description": "Stable variable key."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human-readable variable name."
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "description": "Sub-dimension the variable belongs to."
+          },
+          "in_index": {
+            "type": "boolean",
+            "title": "In Index",
+            "description": "False for a variable published for audit that contributes to no theme sum."
+          },
+          "exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusion Reason",
+            "description": "Why a published variable stays out of the index."
+          },
+          "numerator": {
+            "type": "string",
+            "title": "Numerator",
+            "description": "What is counted, in the source's terms."
+          },
+          "denominator": {
+            "type": "string",
+            "title": "Denominator",
+            "description": "The universe the count is divided by."
+          },
+          "measure": {
+            "type": "string",
+            "title": "Measure",
+            "description": "What the rate is. A distance variable says so here, including that it is a lower bound, so metres are never read as a percentage."
+          },
+          "inform_equivalent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inform Equivalent",
+            "description": "The INFORM 2017 LCC component this stands in for."
+          },
+          "higher_is_worse": {
+            "type": "boolean",
+            "title": "Higher Is Worse",
+            "description": "Direction of the ranking, declared rather than assumed. False for the shelter density, whose high values are good and which is therefore ranked in reverse."
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate",
+            "description": "CDC step E: the raw estimate. Person-metres for a distance variable, people for a share, facilities x 1,000 for the shelter density. Null when it could not be measured."
+          },
+          "universe": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Universe",
+            "description": "The denominator as published, or null when withheld."
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate",
+            "description": "CDC step EP: estimate over universe, in the stated measure."
+          },
+          "percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile",
+            "description": "CDC step EPL: percentile rank 0-1, or null when not ranked."
+          },
+          "suppressed": {
+            "type": "boolean",
+            "title": "Suppressed",
+            "description": "True when this variable could not be published for this district, either because the measurement is absent or because its population denominator is below the disclosure threshold."
+          },
+          "suppression_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppression Reason",
+            "description": "Why the value is absent."
+          },
+          "inputs_incomplete": {
+            "type": "boolean",
+            "title": "Inputs Incomplete",
+            "description": "True when the estimate was summed over at least one withheld cell, making it a lower bound in the disclosure sense as well."
+          },
+          "maximum_undercount": {
+            "type": "integer",
+            "title": "Maximum Undercount",
+            "description": "Largest number of units the estimate can be short by, bounded by the suppression threshold itself."
+          }
+        },
+        "type": "object",
+        "required": [
+          "variable",
+          "label",
+          "theme",
+          "in_index",
+          "numerator",
+          "denominator",
+          "measure",
+          "higher_is_worse",
+          "estimate",
+          "universe",
+          "rate",
+          "percentile",
+          "suppressed",
+          "inputs_incomplete",
+          "maximum_undercount"
+        ],
+        "title": "CopingVariableRead",
+        "description": "One variable's full audit trail behind a district's score."
       },
       "DashboardKPIsRead": {
         "properties": {
@@ -1161,32 +1714,317 @@
         "title": "DashboardKPIsRead",
         "description": "Aggregated operational KPIs for the dashboard header and analytics."
       },
-      "DeclaredGapRead": {
+      "DistrictCopingAuditRead": {
         "properties": {
-          "subject": {
+          "district_code": {
             "type": "string",
-            "title": "Subject",
-            "description": "The variable or table that is unavailable."
+            "title": "District Code",
+            "description": "Six-character DIGESTYC/BCR-CNR code."
           },
-          "reason": {
+          "district_name": {
             "type": "string",
-            "title": "Reason",
-            "description": "Why it is unavailable, with its evidence."
+            "title": "District Name",
+            "description": "Published district name."
           },
-          "consequence": {
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population",
+            "description": "Published resident population, or null when withheld."
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "1 is the district with the worst coping capacity. Tied scores share a rank; a district with no score carries none."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The LCC dimension score, 0-10, where 10 is worst placed. Equal to the infrastructure sub-dimension score while the institutional sub-dimension remains a declared gap."
+          },
+          "cdc_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdc Score",
+            "description": "CDC's own cross-theme composition (RPL_THEMES rescaled to 0-10), published beside the INFORM geometric mean as an audit cross-check."
+          },
+          "theme_percentile_sum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Sum",
+            "description": "CDC step SPL_THEMES: sum of the scored theme ranks."
+          },
+          "theme_percentile_rank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Rank",
+            "description": "CDC step RPL_THEMES: percentile rank of that sum."
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/CopingThemeRead"
+            },
+            "type": "array",
+            "title": "Themes",
+            "description": "Both sub-dimensions, including the declared-gap one."
+          },
+          "inputs_incomplete": {
+            "type": "boolean",
+            "title": "Inputs Incomplete",
+            "description": "True when any published estimate is a lower bound."
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld",
+            "description": "True when no score is published for this district."
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason",
+            "description": "Why no score is published."
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/CopingVariableRead"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "Every declared variable's E, EP and EPL for this district."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/CopingMethodologyRead",
+            "description": "The method this score was produced by."
+          },
+          "distance_basis": {
             "type": "string",
-            "title": "Consequence",
-            "description": "What its absence does to the published score."
+            "title": "Distance Basis",
+            "description": "What the distances are, and what they are not."
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/app__modules__prioritization__infrastructure__coping_router__DeclaredGapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps",
+            "description": "What the index cannot carry, with the consequences."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Census attribution."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "What this score is not."
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When the score was computed."
           }
         },
         "type": "object",
         "required": [
-          "subject",
-          "reason",
-          "consequence"
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "cdc_score",
+          "theme_percentile_sum",
+          "theme_percentile_rank",
+          "themes",
+          "inputs_incomplete",
+          "withheld",
+          "variables",
+          "methodology",
+          "distance_basis",
+          "declared_gaps",
+          "source",
+          "disclaimer",
+          "computed_at"
         ],
-        "title": "DeclaredGapRead",
-        "description": "A variable the index cannot carry, with the reason and what it costs."
+        "title": "DistrictCopingAuditRead",
+        "description": "One district's LCC score with every variable behind it."
+      },
+      "DistrictCopingRead": {
+        "properties": {
+          "district_code": {
+            "type": "string",
+            "title": "District Code",
+            "description": "Six-character DIGESTYC/BCR-CNR code."
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name",
+            "description": "Published district name."
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population",
+            "description": "Published resident population, or null when withheld."
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "1 is the district with the worst coping capacity. Tied scores share a rank; a district with no score carries none."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The LCC dimension score, 0-10, where 10 is worst placed. Equal to the infrastructure sub-dimension score while the institutional sub-dimension remains a declared gap."
+          },
+          "cdc_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdc Score",
+            "description": "CDC's own cross-theme composition (RPL_THEMES rescaled to 0-10), published beside the INFORM geometric mean as an audit cross-check."
+          },
+          "theme_percentile_sum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Sum",
+            "description": "CDC step SPL_THEMES: sum of the scored theme ranks."
+          },
+          "theme_percentile_rank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Rank",
+            "description": "CDC step RPL_THEMES: percentile rank of that sum."
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/CopingThemeRead"
+            },
+            "type": "array",
+            "title": "Themes",
+            "description": "Both sub-dimensions, including the declared-gap one."
+          },
+          "inputs_incomplete": {
+            "type": "boolean",
+            "title": "Inputs Incomplete",
+            "description": "True when any published estimate is a lower bound."
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld",
+            "description": "True when no score is published for this district."
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason",
+            "description": "Why no score is published."
+          }
+        },
+        "type": "object",
+        "required": [
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "cdc_score",
+          "theme_percentile_sum",
+          "theme_percentile_rank",
+          "themes",
+          "inputs_incomplete",
+          "withheld"
+        ],
+        "title": "DistrictCopingRead",
+        "description": "One district's LCC score, as it appears in the ranked list."
       },
       "DistrictVulnerabilityAuditRead": {
         "properties": {
@@ -1316,7 +2154,7 @@
           },
           "declared_gaps": {
             "items": {
-              "$ref": "#/components/schemas/DeclaredGapRead"
+              "$ref": "#/components/schemas/app__modules__prioritization__infrastructure__router__DeclaredGapRead"
             },
             "type": "array",
             "title": "Declared Gaps",
@@ -2560,6 +3398,206 @@
         "title": "PlaceTriageUpdate",
         "description": "Patch payload for institutional triage updates."
       },
+      "PopulationUnitAccessRead": {
+        "properties": {
+          "unit_id": {
+            "type": "integer",
+            "title": "Unit Id",
+            "description": "Primary key of the DEGURBA population unit."
+          },
+          "district_code": {
+            "type": "string",
+            "title": "District Code",
+            "description": "District the unit belongs to."
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name",
+            "description": "Published district name."
+          },
+          "dug_level": {
+            "type": "integer",
+            "title": "Dug Level",
+            "description": "DEGURBA level; 2 is the analysis unit."
+          },
+          "dug_class": {
+            "type": "string",
+            "title": "Dug Class",
+            "description": "Published degree-of-urbanisation class."
+          },
+          "dug_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dug Code",
+            "description": "Numeric DEGURBA class code."
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population",
+            "description": "Resident population of this unit."
+          },
+          "geodesic_metres_to_nearest_health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geodesic Metres To Nearest Health",
+            "description": "Straight-line metres from this polygon's representative interior point to the nearest hospital or clinic. A LOWER BOUND on travel distance. Null when unmeasurable, never zero."
+          },
+          "geodesic_metres_to_nearest_road": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geodesic Metres To Nearest Road",
+            "description": "Straight-line metres to the nearest primary-network road. A LOWER BOUND on travel distance."
+          },
+          "geodesic_metres_to_nearest_fire_station": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geodesic Metres To Nearest Fire Station",
+            "description": "Straight-line metres to the nearest mapped fire station. Published for audit only: the national extract holds 18 stations and two departments hold none, so this feeds no score."
+          },
+          "shelter_facility_count": {
+            "type": "integer",
+            "title": "Shelter Facility Count",
+            "description": "Schools and community centres inside this polygon. Published for audit only; OSM school coverage is about 23% of the MINED register."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The district's LCC score, attributed to this unit under the uniformity assumption. Not measured at this level."
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "The district's rank, 1 being worst."
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld",
+            "description": "True when the district carries no score."
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_id",
+          "district_code",
+          "district_name",
+          "dug_level",
+          "dug_class",
+          "population",
+          "geodesic_metres_to_nearest_health",
+          "geodesic_metres_to_nearest_road",
+          "geodesic_metres_to_nearest_fire_station",
+          "shelter_facility_count",
+          "score",
+          "rank",
+          "withheld"
+        ],
+        "title": "PopulationUnitAccessRead",
+        "description": "One DEGURBA polygon's own measured access, behind its district figure."
+      },
+      "PopulationUnitAccessResponse": {
+        "properties": {
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/PopulationUnitAccessRead"
+            },
+            "type": "array",
+            "title": "Units",
+            "description": "DEGURBA Nivel 2 polygons with their own measured access."
+          },
+          "unit_count": {
+            "type": "integer",
+            "title": "Unit Count",
+            "description": "Number of polygons returned."
+          },
+          "distance_basis": {
+            "type": "string",
+            "title": "Distance Basis",
+            "description": "What the distances are, and what they are not."
+          },
+          "population_weighting_rule": {
+            "type": "string",
+            "title": "Population Weighting Rule",
+            "description": "How these per-polygon figures become a district figure."
+          },
+          "uniform_district_score_assumption": {
+            "type": "string",
+            "title": "Uniform District Score Assumption",
+            "description": "The assumption that makes attributing a district score to a finer polygon legitimate, stated because the figure cannot be read without it."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/CopingMethodologyRead",
+            "description": "The method these scores were produced by."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Census attribution."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "What these scores are not."
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When the scores were computed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "units",
+          "unit_count",
+          "distance_basis",
+          "population_weighting_rule",
+          "uniform_district_score_assumption",
+          "methodology",
+          "source",
+          "disclaimer",
+          "computed_at"
+        ],
+        "title": "PopulationUnitAccessResponse",
+        "description": "The per-polygon measurements, with the assumption and the basis."
+      },
       "PopulationUnitVulnerabilityRead": {
         "properties": {
           "unit_id": {
@@ -3104,7 +4142,7 @@
           },
           "declared_gaps": {
             "items": {
-              "$ref": "#/components/schemas/DeclaredGapRead"
+              "$ref": "#/components/schemas/app__modules__prioritization__infrastructure__router__DeclaredGapRead"
             },
             "type": "array",
             "title": "Declared Gaps",
@@ -3364,6 +4402,60 @@
         ],
         "title": "VulnerabilityVariableRead",
         "description": "One variable's full audit trail behind a district's score."
+      },
+      "app__modules__prioritization__infrastructure__coping_router__DeclaredGapRead": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The variable or sub-dimension unavailable."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why it is unavailable, with its evidence."
+          },
+          "consequence": {
+            "type": "string",
+            "title": "Consequence",
+            "description": "What its absence does to the published score."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "reason",
+          "consequence"
+        ],
+        "title": "DeclaredGapRead",
+        "description": "A variable the index cannot carry, with the reason and what it costs."
+      },
+      "app__modules__prioritization__infrastructure__router__DeclaredGapRead": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The variable or table that is unavailable."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why it is unavailable, with its evidence."
+          },
+          "consequence": {
+            "type": "string",
+            "title": "Consequence",
+            "description": "What its absence does to the published score."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "reason",
+          "consequence"
+        ],
+        "title": "DeclaredGapRead",
+        "description": "A variable the index cannot carry, with the reason and what it costs."
       }
     },
     "securitySchemes": {

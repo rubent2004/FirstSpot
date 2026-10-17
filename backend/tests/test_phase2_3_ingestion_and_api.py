@@ -504,6 +504,7 @@ class TestFastAPIEndpointsAndOpenAPIContract:
             assert operation_ids == [
                 "createInstitutionInvite",
                 "createPlaceActivity",
+                "getDistrictCopingCapacityAudit",
                 "getDistrictVulnerabilityAudit",
                 "getHealthStatus",
                 "getHeatmapData",
@@ -511,8 +512,10 @@ class TestFastAPIEndpointsAndOpenAPIContract:
                 "getPlaceById",
                 "getPlacePopulationExposure",
                 "joinInstitution",
+                "listDistrictCopingCapacity",
                 "listDistrictVulnerability",
                 "listPlaceActivities",
+                "listPopulationUnitCopingAccess",
                 "listPopulationUnitVulnerability",
                 "listPredefinedZones",
                 "listPrioritizedPlaces",
