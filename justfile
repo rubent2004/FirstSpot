@@ -180,6 +180,13 @@ osm-download *args:
 osm-ingest *args: db-up
     uv run --directory backend python -m scripts.ingest_osm_coping {{args}}
 
+# Seed the fictitious demo organizations and the "Simulacro:" coordination log on the
+# place the guided tour shows (local only; needs the running API: `just up2`).
+# The coordination seed runs seed_demo_institution first, so both seeds run here.
+# `just demo-seed --reset` removes only what the coordination seed created.
+demo-seed *args:
+    uv run --directory backend python -m scripts.seed_demo_coordination {{args}}
+
 # Run full verification suite (PostGIS + Backend pytest + Frontend Vitest + TypeScript build)
 test: db-up
     uv run --directory backend pytest -v
