@@ -54,7 +54,10 @@ const emit = defineEmits<{
   (e: "request-access"): void;
 }>();
 
-const { t, locale, localizePlaceName } = useI18n();
+const { t, locale, describePlace } = useI18n();
+const placeName = computed(() =>
+  describePlace(props.place ?? { name: "", category: undefined }),
+);
 const isSaving = ref<boolean>(false);
 const coordsCopied = ref<boolean>(false);
 const copy = computed(() => locale.value === "es" ? {
@@ -310,8 +313,8 @@ function handleSave(): void {
       <section class="place-overview" aria-labelledby="triage-place-name">
         <span class="place-icon"><Icon0 :name="CATEGORY_ICON_MAP[props.place.category as PlaceCategory] ?? 'map_pin'" :size="24" /></span>
         <div class="place-identity">
-          <span class="place-zone"><Icon0 name="map_pin" :size="12" />{{ props.place.zone_name }}</span>
-          <h3 id="triage-place-name">{{ localizePlaceName(props.place) }}</h3>
+          <span class="place-zone"><Icon0 name="map_pin" :size="12" />{{ props.place.zone_name }}<template v-if="placeName.hint"><span aria-hidden="true"> · </span>{{ placeName.hint }}</template></span>
+          <h3 id="triage-place-name">{{ placeName.label }}</h3>
           <p>{{ t.categories[props.place.category as PlaceCategory] }}<span aria-hidden="true"> · </span>{{ t.groups[props.place.vulnerability_group as VulnerabilityGroup] }}</p>
         </div>
       </section>
@@ -406,7 +409,7 @@ function handleSave(): void {
 
       <section class="activity-log" aria-labelledby="activity-log-title" data-testid="place-activity-log">
         <div class="activity-log-heading">
-          <div><h3 id="activity-log-title">{{ copy.timeline }}</h3><p>{{ localizePlaceName(props.place) }}</p></div>
+          <div><h3 id="activity-log-title">{{ copy.timeline }}</h3><p>{{ placeName.label }}</p></div>
           <span class="activity-count eoc-numeric">{{ props.activities.length }}</span>
         </div>
         <p class="activity-disclaimer">{{ copy.verificationDisclaimer }}</p>
@@ -429,7 +432,7 @@ function handleSave(): void {
               <p v-if="item.notes" class="activity-notes">{{ item.notes }}</p>
               <div v-if="item.attention_status || item.urgency_level || item.estimated_vulnerable_count !== null" class="activity-snapshot">
                 <span v-if="item.attention_status">{{ statusOptions.find((option) => option.value === item.attention_status)?.label ?? item.attention_status }}</span>
-                <span v-if="item.urgency_level">{{ locale === 'es' ? 'Urgencia' : 'Urgency' }} N{{ item.urgency_level }}</span>
+                <span v-if="item.urgency_level">{{ copy.urgency }}: {{ t.urgency[item.urgency_level] ?? item.urgency_level }}</span>
                 <span v-if="item.estimated_vulnerable_count != null">{{ item.estimated_vulnerable_count }} {{ locale === 'es' ? 'personas' : 'people' }}</span>
               </div>
             </div>
@@ -441,7 +444,6 @@ function handleSave(): void {
       <details class="quiet-details technical-details">
         <summary>{{ copy.details }}<Icon0 name="chevron_down" :size="14" /></summary>
         <div class="technical-content">
-          <p>{{ t.drawer.fieldOsm }}: <code>{{ props.place.osm_type }}/{{ props.place.osm_id }}</code></p>
           <dl><div v-for="(value, key) in props.place.osm_tags" :key="key"><dt>{{ key }}</dt><dd>{{ value }}</dd></div></dl>
         </div>
       </details>

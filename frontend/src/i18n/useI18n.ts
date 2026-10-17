@@ -6,6 +6,12 @@ import type {
   PlaceCategory,
   VulnerabilityGroup,
 } from "../api/client";
+import {
+  containsOsmIdentifier,
+  isSynthesisedPlaceName,
+  placeLocatingHint,
+  stripOsmIdentifier,
+} from "../utils/placeName";
 
 export type AppLocale = "es" | "en";
 
@@ -162,7 +168,6 @@ export interface I18nMessages {
     attendedAttenuation: string;
     metadataTitle: string;
     fieldName: string;
-    fieldOsm: string;
     fieldCategory: string;
     fieldGroup: string;
     fieldZoneCoords: string;
@@ -196,7 +201,14 @@ export interface I18nMessages {
   groups: Record<VulnerabilityGroup, string>;
   statuses: Record<AttentionStatus, string>;
   urgency: Record<number, string>;
-  urgencyShort: Record<number, string>;
+  /**
+   * What to call a place the map has no name for. The backend substitutes the
+   * raw OSM identifier here; these read as something a dispatcher would say out
+   * loud over the radio.
+   */
+  unnamedPlaces: Record<PlaceCategory, string>;
+  /** Used when the category itself is unrecognised. */
+  unnamedPlaceFallback: string;
 }
 
 export const MESSAGES: Record<AppLocale, I18nMessages> = {
@@ -342,7 +354,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       attendedAttenuation: "Atenuación por Aseguramiento",
       metadataTitle: "Ubicación e Información del Establecimiento",
       fieldName: "Nombre",
-      fieldOsm: "Referencia Cartográfica",
       fieldCategory: "Clasificación",
       fieldGroup: "Población Objetivo",
       fieldZoneCoords: "Municipio y Coordenadas",
@@ -404,19 +415,25 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       attended: "Atendido",
     },
     urgency: {
-      1: "1 - Baja (×0.6)",
-      2: "2 - Moderada (×0.8)",
-      3: "3 - Estándar (×1.0)",
-      4: "4 - Alta (×1.3)",
-      5: "5 - Crítica / Emergencia (×1.6)",
+      1: "Baja",
+      2: "Moderada",
+      3: "Media",
+      4: "Alta",
+      5: "Crítica",
     },
-    urgencyShort: {
-      1: "N1 Baja",
-      2: "N2 Mod.",
-      3: "N3 Media",
-      4: "N4 Alta",
-      5: "N5 Crítica",
+    unnamedPlaces: {
+      hospital: "Hospital sin nombre",
+      clinic: "Clínica sin nombre",
+      social_facility: "Albergue sin nombre",
+      kindergarten: "Parvularia sin nombre",
+      school: "Centro escolar sin nombre",
+      community_centre: "Casa comunal sin nombre",
+      university: "Universidad sin nombre",
+      pharmacy: "Farmacia sin nombre",
+      commercial_hub: "Centro comercial sin nombre",
+      place_of_worship: "Templo sin nombre",
     },
+    unnamedPlaceFallback: "Lugar sin nombre",
   },
   en: {
     header: {
@@ -559,7 +576,6 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       attendedAttenuation: "Attended Attenuation",
       metadataTitle: "Location & Facility Information",
       fieldName: "Name",
-      fieldOsm: "Cartographic Reference",
       fieldCategory: "Facility Category",
       fieldGroup: "Target Population",
       fieldZoneCoords: "Municipality & Coordinates",
@@ -621,19 +637,25 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       attended: "Attended",
     },
     urgency: {
-      1: "1 - Low (0.6x)",
-      2: "2 - Moderate (0.8x)",
-      3: "3 - Standard (1.0x)",
-      4: "4 - High (1.3x)",
-      5: "5 - Critical (1.6x)",
+      1: "Low",
+      2: "Moderate",
+      3: "Medium",
+      4: "High",
+      5: "Critical",
     },
-    urgencyShort: {
-      1: "L1 Low",
-      2: "L2 Mod",
-      3: "L3 Std",
-      4: "L4 High",
-      5: "L5 Crit",
+    unnamedPlaces: {
+      hospital: "Unnamed hospital",
+      clinic: "Unnamed clinic",
+      social_facility: "Unnamed shelter",
+      kindergarten: "Unnamed kindergarten",
+      school: "Unnamed school",
+      community_centre: "Unnamed community centre",
+      university: "Unnamed university",
+      pharmacy: "Unnamed pharmacy",
+      commercial_hub: "Unnamed commercial hub",
+      place_of_worship: "Unnamed place of worship",
     },
+    unnamedPlaceFallback: "Unnamed place",
   },
 };
 
@@ -652,23 +674,80 @@ export function toggleAppLocale(): void {
   setAppLocale(currentLocale.value === "es" ? "en" : "es");
 }
 
+/** The minimum a place has to carry for its name to be resolved. */
+export interface PlaceNameSource {
+  name: string;
+  category?: string;
+  osm_tags?: Record<string, unknown>;
+}
+
+/** A place name split into what to show and how to locate it. */
+export interface PlaceNameDescription {
+  /** Human-facing label. Never contains a raw OSM identifier. */
+  readonly label: string;
+  /** Where to find an unnamed place, when the tags say; otherwise null. */
+  readonly hint: string | null;
+  /** True when the label is our wording rather than a real place name. */
+  readonly isUnnamed: boolean;
+}
+
+/** Localized name straight from the OSM tags, when the data carries one. */
+function taggedPlaceName(
+  place: PlaceNameSource,
+  locale: AppLocale,
+): string | null {
+  const tags = place.osm_tags;
+  if (!tags || typeof tags !== "object") return null;
+  const tag = tags[locale === "es" ? "name:es" : "name:en"];
+  if (typeof tag !== "string") return null;
+  const trimmed = tag.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 /**
- * Resolve localized place name from OSM tags (`name:es` / `name:en`) when available.
+ * Resolve what to call a place.
+ *
+ * Preference order is the localized OSM tag, then the stored name, then our own
+ * wording for an unnamed place of that category. Every branch is checked for a
+ * raw OSM identifier before it is returned, so no data shape — present or
+ * future — can put a database key in front of an operator.
  */
+export function describePlaceName(
+  place: PlaceNameSource,
+  locale: AppLocale = currentLocale.value,
+): PlaceNameDescription {
+  const messages = MESSAGES[locale];
+  const category = place.category as PlaceCategory | undefined;
+  const unnamedLabel =
+    (category && messages.unnamedPlaces[category]) ||
+    messages.unnamedPlaceFallback;
+
+  for (const candidate of [taggedPlaceName(place, locale), place.name?.trim()]) {
+    if (!candidate) continue;
+    if (isSynthesisedPlaceName(candidate)) break;
+    if (!containsOsmIdentifier(candidate)) {
+      return { label: candidate, hint: null, isUnnamed: false };
+    }
+    const stripped = stripOsmIdentifier(candidate);
+    if (stripped.length > 0) {
+      return { label: stripped, hint: null, isUnnamed: false };
+    }
+    break;
+  }
+
+  return {
+    label: unnamedLabel,
+    hint: placeLocatingHint(place),
+    isUnnamed: true,
+  };
+}
+
+/** The label alone, for the many call sites that only render a string. */
 export function getLocalizedPlaceName(
-  place: { name: string; osm_tags?: Record<string, unknown> },
+  place: PlaceNameSource,
   locale: AppLocale = currentLocale.value,
 ): string {
-  const tags = place.osm_tags;
-  if (tags && typeof tags === "object") {
-    if (locale === "es" && typeof tags["name:es"] === "string" && tags["name:es"].trim()) {
-      return tags["name:es"].trim();
-    }
-    if (locale === "en" && typeof tags["name:en"] === "string" && tags["name:en"].trim()) {
-      return tags["name:en"].trim();
-    }
-  }
-  return place.name;
+  return describePlaceName(place, locale).label;
 }
 
 export function useI18n() {
@@ -683,7 +762,9 @@ export function useI18n() {
     elementLocale,
     setLocale: setAppLocale,
     toggleLocale: toggleAppLocale,
-    localizePlaceName: (place: { name: string; osm_tags?: Record<string, unknown> }) =>
+    localizePlaceName: (place: PlaceNameSource) =>
       getLocalizedPlaceName(place, currentLocale.value),
+    describePlace: (place: PlaceNameSource) =>
+      describePlaceName(place, currentLocale.value),
   };
 }

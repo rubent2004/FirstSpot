@@ -35,7 +35,7 @@ const emit = defineEmits<{
   (e: "select-place", place: PlaceRead, openDrawer: boolean): void;
 }>();
 
-const { t, locale, localizePlaceName } = useI18n();
+const { t, locale, describePlace } = useI18n();
 const currentPage = ref(1);
 const pageSize = 10;
 const visiblePlaces = computed(() => {
@@ -198,9 +198,17 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                   />
                 </span>
                 <strong class="place-name">
-                  {{ localizePlaceName(row as PlaceRead) }}
+                  {{ describePlace(row as PlaceRead).label }}
                 </strong>
               </div>
+              <p
+                v-if="describePlace(row as PlaceRead).hint"
+                class="place-hint"
+                data-testid="row-place-hint"
+              >
+                <Icon0 name="map_pin" :size="11" />
+                {{ describePlace(row as PlaceRead).hint }}
+              </p>
               <div class="place-badges">
                 <span
                   v-if="props.selectedPlace?.id === row.id"
@@ -233,9 +241,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                 :type="getUrgencyTagType(row.urgency_level)"
                 effect="dark"
               >
-                {{
-                  t.urgencyShort[row.urgency_level] ?? `L${row.urgency_level}`
-                }}
+                {{ t.urgency[row.urgency_level] ?? t.queue.colUrgency }}
               </ElTag>
               <span
                 class="exposed-population eoc-numeric"
@@ -491,6 +497,19 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   color: var(--eoc-text-primary);
   line-height: 1.3;
   font-weight: var(--eoc-fw-semibold);
+}
+
+/* A locating hint only exists for a place with no name, so it carries the
+   quiet weight of supporting information rather than competing with the label */
+.place-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding-left: 26px;
+  font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-secondary);
+  line-height: 1.3;
 }
 
 .place-badges {
