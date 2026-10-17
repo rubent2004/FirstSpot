@@ -131,6 +131,39 @@ export type PlaceActivityType = "reported" | "en_route" | "on_scene" | "needs_su
 
 export type PlaceCategory = "hospital" | "clinic" | "social_facility" | "kindergarten" | "school" | "community_centre" | "university" | "pharmacy" | "commercial_hub" | "place_of_worship";
 
+export interface PlaceExposureEstimateRead {
+  radius_meters: number;
+  estimated_exposed_population?: number | null;
+  estimated_exposed_older_adults?: number | null;
+  estimated_exposed_young_children?: number | null;
+  estimated_exposed_persons_with_disability?: number | null;
+  suppressed?: boolean;
+  suppression_reason?: string | null;
+  estimated_at?: string | null;
+}
+
+export interface PlaceExposureMethodologyRead {
+  radius_meters: number;
+  estimated_exposed_population?: number | null;
+  estimated_exposed_older_adults?: number | null;
+  estimated_exposed_young_children?: number | null;
+  estimated_exposed_persons_with_disability?: number | null;
+  suppressed?: boolean;
+  suppression_reason?: string | null;
+  estimated_at?: string | null;
+  estimation_method: string;
+  spatial_assignment_rule: string;
+  metric_projection_srid: number;
+  metric_projection_name: string;
+  uniform_density_assumption: string;
+  uniform_district_rate_assumption: string;
+  reference_period: string;
+  contributing_unit_count: number;
+  census_unit_id?: number | null;
+  source: string;
+  disclaimer: string;
+}
+
 export interface PlaceRead {
   id: string;
   osm_type: string;
@@ -145,6 +178,8 @@ export interface PlaceRead {
   attention_status: AttentionStatus;
   urgency_level: number;
   estimated_vulnerable_count: number;
+  census_unit_id?: number | null;
+  population_exposure?: PlaceExposureEstimateRead | null;
   institution_notes?: string | null;
   category_weight: number;
   nearby_places_count?: number;
@@ -205,6 +240,7 @@ export const OPENAPI_OPERATION_IDS = [
   "getHeatmapData",
   "getInstitutionAccount",
   "getPlaceById",
+  "getPlacePopulationExposure",
   "joinInstitution",
   "listPlaceActivities",
   "listPredefinedZones",

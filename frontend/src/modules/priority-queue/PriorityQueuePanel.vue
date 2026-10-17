@@ -20,6 +20,10 @@ import {
   STATUS_ICON_MAP,
 } from "../../components/icons0Registry";
 import { useI18n } from "../../i18n/useI18n";
+import {
+  exposedPopulationState,
+  formatExposureValue,
+} from "./populationExposure";
 
 const props = defineProps<{
   places: PlaceRead[];
@@ -83,6 +87,24 @@ function getScoreSeverityClass(score: number): string {
   if (score >= 110) return "score-high";
   if (score >= 85) return "score-medium";
   return "score-low";
+}
+
+/** False while the census figure is unknown, which is never the same as zero. */
+function isExposureKnown(place: PlaceRead): boolean {
+  return exposedPopulationState(place).kind === "estimate";
+}
+
+/** Estimated exposed residents, or the reason the figure is unavailable. */
+function exposureText(place: PlaceRead): string {
+  const state = exposedPopulationState(place);
+  if (state.kind === "estimate") {
+    return `${formatExposureValue(state.value, locale.value)} ${t.value.exposure.queueLabel}`;
+  }
+  const reason =
+    state.kind === "withheld"
+      ? t.value.exposure.withheld
+      : t.value.exposure.noCoverage;
+  return `— ${reason}`;
 }
 
 function handleRowClick(row: PlaceRead): void {
@@ -203,7 +225,7 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn :label="t.queue.colUrgency" width="125">
+        <ElTableColumn :label="t.queue.colUrgency" width="142">
           <template #default="{ row }">
             <div class="urgency-cell">
               <ElTag
@@ -215,9 +237,18 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
                   t.urgencyShort[row.urgency_level] ?? `L${row.urgency_level}`
                 }}
               </ElTag>
-              <span class="vuln-count eoc-numeric">
+              <span
+                class="exposed-population eoc-numeric"
+                :class="{ 'is-unknown': !isExposureKnown(row as PlaceRead) }"
+                :title="
+                  isExposureKnown(row as PlaceRead)
+                    ? t.exposure.methodNote
+                    : t.exposure.unknownHint
+                "
+                data-testid="row-exposed-population"
+              >
                 <Icon0 name="community_centre" :size="11" />
-                {{ row.estimated_vulnerable_count }} {{ t.queue.peopleAbbr }}
+                {{ exposureText(row as PlaceRead) }}
               </span>
             </div>
           </template>
@@ -490,13 +521,20 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   gap: 3px;
 }
 
-.vuln-count {
+.exposed-population {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   font-size: var(--eoc-fs-micro);
   font-weight: var(--eoc-fw-regular);
+  line-height: 1.35;
   color: var(--eoc-text-secondary);
+}
+
+/* An unknown figure reads quieter than a real one, and never as a zero */
+.exposed-population.is-unknown {
+  color: var(--eoc-text-muted);
 }
 
 .status-tag-inner {

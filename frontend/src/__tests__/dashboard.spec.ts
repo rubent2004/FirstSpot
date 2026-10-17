@@ -159,6 +159,7 @@ describe("OpenAPI 3.1 Generated Contract & SDK", () => {
       "getHeatmapData",
       "getInstitutionAccount",
       "getPlaceById",
+      "getPlacePopulationExposure",
       "joinInstitution",
       "listPlaceActivities",
       "listPredefinedZones",

@@ -26,6 +26,13 @@ import {
   CATEGORY_ICON_MAP,
 } from "../../components/icons0Registry";
 import { useI18n } from "../../i18n/useI18n";
+import {
+  exposedPopulationState,
+  exposureRadiusMeters,
+  formatExposureValue,
+  vulnerableExposureBreakdown,
+  type PopulationExposureState,
+} from "./populationExposure";
 
 const props = withDefaults(defineProps<{
   visible: boolean;
@@ -183,6 +190,35 @@ const prioritySeverity = computed(() => {
   return { level: "low", label: t.value.drawer.severityLow };
 });
 
+const exposedPopulation = computed(() => exposedPopulationState(props.place));
+const exposureBreakdown = computed(() =>
+  vulnerableExposureBreakdown(props.place),
+);
+const exposureRadius = computed(() => exposureRadiusMeters(props.place));
+
+/** Headline figure, or the reason the census cannot supply one. */
+const exposureTotalLabel = computed<string>(() => {
+  const state = exposedPopulation.value;
+  if (state.kind === "estimate") {
+    return formatExposureValue(state.value, locale.value);
+  }
+  const reason =
+    state.kind === "withheld"
+      ? t.value.exposure.withheld
+      : t.value.exposure.noCoverage;
+  return `— ${reason}`;
+});
+
+/**
+ * Breakdown figures carry the em dash alone: the headline above already names
+ * why the figures are missing, and an unknown is never shown as zero.
+ */
+function exposureFigure(state: PopulationExposureState): string {
+  return state.kind === "estimate"
+    ? formatExposureValue(state.value, locale.value)
+    : "—";
+}
+
 const placePhone = computed<string | null>(() => {
   if (!props.place?.osm_tags) return null;
   const tags = props.place.osm_tags as Record<string, string>;
@@ -338,6 +374,23 @@ function handleSave(): void {
             </details>
           </section>
 
+          <section class="census-exposure" data-testid="exposure-estimate">
+            <div class="summary-label eoc-label">{{ t.exposure.panelTitle }}</div>
+            <div
+              class="exposure-value eoc-numeric"
+              :class="{ 'is-unknown': exposedPopulation.kind !== 'estimate' }"
+              :title="exposedPopulation.kind === 'estimate' ? t.exposure.methodNote : t.exposure.unknownHint"
+              data-testid="exposure-total"
+            >{{ exposureTotalLabel }}</div>
+            <span v-if="exposureRadius !== null" class="exposure-radius eoc-numeric">{{ t.exposure.radiusLabel }} {{ exposureRadius }} m</span>
+            <dl class="exposure-breakdown eoc-numeric" data-testid="exposure-breakdown">
+              <div><dt>{{ t.exposure.olderAdults }}</dt><dd>{{ exposureFigure(exposureBreakdown.olderAdults) }}</dd></div>
+              <div><dt>{{ t.exposure.youngChildren }}</dt><dd>{{ exposureFigure(exposureBreakdown.youngChildren) }}</dd></div>
+              <div><dt>{{ t.exposure.personsWithDisability }}</dt><dd>{{ exposureFigure(exposureBreakdown.personsWithDisability) }}</dd></div>
+            </dl>
+            <p class="score-hint">{{ t.exposure.methodNote }}</p>
+          </section>
+
           <section class="location-actions" data-testid="prominent-nav-bar">
             <h4>{{ copy.route }}</h4>
             <div class="route-buttons">
@@ -466,7 +519,15 @@ function handleSave(): void {
 .score-details dt { color: var(--eoc-text-secondary); }
 .score-details dd { margin: 0; color: var(--eoc-text-primary); font-variant-numeric: tabular-nums; }
 .score-details small { white-space: nowrap; }
-.location-actions { border-top: var(--eoc-border-width) solid var(--eoc-border-subtle); padding-top: var(--eoc-pad-panel); }
+.census-exposure, .location-actions { border-top: var(--eoc-border-width) solid var(--eoc-border-subtle); padding-top: var(--eoc-pad-panel); }
+.exposure-value { margin: 4px 0; font-size: var(--eoc-fs-heading); font-weight: var(--eoc-fw-semibold); line-height: 1.2; color: var(--eoc-text-primary); }
+/* An unknown figure never borrows the headline weight of a real estimate */
+.exposure-value.is-unknown { font-size: var(--eoc-fs-body); font-weight: var(--eoc-fw-regular); color: var(--eoc-text-muted); }
+.exposure-radius { display: block; color: var(--eoc-text-secondary); font-size: var(--eoc-fs-micro); }
+.exposure-breakdown { margin: var(--eoc-gap-x) 0 0; }
+.exposure-breakdown > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--eoc-gap-x); padding: 3px 0; font-size: var(--eoc-fs-micro); }
+.exposure-breakdown dt { color: var(--eoc-text-secondary); }
+.exposure-breakdown dd { margin: 0; color: var(--eoc-text-primary); font-variant-numeric: tabular-nums; }
 .route-buttons { display: flex; gap: var(--eoc-gap-x); margin-top: var(--eoc-gap-x); }
 .route-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: var(--eoc-gap-x); height: var(--eoc-control-h); border: var(--eoc-border-width) solid var(--eoc-border); background: var(--eoc-bg-card); color: var(--eoc-text-primary); border-radius: var(--eoc-radius-button); padding: var(--eoc-pad-button); font: inherit; font-size: var(--eoc-fs-micro); cursor: pointer; flex: 1; }
 .route-buttons button:hover { border-color: var(--eoc-border-strong); background: var(--eoc-bg-hover); }

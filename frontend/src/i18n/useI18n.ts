@@ -132,10 +132,21 @@ export interface I18nMessages {
     colStatus: string;
     colAction: string;
     clusterBadge: string;
-    peopleAbbr: string;
     triageAction: string;
     quickDispatch: string;
     showingCount: string;
+  };
+  exposure: {
+    queueLabel: string;
+    panelTitle: string;
+    radiusLabel: string;
+    noCoverage: string;
+    withheld: string;
+    unknownHint: string;
+    methodNote: string;
+    olderAdults: string;
+    youngChildren: string;
+    personsWithDisability: string;
   };
   drawer: {
     title: string;
@@ -295,14 +306,26 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       colRank: "#",
       colScore: "Puntaje",
       colPlace: "Lugar y Categoría",
-      colUrgency: "Urgencia / Pob.",
+      colUrgency: "Urgencia / Pob. est.",
       colStatus: "Estado",
       colAction: "Acción",
       clusterBadge: "en 500m",
-      peopleAbbr: "pers.",
       triageAction: "Evaluar",
       quickDispatch: "Despachar",
       showingCount: "lugares priorizados",
+    },
+    exposure: {
+      queueLabel: "pob. estimada",
+      panelTitle: "Población Expuesta Estimada",
+      radiusLabel: "Radio",
+      noCoverage: "sin cobertura censal",
+      withheld: "dato reservado",
+      unknownHint: "Valor desconocido, no cero.",
+      methodNote:
+        "Estimación por ponderación areal de polígonos censales; se asume densidad uniforme dentro de cada unidad.",
+      olderAdults: "65 y más",
+      youngChildren: "Menores de 5",
+      personsWithDisability: "Con discapacidad",
     },
     drawer: {
       title: "Ficha de Despacho y Evaluación Operativa",
@@ -500,14 +523,26 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       colRank: "#",
       colScore: "Score",
       colPlace: "Place & Category",
-      colUrgency: "Urgency / Vuln.",
+      colUrgency: "Urgency / Est. pop.",
       colStatus: "Status",
       colAction: "Action",
       clusterBadge: "in 500m",
-      peopleAbbr: "ppl",
       triageAction: "Triage",
       quickDispatch: "Dispatch",
       showingCount: "prioritized places",
+    },
+    exposure: {
+      queueLabel: "est. population",
+      panelTitle: "Estimated Exposed Population",
+      radiusLabel: "Radius",
+      noCoverage: "no census coverage",
+      withheld: "figure withheld",
+      unknownHint: "Value unknown, not zero.",
+      methodNote:
+        "Estimate by areal weighting of census polygons; uniform density assumed within a unit.",
+      olderAdults: "65 and over",
+      youngChildren: "Under 5",
+      personsWithDisability: "With disability",
     },
     drawer: {
       title: "Emergency Dispatch & Operational Triage",
