@@ -649,7 +649,11 @@ inversion cannot be absorbed silently.
   detail, baseline/event mode, export dialog (xlsx/csv download, print views),
   current-view print for an in-coverage zone (Sonsonate) and an
   outside-coverage zone (Escuintla, Guatemala), print section toggles and
-  presets, keyboard-only navigation, axe accessibility scan, and visual
+  presets, a full export run for the Acajutla zone (key `acajutla`, Sonsonate,
+  in census coverage: current-view map PDF with sections, xlsx and csv, each
+  file opened and checked for zone title, mode, timestamp, limits line and
+  BCR/ONEC attribution, no suppressed values, null never exported as 0;
+  artifacts kept for human review), keyboard-only navigation, axe accessibility scan, and visual
   screenshots at 1920px and 390px in both themes. Also assert no tile request
   hits a key-gated provider (the CARTO incident).
 
