@@ -167,43 +167,20 @@ const scoreTerms = computed(() => {
   };
 });
 
+// Colour comes from the .severity-* CSS classes, which are token-driven.
 const prioritySeverity = computed(() => {
   const score = scoreTerms.value.finalScore;
   const urg = formState.urgency_level;
   if (score >= 130 || urg >= 5) {
-    return {
-      level: "critical",
-      label: t.value.drawer.severityCritical,
-      color: "#ef4444",
-      bg: "rgba(239, 68, 68, 0.15)",
-      border: "rgba(239, 68, 68, 0.4)",
-    };
+    return { level: "critical", label: t.value.drawer.severityCritical };
   }
   if (score >= 100 || urg >= 4) {
-    return {
-      level: "high",
-      label: t.value.drawer.severityHigh,
-      color: "#f97316",
-      bg: "rgba(249, 115, 22, 0.15)",
-      border: "rgba(249, 115, 22, 0.4)",
-    };
+    return { level: "high", label: t.value.drawer.severityHigh };
   }
   if (score >= 70) {
-    return {
-      level: "medium",
-      label: t.value.drawer.severityMedium,
-      color: "#eab308",
-      bg: "rgba(234, 179, 8, 0.15)",
-      border: "rgba(234, 179, 8, 0.4)",
-    };
+    return { level: "medium", label: t.value.drawer.severityMedium };
   }
-  return {
-    level: "low",
-    label: t.value.drawer.severityLow,
-    color: "#10b981",
-    bg: "rgba(16, 185, 129, 0.15)",
-    border: "rgba(16, 185, 129, 0.4)",
-  };
+  return { level: "low", label: t.value.drawer.severityLow };
 });
 
 const placePhone = computed<string | null>(() => {

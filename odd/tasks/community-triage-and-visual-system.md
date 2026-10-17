@@ -249,12 +249,64 @@ verification.
   **Commit `1316693`.** Verified: `pnpm build` (vue-tsc + vite) passes;
   `pnpm vitest run` 34/34 passing. CSS 450→456 KB (overrides added),
   JS unchanged at 1,332 KB — splitting is task E4.
-- [ ] **A2** Apply density overrides to Element Plus and the app shell
+- [x] **A2** Apply density overrides to Element Plus and the app shell
   (header 34px, status bar 26px, table header 24px, panel ranges).
   *Route: delegated writer (multi-file).*
-- [ ] **A3** Map treatment: Positron/Dark Matter basemaps, translucent floating
+  **Commit `2f0b08b`.** Verified: vue-tsc exit 0, vitest 34/34, build passing.
+  Parent spot check re-ran vitest and build independently — both pass.
+  Audited: 0 gradients and 0 hardcoded hex across App.vue, GeoRibbon and
+  InstitutionAccessDialog.
+
+  Two real bugs surfaced and were fixed along the way:
+  - Accent fills used `--eoc-text-inverse`, which inverts per theme and
+    therefore rendered dark text on blue in dark mode. Now `--eoc-on-accent`.
+  - The `beacon-pulse` keyframe was declared in SyncHeaderBar's *scoped* style
+    but consumed by HazardTelemetryStrip. It worked only because CSS keyframes
+    ignore scoping — a latent coupling bug. Now global.
+
+  Root cause of the large diff: `GeoRibbon.vue` carried a private 19-variable
+  `--ribbon-*` palette shadowing the design tokens. Deleting that alias layer
+  also removed its entire duplicated dark-mode block as dead weight.
+
+- [x] **A3** Map treatment: Positron/Dark Matter basemaps, translucent floating
   controls at 75–92% alpha with 1px strong border, restyled Leaflet controls,
   legends and popups. *Route: delegated writer.*
+  **Commit `8a9f2dc`.** Verified: vue-tsc exit 0, vitest 34/34, build passing.
+  Audited: `rg 'filter:\s*(grayscale|saturate)'` returns 0 — muting comes from
+  the tile source, not a filter.
+
+  Known constraint: 23 literal hex values remain in this component and
+  **cannot** be tokenized. Leaflet renders `L.circle` and `L.circleMarker` onto
+  a canvas, and canvas does not resolve CSS custom properties. Only `divIcon`
+  markup can use `var()`.
+
+  Visual debt left open:
+  - The heat gradient stays saturated (`#3b82f6 -> #ef4444`) because
+    `updateHeatLayer` was out of scope. The legend bar mirrors it deliberately,
+    so both move together or not at all.
+  - `GROUP_COLORS` lives in `frontend/src/api/client.ts`, outside the authorized
+    surface, so group fills keep their saturated hues.
+- [ ] **A4** Decompose `VulnerabilityHeatmapCanvas.vue` (1871 lines) into
+  composables. **Must run after A3 and before C5** — C5 adds the community
+  triage layer to this same component, and past ~2500 lines it stops being
+  refactorable at all. Sequence it so no writer is inside the file.
+
+  Target split, container-presentational applied to Vue: the `.vue` file keeps
+  only template, props/emits and orchestration; all Leaflet logic moves to
+  `frontend/src/modules/map-viewer/composables/`:
+
+  | Composable | Owns | Current lines |
+  |---|---|---|
+  | `useLeafletMap` | init, lifecycle, basemap switching, theme reaction | — |
+  | `useMapMarkers` | `renderSinglePlaceMarker`, divIcon/circleMarker | ~360-461 |
+  | `useHeatLayer` | `leaflet.heat` wiring | ~515-565 |
+  | `useMarkerClustering` | proximity clustering, `CLUSTER_RADIUS_PX` | ~659-750 |
+  | `useHazardLayer` | hazard overlays and radar circles | — |
+
+  Hard requirement: **pure refactor, zero behavior change.** The 34 tests must
+  pass untouched before and after. If a test needs editing, the refactor
+  changed behavior and is wrong. Extract one composable per commit so each
+  step is independently revertable.
 
 ### Phase B — Census ingestion
 
