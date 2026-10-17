@@ -248,7 +248,7 @@ Donde:
 
 ## Ejecución Rápida con `justfile`
 
-El proyecto cuenta con un [`justfile`](file:///home/ruben/Documentos/PROYECTOS/RALLY_LATAM/geo-prioridad-vulnerable/justfile) en la raíz para levantar y verificar todo el ecosistema con un solo comando:
+El proyecto cuenta con un `justfile` en la raíz para levantar y verificar todo el ecosistema con un solo comando:
 
 - `just up`: Levanta PostgreSQL + PostGIS, ejecuta migraciones Alembic e inicia simultáneamente el backend FastAPI (`:8000`) y el frontend Vue 3 (`:5173`).
 - `just up-bg` / `just down`: Inicia o detiene el stack completo en segundo plano.
@@ -256,3 +256,5 @@ El proyecto cuenta con un [`justfile`](file:///home/ruben/Documentos/PROYECTOS/R
 - `just codegen`: Exporta `backend/openapi.json` y regenera el cliente TypeScript en `frontend/src/api/generated/`.
 - `just test`: Ejecuta todas las pruebas de backend (`uv run pytest -v`), pruebas de frontend (`pnpm run test`) y compilación estricta (`pnpm run build`).
 - `just status`: Muestra el estado del contenedor PostGIS y el conteo de lugares priorizados por zona.
+
+La base de las fases 1 a 5 está implementada para la priorización de lugares vulnerables. Antes de ampliar el producto con reportes del evento y verificación de rutas, acordar el alcance del demo con la [propuesta de producto](PROPUESTA_PRODUCTO.md). Esas capacidades no están incluidas en la API actual.
