@@ -160,6 +160,15 @@ describe("printed map of the current view", () => {
     expect(setView).toHaveBeenCalledWith([13.7222, -89.7236], 13);
   });
 
+  it("prints a fractional live zoom rounded, not as a raw float", async () => {
+    const snapshot = sonsonateSnapshot();
+    snapshot.view.zoom = 13.269118064090618;
+    sheet(snapshot, ["map", "limits"]);
+    await flushPromises();
+    expect(text()).toContain("zoom 13.3");
+    expect(text()).not.toContain("13.269118064090618");
+  });
+
   it("uses a light Esri basemap on paper, never CARTO or a keyed provider", () => {
     expect(printBasemap("grayDark")).toBe("grayLight");
     expect(printBasemap("grayLight")).toBe("grayLight");

@@ -71,7 +71,8 @@ const viewLine = computed(() =>
   fillMessage(m.value.sheet.viewLine, {
     lat: number(props.snapshot.view.center[0], 4),
     lon: number(props.snapshot.view.center[1], 4),
-    zoom: props.snapshot.view.zoom,
+    // fitBounds leaves a fractional zoom; one decimal is all a reader can use
+    zoom: number(props.snapshot.view.zoom, Number.isInteger(props.snapshot.view.zoom) ? 0 : 1),
   }),
 );
 /** The limits block is not optional; everything else prints only if chosen. */
