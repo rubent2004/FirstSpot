@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import ElementPlus from "element-plus";
 import GeoRibbon from "../components/GeoRibbon.vue";
@@ -17,6 +17,7 @@ const zones: PredefinedZoneRead[] = [
 ];
 
 const mountedRibbons: VueWrapper[] = [];
+const RIBBON_KEY = "firstspot.ribbon.v1";
 
 function makeFilters(search = "Escuela"): PlaceFilters {
   return {
@@ -101,6 +102,54 @@ describe("GeoRibbon actions", () => {
     await toggle.trigger("click");
     expect(toggle.attributes("aria-expanded")).toBe("true");
     expect((panel.element as HTMLElement).style.display).not.toBe("none");
+  });
+
+  describe("remembering the collapsed state", () => {
+    class MemoryStorage {
+      private data = new Map<string, string>();
+      getItem(key: string) {
+        return this.data.get(key) ?? null;
+      }
+      setItem(key: string, value: string) {
+        this.data.set(key, value);
+      }
+    }
+
+    beforeEach(() => {
+      Object.defineProperty(window, "localStorage", { value: new MemoryStorage(), configurable: true });
+    });
+
+    it("remembers a collapsed ribbon under a namespaced, versioned key", async () => {
+      const first = mountRibbon();
+      await first.find(".ribbon-expand-toggle").trigger("click");
+      expect(JSON.parse(window.localStorage.getItem(RIBBON_KEY)!)).toEqual({ version: 1, collapsed: true });
+      first.unmount();
+
+      const second = mountRibbon();
+      expect(second.find(".ribbon-expand-toggle").attributes("aria-expanded")).toBe("false");
+      expect((second.find("#geo-ribbon-panel").element as HTMLElement).style.display).toBe("none");
+    });
+
+    it("starts expanded when nothing was remembered or the value is junk", () => {
+      expect(mountRibbon().find(".ribbon-expand-toggle").attributes("aria-expanded")).toBe("true");
+      window.localStorage.setItem(RIBBON_KEY, "{broken");
+      expect(mountRibbon().find(".ribbon-expand-toggle").attributes("aria-expanded")).toBe("true");
+    });
+
+    it("collapses and restores with Ctrl+F1", async () => {
+      const wrapper = mountRibbon();
+      const toggle = wrapper.find(".ribbon-expand-toggle");
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "F1", ctrlKey: true }));
+      await flushPromises();
+      expect(toggle.attributes("aria-expanded")).toBe("false");
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "F1", ctrlKey: true }));
+      await flushPromises();
+      expect(toggle.attributes("aria-expanded")).toBe("true");
+    });
+
+    it("names the shortcut on the toggle", () => {
+      expect(mountRibbon().find(".ribbon-expand-toggle").attributes("title")).toContain("Ctrl F1");
+    });
   });
 
   it("routes toolbar actions from each tab to the app", async () => {

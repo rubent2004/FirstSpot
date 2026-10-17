@@ -56,7 +56,26 @@ const tabs = computed(() => props.locale === "es"
   : ["Home", "Data", "Style", "Analyze", "View"]);
 const tabCommandIds = ["tab-home", "tab-data", "tab-style", "tab-analyze", "tab-view"];
 const activeTab = ref(0);
-const ribbonExpanded = ref(true);
+/** The operator's choice survives a reload: a collapsed ribbon stays collapsed. */
+const RIBBON_KEY = "firstspot.ribbon.v1";
+function loadRibbonExpanded(): boolean {
+  try {
+    const parsed = JSON.parse(window.localStorage?.getItem(RIBBON_KEY) ?? "null") as
+      | { version?: number; collapsed?: unknown }
+      | null;
+    return !(parsed?.version === 1 && parsed.collapsed === true);
+  } catch {
+    return true;
+  }
+}
+const ribbonExpanded = ref(loadRibbonExpanded());
+watch(ribbonExpanded, (expanded) => {
+  try {
+    window.localStorage?.setItem(RIBBON_KEY, JSON.stringify({ version: 1, collapsed: !expanded }));
+  } catch {
+    // A blocked or full storage must not break the ribbon.
+  }
+});
 const commandOpen = ref(false);
 const commandQuery = ref("");
 const commandInput = ref<HTMLInputElement | null>(null);
@@ -194,6 +213,11 @@ function handleTabKeydown(event: KeyboardEvent, index: number): void {
 }
 
 function handleGlobalKeydown(event: KeyboardEvent): void {
+  if ((event.ctrlKey || event.metaKey) && event.key === "F1") {
+    event.preventDefault();
+    ribbonExpanded.value = !ribbonExpanded.value;
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
     openCommandPalette();
@@ -264,7 +288,8 @@ onBeforeUnmount(() => {
         type="button"
         :aria-expanded="ribbonExpanded"
         :aria-label="ribbonExpanded ? (props.locale === 'es' ? 'Contraer cinta' : 'Collapse ribbon') : (props.locale === 'es' ? 'Expandir cinta' : 'Expand ribbon')"
-        :title="ribbonExpanded ? (props.locale === 'es' ? 'Contraer cinta' : 'Collapse ribbon') : (props.locale === 'es' ? 'Expandir cinta' : 'Expand ribbon')"
+        :aria-keyshortcuts="'Control+F1'"
+        :title="`${ribbonExpanded ? (props.locale === 'es' ? 'Contraer cinta' : 'Collapse ribbon') : (props.locale === 'es' ? 'Expandir cinta' : 'Expand ribbon')} (Ctrl F1)`"
         @click="ribbonExpanded = !ribbonExpanded"
       ><ArrowUp v-if="ribbonExpanded" /><ArrowDown v-else /></button>
       <button class="geo-locale" :title="props.locale === 'es' ? 'Switch to English' : 'Cambiar a español'" @click="emit('toggle-locale')">{{ props.locale.toUpperCase() }}</button>
