@@ -72,6 +72,14 @@ describe("GeoRibbon actions", () => {
     expect(logo.attributes("alt")).toBe("");
   });
 
+  it("gives the work-zone picker an accessible name matching its visible label", () => {
+    const wrapper = mountRibbon();
+    const combobox = wrapper.find('.geo-zone-select input[role="combobox"]');
+
+    expect(combobox.exists()).toBe(true);
+    expect(combobox.attributes("aria-label")).toBe("Zona de trabajo");
+  });
+
   it("supports accessible tab semantics and arrow-key navigation", async () => {
     const wrapper = mountRibbon();
     const tabs = wrapper.findAll('[role="tab"]');

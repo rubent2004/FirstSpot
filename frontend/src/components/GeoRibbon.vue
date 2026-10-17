@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
           <button class="geo-big-tool primary-tool" :disabled="props.isSyncing" @click="emit('sync-zone')"><span class="geo-tool-icon"><Refresh /></span><span>{{ props.isSyncing ? (props.locale === "es" ? "Sincronizando" : "Syncing") : (props.locale === "es" ? "Sincronizar" : "Sync places") }}</span></button>
           <div class="geo-tool-stack">
             <label class="eoc-label">{{ props.locale === "es" ? "ZONA DE TRABAJO" : "WORKING AREA" }}</label>
-            <ElSelect :model-value="props.selectedZoneKey" filterable size="small" class="geo-zone-select" @update:model-value="emit('change-zone', String($event))">
+            <ElSelect :model-value="props.selectedZoneKey" filterable size="small" class="geo-zone-select" :aria-label="props.locale === 'es' ? 'Zona de trabajo' : 'Working area'" @update:model-value="emit('change-zone', String($event))">
               <ElOption v-for="zone in props.zones" :key="zone.key" :label="`${zone.name} · ${zone.department}`" :value="zone.key" />
             </ElSelect>
             <div class="geo-radius-control geo-home-radius">
