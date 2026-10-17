@@ -6,6 +6,8 @@ const props = defineProps<{
   label: string;
   /** Where the popover hangs from its trigger. */
   align?: "start" | "end";
+  /** Opens below its trigger, or above it when the trigger sits at the bottom of the screen. */
+  placement?: "bottom" | "top";
 }>();
 
 const open = defineModel<boolean>("open", { default: false });
@@ -65,7 +67,7 @@ void props;
       :id="id"
       ref="popover"
       class="pop"
-      :class="align === 'end' ? 'is-end' : 'is-start'"
+      :class="[align === 'end' ? 'is-end' : 'is-start', placement === 'top' ? 'is-top' : '']"
       role="dialog"
       tabindex="-1"
       :aria-label="label"
@@ -118,6 +120,10 @@ void props;
   box-shadow: var(--eoc-shadow-popup);
   font-size: var(--eoc-fs-body);
   text-align: left;
+}
+.pop.is-top {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 .pop.is-start {
   left: 0;

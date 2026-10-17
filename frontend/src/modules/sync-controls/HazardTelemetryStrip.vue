@@ -16,6 +16,7 @@ import {
 import Icon0 from "../../components/Icon0.vue";
 import { useI18n } from "../../i18n/useI18n";
 import { formatExactTime, formatRelativeTime } from "../../utils/date";
+import { feedStatusKey } from "./feedStatus";
 
 const props = withDefaults(
   defineProps<{
@@ -24,8 +25,11 @@ const props = withDefaults(
     lastCheckedAt?: string | null;
     isRefreshing?: boolean;
     refreshError?: string | null;
+    /** Laid out as a column, for use inside the status-bar popover. */
+    stacked?: boolean;
   }>(),
   {
+    stacked: false,
     lastCheckedAt: null,
     isRefreshing: false,
     refreshError: null,
@@ -116,35 +120,13 @@ const labels = computed(() =>
 );
 
 const feedStatus = computed(() => {
-  if (props.isRefreshing) {
-    return { key: "refreshing", label: labels.value.feedStatus.checking };
-  }
-  if (props.refreshError) {
-    return { key: "error", label: labels.value.feedStatus.error };
-  }
-  if (props.scenario !== "none") {
-    return { key: "simulation", label: labels.value.feedStatus.simulation };
-  }
-
-  const sources = props.activeHazards?.active_sources ?? [];
-  if (sources.length === 0) {
-    return { key: "unavailable", label: labels.value.feedStatus.unavailable };
-  }
-  if (
-    sources.some(
-      (source) =>
-        source.startsWith("fallback://") || source.startsWith("stale-cache://"),
-    )
-  ) {
-    return { key: "fallback", label: labels.value.feedStatus.fallback };
-  }
-  if (sources.every((source) => source.startsWith("cache://"))) {
-    return { key: "cached", label: labels.value.feedStatus.cached };
-  }
-  if (sources.some((source) => source.startsWith("cache://"))) {
-    return { key: "partial", label: labels.value.feedStatus.partial };
-  }
-  return { key: "live", label: labels.value.feedStatus.live };
+  const key = feedStatusKey({
+    activeHazards: props.activeHazards,
+    scenario: props.scenario,
+    isRefreshing: props.isRefreshing,
+    refreshError: props.refreshError,
+  });
+  return { key, label: labels.value.feedStatus[key === "refreshing" ? "checking" : key] };
 });
 
 function getAlertTagType(
@@ -188,7 +170,11 @@ function selectSuggestion(item: GeocodeResultRead): void {
 </script>
 
 <template>
-  <section class="hazard-telemetry-strip" data-testid="hazard-telemetry-strip">
+  <section
+    class="hazard-telemetry-strip"
+    :class="{ stacked: props.stacked }"
+    data-testid="hazard-telemetry-strip"
+  >
     <div class="telemetry-item telemetry-badge-box">
       <span
         class="alert-dot"
@@ -399,6 +385,21 @@ function selectSuggestion(item: GeocodeResultRead): void {
   min-height: var(--eoc-tabstrip-h);
   transition: background-color var(--eoc-transition),
     border-color var(--eoc-transition);
+}
+
+/* Inside the status-bar popover the strip reads top to bottom */
+.hazard-telemetry-strip.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  border-bottom: 0;
+  background: transparent;
+  padding: 0;
+}
+.hazard-telemetry-strip.stacked :deep(.telemetry-controls),
+.hazard-telemetry-strip.stacked .telemetry-controls {
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .telemetry-item {

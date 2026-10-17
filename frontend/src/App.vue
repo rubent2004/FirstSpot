@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { ElAlert, ElConfigProvider } from "element-plus";
+import FeedsStatusChip from "./modules/sync-controls/FeedsStatusChip.vue";
 import HazardTelemetryStrip from "./modules/sync-controls/HazardTelemetryStrip.vue";
+import { feedStatusKey, needsAttention } from "./modules/sync-controls/feedStatus";
 import VulnerabilityHeatmapCanvas from "./modules/map-viewer/VulnerabilityHeatmapCanvas.vue";
 import PriorityQueuePanel from "./modules/priority-queue/PriorityQueuePanel.vue";
 import CommunityTriagePanel, {
@@ -29,6 +31,21 @@ const showHeatmapLayer = ref(true);
 const showMarkersLayer = ref(true);
 const showHazardsLayer = ref(true);
 const showInstitutionAccess = ref(false);
+/**
+ * The feeds earn permanent screen space only when something is wrong (stale,
+ * failing, partial) or a drill is running. Normally they are one status-bar chip.
+ */
+const feedsNeedAttention = computed(() =>
+  needsAttention(
+    feedStatusKey({
+      activeHazards: store.activeHazards,
+      scenario: store.hazardScenario,
+      isRefreshing: store.isRefreshingHazards,
+      refreshError: store.hazardRefreshError,
+    }),
+  ),
+);
+
 /** District ranking is the overview; the district detail opens beside it on demand. */
 const triageLevel = ref<TriageLevel>("list");
 const detailOpen = ref(false);
@@ -217,7 +234,7 @@ function handleFitMap(): void {
         @update:tactical-basemap="tacticalBasemap = $event"
         @open-institution-access="showInstitutionAccess = true"
       >
-        <template #workspace-status>
+        <template v-if="feedsNeedAttention" #workspace-status>
           <HazardTelemetryStrip
             :active-hazards="store.activeHazards"
             :scenario="store.hazardScenario"
@@ -283,7 +300,15 @@ function handleFitMap(): void {
       </main>
 
       <footer class="geo-statusbar">
-        <span class="status-connection"><i></i>{{ locale === "es" ? "Fuentes operativas" : "Operational feeds" }}</span>
+        <FeedsStatusChip
+          :active-hazards="store.activeHazards"
+          :scenario="store.hazardScenario"
+          :last-checked-at="store.hazardLastCheckedAt"
+          :is-refreshing="store.isRefreshingHazards"
+          :refresh-error="store.hazardRefreshError"
+          @change-scenario="handleScenarioChange"
+          @fly-to-coordinates="handleFlyToCoordinates"
+        />
         <span class="status-separator"></span>
         <span>{{ store.activeZoneName || (locale === "es" ? "Área personalizada" : "Custom area") }}</span>
         <span class="status-stat eoc-numeric">{{ store.kpis.total_places }} {{ locale === "es" ? "lugares" : "places" }}</span>

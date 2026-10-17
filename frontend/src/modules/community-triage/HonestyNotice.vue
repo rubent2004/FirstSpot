@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { DATA_ATTRIBUTION, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
-import InfoPopover from "./InfoPopover.vue";
+import InfoPopover from "../../components/InfoPopover.vue";
 
 const props = defineProps<{ districtCount: number }>();
 const { t } = useI18n();
