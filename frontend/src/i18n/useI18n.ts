@@ -141,6 +141,10 @@ export interface I18nMessages {
     triageAction: string;
     quickDispatch: string;
     showingCount: string;
+    /** Explains that the priority figure only means anything relatively. */
+    priorityHint: string;
+    /** Completes an urgency reading for assistive technology, e.g. "4 of 5". */
+    urgencyScaleSuffix: string;
   };
   exposure: {
     queueLabel: string;
@@ -316,15 +320,18 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       emptyText:
         "No se encontraron lugares vulnerables con los filtros actuales.",
       colRank: "#",
-      colScore: "Puntaje",
+      colScore: "Prioridad",
       colPlace: "Lugar y Categoría",
-      colUrgency: "Urgencia / Pob. est.",
+      colUrgency: "Urgencia",
       colStatus: "Estado",
       colAction: "Acción",
       clusterBadge: "en 500m",
       triageAction: "Evaluar",
       quickDispatch: "Despachar",
       showingCount: "lugares priorizados",
+      priorityHint:
+        "Puntaje de prioridad, comparado con el más alto de la cola actual.",
+      urgencyScaleSuffix: "de 5",
     },
     exposure: {
       queueLabel: "pob. estimada",
@@ -538,15 +545,18 @@ export const MESSAGES: Record<AppLocale, I18nMessages> = {
       showAttendedHeatmap: "Show Attended in Heatmap",
       emptyText: "No vulnerable places match the current filters.",
       colRank: "#",
-      colScore: "Score",
+      colScore: "Priority",
       colPlace: "Place & Category",
-      colUrgency: "Urgency / Est. pop.",
+      colUrgency: "Urgency",
       colStatus: "Status",
       colAction: "Action",
       clusterBadge: "in 500m",
       triageAction: "Triage",
       quickDispatch: "Dispatch",
       showingCount: "prioritized places",
+      priorityHint:
+        "Priority score, compared with the highest in the current queue.",
+      urgencyScaleSuffix: "of 5",
     },
     exposure: {
       queueLabel: "est. population",

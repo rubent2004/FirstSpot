@@ -363,15 +363,15 @@ function handleSave(): void {
         <aside class="assessment-sidebar">
           <section class="priority-summary" :class="`severity-${prioritySeverity.level}`">
             <div class="summary-label eoc-label">{{ copy.priority }}</div>
-            <div class="priority-value eoc-numeric" data-testid="preview-priority-score">{{ scoreTerms.finalScore.toFixed(1) }}<span>{{ copy.points }}</span></div>
+            <div class="priority-value eoc-numeric" data-testid="preview-priority-score">{{ Math.round(scoreTerms.finalScore) }}<span>{{ copy.points }}</span></div>
             <span class="severity-label"><span aria-hidden="true"></span>{{ prioritySeverity.label }}</span>
             <p class="score-hint">{{ copy.scoreHint }}</p>
             <details class="quiet-details score-details" data-testid="priority-breakdown">
               <summary>{{ copy.breakdown }}<Icon0 name="chevron_down" :size="14" /></summary>
               <dl class="eoc-numeric">
-                <div><dt>{{ t.drawer.weightBase }} <small>×{{ scoreTerms.mUrg.toFixed(1) }}</small></dt><dd>{{ scoreTerms.weightedCat.toFixed(1) }}</dd></div>
-                <div><dt>{{ t.drawer.popBonus }}</dt><dd>+{{ scoreTerms.popTerm.toFixed(1) }}</dd></div>
-                <div><dt>{{ t.drawer.clusterBonus }}</dt><dd>+{{ scoreTerms.clusterTerm.toFixed(1) }}</dd></div>
+                <div><dt>{{ t.drawer.weightBase }} <small>×{{ scoreTerms.mUrg.toFixed(1) }}</small></dt><dd>{{ Math.round(scoreTerms.weightedCat) }}</dd></div>
+                <div><dt>{{ t.drawer.popBonus }}</dt><dd>+{{ Math.round(scoreTerms.popTerm) }}</dd></div>
+                <div><dt>{{ t.drawer.clusterBonus }}</dt><dd>+{{ Math.round(scoreTerms.clusterTerm) }}</dd></div>
               </dl>
               <p v-if="formState.attention_status === 'attended'" class="score-hint">{{ copy.reduction }}</p>
             </details>

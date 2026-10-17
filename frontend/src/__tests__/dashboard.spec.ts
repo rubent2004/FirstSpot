@@ -545,6 +545,44 @@ describe("Presentational Dashboard Components (Bilingual i18n ES/EN)", () => {
     setAppLocale("es");
   });
 
+  it("encodes priority as a whole number plus a relative bar, and urgency as a level meter", async () => {
+    setAppLocale("es");
+    const wrapper = mount(PriorityQueuePanel, {
+      global: { plugins: [ElementPlus] },
+      props: {
+        places: [
+          { ...sampleHospital, id: "top", priority_score: 130.0, urgency_level: 5 },
+          { ...sampleHospital, id: "half", priority_score: 65.0, urgency_level: 1 },
+        ],
+        selectedPlace: null,
+        isLoading: false,
+      },
+    });
+    await flushPromises();
+
+    // The ".0" was noise and the bare figure did not discriminate between rows.
+    expect(wrapper.findAll(".priority-figure").map((cell) => cell.text())).toEqual([
+      "130",
+      "65",
+    ]);
+    expect(wrapper.text()).not.toMatch(/\d\.0(?!\d)/);
+    expect(
+      wrapper.findAll(".priority-bar > i").map((bar) => bar.attributes("style")),
+    ).toEqual([
+      expect.stringContaining("width: 100%"),
+      expect.stringContaining("width: 50%"),
+    ]);
+
+    const readings = wrapper.findAll('[data-testid="row-urgency"]');
+    expect(readings[0].attributes("aria-label")).toBe("Crítica · 5 de 5");
+    expect(readings[0].findAll(".urgency-meter > i.is-reached")).toHaveLength(5);
+    expect(readings[0].text()).toBe("Crítica");
+    expect(readings[1].findAll(".urgency-meter > i.is-reached")).toHaveLength(1);
+    expect(readings[1].text()).toBe("Baja");
+    expect(wrapper.text()).not.toMatch(/\bN[1-5]\b/);
+    wrapper.unmount();
+  });
+
   it("labels the selected place explicitly instead of relying only on row color", async () => {
     setAppLocale("es");
     const places = Array.from({ length: 12 }, (_, index) => ({

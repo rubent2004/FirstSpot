@@ -148,7 +148,7 @@ export function useMapMarkers(options: UseMapMarkersOptions) {
       `<div class="map-tip">` +
         selectedBadge +
         `<strong class="map-tip-title">${escapeHtml(displayName)}</strong><br/>` +
-        `<span class="map-tip-meta">${escapeHtml(categoryLabel)}</span> • ${t.value.map.tooltipScore}: <b class="eoc-numeric">${place.priority_score.toFixed(1)}</b><br/>` +
+        `<span class="map-tip-meta">${escapeHtml(categoryLabel)}</span> • ${t.value.map.tooltipScore}: <b class="eoc-numeric">${Math.round(place.priority_score)}</b><br/>` +
         `${t.value.map.tooltipStatus}: <b>${escapeHtml(statusLabel)}</b> • ${t.value.map.tooltipCluster}: <b class="eoc-numeric">+${place.nearby_places_count}</b><br/>` +
         `<em class="map-tip-hint">${t.value.map.tooltipClickHint}</em>` +
         `</div>`,

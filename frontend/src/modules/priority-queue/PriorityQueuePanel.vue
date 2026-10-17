@@ -73,20 +73,47 @@ function getStatusTagType(
   return "warning";
 }
 
-function getUrgencyTagType(
-  level: number,
-): "info" | "warning" | "danger" | "primary" {
-  if (level >= 5) return "danger";
-  if (level === 4) return "warning";
-  if (level === 3) return "primary";
-  return "info";
+/** Steps in the urgency meter; mirrors the 1..5 scale the API accepts. */
+const URGENCY_STEPS = [1, 2, 3, 4, 5] as const;
+
+/**
+ * Severity tone for an urgency level.
+ *
+ * A low level is muted rather than green: nothing in this queue is "all clear",
+ * it is only less urgent than the rest, and green would say otherwise.
+ */
+function getUrgencyTone(level: number): string {
+  if (level >= 5) return "urgency-critical";
+  if (level === 4) return "urgency-high";
+  if (level === 3) return "urgency-medium";
+  return "urgency-low";
 }
 
-function getScoreSeverityClass(score: number): string {
-  if (score >= 130) return "score-critical";
-  if (score >= 110) return "score-high";
-  if (score >= 85) return "score-medium";
-  return "score-low";
+/**
+ * Highest score in the current result set, which is the only reference an
+ * absolute score has. The API sorts by score, so this is the first row, but
+ * reducing over the list keeps the bar honest if that ever stops being true.
+ */
+const topPriorityScore = computed(() =>
+  props.places.reduce(
+    (highest, place) => Math.max(highest, Number(place.priority_score)),
+    0,
+  ),
+);
+
+/**
+ * How long a row's priority bar is, as a fraction of the top of the queue.
+ *
+ * The useful signal in this column is relative position, not the absolute
+ * figure: identical scores in ten consecutive rows carry no information, and
+ * with a hazard bonus folded in, a fixed red/amber threshold would tell the
+ * operator nothing except that the whole zone is alarming. A floor keeps the
+ * lowest row visible as a bar rather than as nothing.
+ */
+function priorityShare(score: number): number {
+  const top = topPriorityScore.value;
+  if (!(top > 0)) return 0;
+  return Math.min(1, Math.max(0.05, Number(score) / top));
 }
 
 /** False while the census figure is unknown, which is never the same as zero. */
@@ -162,18 +189,27 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
 
         <ElTableColumn
           :label="t.queue.colScore"
-          width="90"
+          width="78"
           sortable
           prop="priority_score"
         >
           <template #default="{ row }">
-            <span
-              class="score-pill eoc-numeric"
-              :class="getScoreSeverityClass(Number(row.priority_score))"
+            <div
+              class="priority-cell"
+              :title="t.queue.priorityHint"
               data-testid="row-priority-score"
             >
-              {{ Number(row.priority_score).toFixed(1) }}
-            </span>
+              <span class="priority-figure eoc-numeric">
+                {{ Math.round(Number(row.priority_score)) }}
+              </span>
+              <span class="priority-bar" aria-hidden="true">
+                <i
+                  :style="{
+                    width: `${priorityShare(Number(row.priority_score)) * 100}%`,
+                  }"
+                ></i>
+              </span>
+            </div>
           </template>
         </ElTableColumn>
 
@@ -236,13 +272,24 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
         <ElTableColumn :label="t.queue.colUrgency" width="142">
           <template #default="{ row }">
             <div class="urgency-cell">
-              <ElTag
-                size="small"
-                :type="getUrgencyTagType(row.urgency_level)"
-                effect="dark"
+              <div
+                class="urgency-reading"
+                :class="getUrgencyTone(row.urgency_level)"
+                role="img"
+                :aria-label="`${t.urgency[row.urgency_level] ?? ''} · ${row.urgency_level} ${t.queue.urgencyScaleSuffix}`"
+                data-testid="row-urgency"
               >
-                {{ t.urgency[row.urgency_level] ?? t.queue.colUrgency }}
-              </ElTag>
+                <span class="urgency-meter" aria-hidden="true">
+                  <i
+                    v-for="step in URGENCY_STEPS"
+                    :key="step"
+                    :class="{ 'is-reached': step <= row.urgency_level }"
+                  ></i>
+                </span>
+                <span class="urgency-word">
+                  {{ t.urgency[row.urgency_level] ?? row.urgency_level }}
+                </span>
+              </div>
               <span
                 class="exposed-population eoc-numeric"
                 :class="{ 'is-unknown': !isExposureKnown(row as PlaceRead) }"
@@ -436,36 +483,35 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   border-color: var(--eoc-critical-border);
 }
 
-.score-pill {
-  display: inline-block;
-  font-weight: var(--eoc-fw-semibold);
+.priority-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: var(--eoc-gap-x);
+}
+
+.priority-figure {
   font-size: var(--eoc-fs-body);
-  padding: 1px var(--eoc-gap-x);
-  border-radius: var(--eoc-radius-control);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-text-primary);
+  line-height: 1.2;
 }
 
-.score-critical {
-  color: var(--eoc-critical);
-  background: var(--eoc-critical-bg);
-  border: var(--eoc-border-width) solid var(--eoc-critical-border);
-}
-
-.score-high {
-  color: var(--eoc-warning);
-  background: var(--eoc-warning-bg);
-  border: var(--eoc-border-width) solid var(--eoc-warning-border);
-}
-
-.score-medium {
-  color: var(--eoc-text-secondary);
-  background: var(--eoc-bg-card);
-  border: var(--eoc-border-width) solid var(--eoc-border-strong);
-}
-
-.score-low {
-  color: var(--eoc-text-muted);
-  background: var(--eoc-bg-card);
+/* Magnitude, not severity: the bar stays neutral so the only severity ramp in
+   the row is the urgency meter, and the two never argue about "how bad" */
+.priority-bar {
+  display: block;
+  height: 3px;
+  border-radius: var(--eoc-radius-pill);
+  background: var(--eoc-bg-sunken);
   border: var(--eoc-border-width) solid var(--eoc-border);
+  overflow: hidden;
+}
+
+.priority-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--eoc-text-muted);
 }
 
 .place-cell {
@@ -538,6 +584,61 @@ function tableRowClassName({ row }: { row: PlaceRead }): string {
   flex-direction: column;
   align-items: flex-start;
   gap: 3px;
+}
+
+/* Five steps read as a level at a glance; the word keeps it from being a
+   colour-only encoding, and the tone is semantic because urgency is severity */
+.urgency-reading {
+  --urgency-tone: var(--eoc-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.urgency-reading.urgency-critical {
+  --urgency-tone: var(--eoc-critical);
+}
+
+.urgency-reading.urgency-high {
+  --urgency-tone: var(--eoc-warning);
+}
+
+.urgency-reading.urgency-medium {
+  --urgency-tone: var(--eoc-info);
+}
+
+.urgency-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  flex-shrink: 0;
+}
+
+.urgency-meter > i {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  background: var(--eoc-bg-sunken);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+}
+
+.urgency-meter > i.is-reached {
+  background: var(--urgency-tone);
+  border-color: var(--urgency-tone);
+}
+
+.urgency-word {
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--urgency-tone);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* A merely-less-urgent row must not read as resolved, so its word stays in the
+   body colour while the meter carries the muted level */
+.urgency-reading.urgency-low .urgency-word {
+  color: var(--eoc-text-secondary);
 }
 
 .exposed-population {
