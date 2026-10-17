@@ -158,6 +158,18 @@ sync zone="sonsonate": db-up
     asyncio.run(main(sys.argv[1]))
     PY
 
+# Regenerate data/census/raw/ from the public BCR/ONEC ArcGIS REST API (idempotent, resumable)
+census-download *args:
+    uv run --directory backend python -m scripts.download_census {{args}}
+
+# Load the CPV 2024 census corpus into PostGIS (idempotent; asserts the national reconciliation)
+census-ingest *args: db-up
+    uv run --directory backend python -m scripts.ingest_census {{args}}
+
+# Attach places to census units and refresh their areal-weighted exposure estimates
+census-attach *args: db-up
+    uv run --directory backend python -m scripts.attach_place_census {{args}}
+
 # Run full verification suite (PostGIS + Backend pytest + Frontend Vitest + TypeScript build)
 test: db-up
     uv run --directory backend pytest -v
