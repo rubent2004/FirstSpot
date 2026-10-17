@@ -107,6 +107,13 @@ export interface UseLeafletMapOptions {
   initialCenter: () => L.LatLngTuple;
 }
 
+/** Whether a map container has an area to draw into (hidden or collapsed ones do not). */
+export function hasDrawableSize(
+  element: Pick<HTMLElement, "clientWidth" | "clientHeight"> | null,
+): boolean {
+  return element !== null && element.clientWidth > 0 && element.clientHeight > 0;
+}
+
 /**
  * Owns the Leaflet map instance: creation, basemap tiles, container resize,
  * camera moves and teardown.
@@ -214,7 +221,9 @@ export function useLeafletMap(options: UseLeafletMapOptions) {
 
     if (typeof ResizeObserver !== "undefined") {
       resizeObserver = new ResizeObserver(() => {
-        mapInstance?.invalidateSize();
+        // Printing a sheet hides the live map (0x0); resizing then would make the
+        // heat layer read a 0-wide canvas and throw. It resizes again on return.
+        if (hasDrawableSize(mapContainer.value)) mapInstance?.invalidateSize();
       });
       resizeObserver.observe(mapContainer.value);
     }
