@@ -644,6 +644,15 @@ inversion cannot be absorbed silently.
   lazy 71 KB chunk, PDF via print stylesheet). Excel (district ranking + Sphere needs), PDF report and a
   printable map of priority districts. Client-side, no server round trip.
 
+- [ ] **C7** End-to-end Playwright suite, run once the UI polish lands. Real
+  browser against the running stack (`just up2`). Cover: district list and
+  detail, baseline/event mode, export dialog (xlsx/csv download, print views),
+  current-view print for an in-coverage zone (Sonsonate) and an
+  outside-coverage zone (Escuintla, Guatemala), print section toggles and
+  presets, keyboard-only navigation, axe accessibility scan, and visual
+  screenshots at 1920px and 390px in both themes. Also assert no tile request
+  hits a key-gated provider (the CARTO incident).
+
 ### Phase D — Voluntary location
 
 - [ ] **D1** Privacy design document: dual legal basis mapped per operation,
