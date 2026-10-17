@@ -110,8 +110,17 @@ El Salvador has an **active data protection law**: Decreto Legislativo 144,
 ## The PRIO-SV index
 
 Unit of analysis: **DEGURBA sub-district polygon (902 units at level 2)**,
-aggregatable to district (263), municipality (45) and department (17) for the
+aggregatable to district (262), municipality (44) and department (14) for the
 command view.
+
+**Count correction (verified against the data, 2026-10-16):** earlier research
+said 263 districts / 45 municipalities / 17 departments. Those figures counted
+the `'Otros'` pseudo-unit, which has no geometry. The real post-D.L. 57/2023
+structure is **14 / 44 / 262**. Published secondary summaries routinely inflate
+these. Any assertion must use the corrected numbers.
+
+Also: the segment layer has 10,291 features but only **10,290 real segments** —
+one is an `idsegmento='0000000000'` national rollup.
 
 Why not census segments: the 10,291 segment polygons carry official geometry
 but **zero population attributes**, and the microdata's finest geographic
@@ -310,17 +319,64 @@ verification.
 
 ### Phase B — Census ingestion
 
-- [ ] **B1** Download script against the ArcGIS REST API (org `bcrsv`,
-  orgId `xSn1Pefr3M9zkw7Z`, `outSR=4326`) so `data/census/raw/` is fully
-  regenerable. Idempotent, resumable, with per-layer row-count assertions.
-- [ ] **B2** Alembic migration `0003`: `census_admin_unit` (hierarchy, CNR
-  SIRGAS geometry, simplified), `census_population_unit` (DEGURBA, 902 rows,
-  GIST index), `census_indicator` (long/EAV so new releases need no migration),
-  `census_segment` (geometry-only context). Add `census_unit_id` FK to
-  `vulnerable_places`.
-- [ ] **B3** Ingestion loaders with the gotchas enforced: reject
-  `Total_Personas`, filter `id_depto='15'` and `'AAA'`/`'RRAA'` sentinels,
-  simplify geometry, assert the 5,922,921 + 107,055 = 6,029,976 reconciliation.
+- [x] **B1** Download script against the ArcGIS REST API. **Commit `51e62e7`.**
+  `scripts/download_census.py`, 16 layers pinned by service + layer id +
+  expected row count. All 16 resolve live and counts match. Re-download of 3
+  layers verified `identical_properties` and `identical_rows` against the
+  originals; resumability verified by deleting a file and a cached page.
+- [x] **B2** Alembic migration `0003_census_2024`. **Commit `51e62e7`.**
+  Applies cleanly, `0002 <-> head` round-trip verified, `alembic check` reports
+  no drift. The `census_unit_id` FK on `vulnerable_places` was **not** added —
+  it is B4 work and the writer's brief forbade touching existing tables.
+- [x] **B3** Ingestion loaders. **Commit `51e62e7`.** Real 570 MB ingest in
+  77.7s: 320 / 902 / 50,560 / 10,290 rows, reconciliation exact, re-run
+  idempotent, geometry 570 MB -> 15 MB with zero invalid geometries,
+  342 cells suppressed with none leaking value or share.
+
+  Test-first observed honestly, 4 REDs: missing module, then two missing
+  symbols, then a real `:param::text` bind-parameter failure. 142 tests pass
+  (36 pre-existing untouched + 106 new).
+
+### Data defects found during B3 that the research had missed
+
+The research predicted five defects. Ingestion found four more:
+
+1. **`Total_Personas` is defective in the municipality layer too**, not only
+   the district layer. Both sum 5,843,393; 255 of 262 district rows disagree
+   with `Hombre + Mujer`.
+2. **`'15'` and `'RRAA'` are the same row**, not two sentinels (`Dep_id='15'`
+   carries `Dep_min='RRAA'`). And a third undocumented family exists:
+   `'00'`/`'0000'`/`'000000'` national rollups.
+3. **Each department appears twice** in `estructuras_distritos` and
+   `viviendas_particulares_distritos` — once correctly coded, once as
+   `id_depto='00'`. Worse, the correctly coded dwellings row stores a raw
+   count in its `porcentaje` column, not a fraction. Hence `normalize_share`.
+4. **Department and district layers split 6 people differently between the
+   sexes.** Grand totals agree exactly, so assertions run on the total only.
+
+### Declared gap: construction materials
+
+`material_pared` / `_tec` / `_pis` were **not** ingested. The source CSVs use
+unlabelled `r1..rN` columns and the counts disagree with the published
+dictionary (`_tec` has 9 columns for 8 categories, `_pis` 9 for 7). Inventing a
+mapping would have produced plausible but wrong seismic vulnerability, so the
+single most relevant variable for earthquake risk stays a declared gap.
+
+PRIO-SV's V dimension therefore runs on: `poblacion`, `edad_sexo`,
+`discapacidad`, `discapacidad_tipo`, `viviendas_particulares`, `estructuras`
+and `hogar_parentesco` (which carries the `Monoparentales` variable).
+
+- [ ] **B4** Spatial attachment of `vulnerable_places` to census units
+  (`ST_Intersects`, cached in a column — not computed per query) and
+  areal-weighted population estimate around each place. Use EPSG:5399
+  (SIRGAS-ES2007) for area math; `location` is `GEOGRAPHY`, so buffers are
+  already in meters. **This is what replaces the `0 pers.` column in the
+  dispatch queue.**
+- [ ] **B5** Move `disclosure.py` to `app/core/privacy.py` before Phase D
+  imports it, so voluntary-location k-anonymity does not import from census.
+  `SuppressionPolicy(minimum_units=5, label="k-anonymity k=5")` is the path.
+- [ ] **B6** Add a `justfile` recipe (`just census-download`, `just
+  census-ingest`) to match project conventions.
 - [ ] **B4** Spatial attachment of `vulnerable_places` to census units
   (`ST_Intersects`, cached in a column — not computed per query) and
   areal-weighted population estimate around each place. Use EPSG:5399
@@ -379,19 +435,41 @@ verification.
 
 ## Progress
 
-Research complete across all four lines: legal/privacy framing, visual
-language, prioritization methodology, and census inventory.
+Phase A visual work complete (A1-A3). Phase B ingestion complete (B1-B3).
 
-- `6dc3957` — checkpoint of pre-existing uncommitted work on `main`
-- `1316693` — **A1 done**: design token system rebuilt and verified
+| Commit | Task | Verified |
+|---|---|---|
+| `6dc3957` | checkpoint of pre-existing work on `main` | — |
+| `1316693` | **A1** design token system | build + 34 tests |
+| `8a9f2dc` | **A3** map treatment | vue-tsc, 34 tests, build |
+| `2f0b08b` | **A2** shell density | vue-tsc, 34 tests, build, spot check |
+| `26a82c3` | dead colour literals removed | 34 tests, vue-tsc |
+| `9c0d037` | **basemap fix** — CARTO now needs a key | 34 tests, live tiles |
+| `51e62e7` | **B1-B3** census ingestion | 142 tests, real 570 MB ingest |
 
-Census data acquired (37 files, 570 MB) with the access method, geographic key,
-data defects and statistical-secrecy constraint all documented above.
+### Incident: the CARTO basemap failure
+
+A3 shipped CARTO Dark Matter / Positron as the default basemaps. CARTO now
+requires an API key and **answers HTTP 200 with a ~2 KB "API KEY REQUIRED"
+placeholder tile** instead of failing. No status-code check, no test and no
+build step could detect it — the map rendered placeholder text across every
+tile and only a human looking at the screen caught it.
+
+Replaced with Esri World Light/Dark Gray Canvas, which need no key and pair
+each Base layer with its Reference overlay. Esri serves `{z}/{y}/{x}`,
+inverting y and x relative to OSM and CARTO.
+
+**Lesson worth keeping: a tile provider that degrades with HTTP 200 is
+invisible to automated verification. Visual surfaces need a human check.**
 
 ## Next step
 
-A2 + A3 — apply density and map treatment across the shell, as one delegated
-writer. Then B1-B4 for census ingestion.
+**B4** — attach places to census units and compute areal-weighted population.
+This is the task that replaces `0 pers.` in the dispatch queue with real
+exposed population, which is the whole point of Phase B.
+
+Then **A4** (decompose the map component) before C5 touches it, and **C1-C4**
+for the PRIO-SV index itself.
 
 ## Open decisions
 
