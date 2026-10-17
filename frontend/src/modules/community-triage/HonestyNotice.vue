@@ -14,34 +14,51 @@ const relative = computed(() =>
 </script>
 
 <template>
-  <section class="honesty" data-testid="honesty-notice">
-    <h3 class="eoc-label">{{ t.community.honesty.title }}</h3>
-    <ul>
-      <li class="strong">{{ t.community.honesty.ranking }}</li>
-      <li>{{ t.community.honesty.noVictims }}</li>
-      <li>{{ t.community.honesty.exposure }}</li>
-      <li>{{ t.community.honesty.gaps }}</li>
-      <li>{{ relative }}</li>
-    </ul>
-    <p class="source">
-      {{ t.community.honesty.attributionLabel }}: {{ DATA_ATTRIBUTION }}
-    </p>
+  <section class="honesty" data-testid="honesty-notice" :aria-label="t.community.honesty.title">
+    <!-- Always visible: the one sentence that must never be missed -->
+    <p class="short">{{ t.community.honesty.short }}</p>
+
+    <!-- Native disclosure: one click or Enter/Space, no script, full text stays in the DOM -->
+    <details class="more">
+      <summary>{{ t.community.honesty.more }}</summary>
+      <ul>
+        <li class="strong">{{ t.community.honesty.ranking }}</li>
+        <li>{{ t.community.honesty.noVictims }}</li>
+        <li>{{ t.community.honesty.exposure }}</li>
+        <li>{{ t.community.honesty.gaps }}</li>
+        <li>{{ relative }}</li>
+      </ul>
+      <p class="source">
+        {{ t.community.honesty.attributionLabel }}: {{ DATA_ATTRIBUTION }}
+      </p>
+    </details>
   </section>
 </template>
 
 <style scoped>
 .honesty {
-  border: var(--eoc-border-width) solid var(--eoc-border);
   border-left: 3px solid var(--eoc-info);
-  border-radius: var(--eoc-radius-control);
-  background: var(--eoc-bg-card);
-  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  padding: 0 var(--eoc-pad-panel);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-h3 {
+.short {
   margin: 0;
+  font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-primary);
+  line-height: 1.4;
+}
+summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--eoc-target-min);
+  cursor: pointer;
+  font-size: var(--eoc-fs-micro);
+  font-weight: var(--eoc-fw-semibold);
+  color: var(--eoc-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 ul {
   margin: 0;
@@ -55,8 +72,8 @@ ul {
   font-weight: var(--eoc-fw-semibold);
 }
 .source {
-  margin: 0;
+  margin: 2px 0 0;
   font-size: var(--eoc-fs-micro);
-  color: var(--eoc-text-muted);
+  color: var(--eoc-text-secondary);
 }
 </style>

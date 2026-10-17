@@ -242,12 +242,16 @@ html:not(.dark),
   --eoc-pad-panel: 10px;
 
   /* Dense shell: these are what make it read as an operations console */
-  --eoc-control-h: 22px;
+  --eoc-control-h: 24px;
   --eoc-header-h: 34px;
   --eoc-tabstrip-h: 32px;
   --eoc-statusbar-h: 26px;
   --eoc-table-header-h: 24px;
   --eoc-icon-btn: 26px;
+
+  /* Touch targets: 24px is the WCAG 2.2 AA floor; primary actions get 44px on touch */
+  --eoc-target-min: 24px;
+  --eoc-target-primary: 44px;
 
   --eoc-panel-left: 270px;
   --eoc-panel-left-min: 200px;
@@ -311,6 +315,19 @@ body,
 table td.eoc-numeric {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+/* Text for assistive technology only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Uppercase micro-labels for group headers and legends */

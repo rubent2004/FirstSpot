@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { ElButton, ElOption, ElSelect } from "element-plus";
+import { computed, nextTick, ref } from "vue";
+import { ElOption, ElSegmented, ElSelect } from "element-plus";
 import type { EventSummaryRead, PrioIndexRead } from "../../api/client";
 import { useI18n } from "../../i18n/useI18n";
 import { describePager, formatUtcTimestamp } from "./formatters";
-import { resolveMode } from "./triageModel";
+import { resolveMode, type TriageMode } from "./triageModel";
 
 const props = defineProps<{
   index: PrioIndexRead | null;
@@ -19,15 +19,29 @@ const emit = defineEmits<{ (e: "select-event", eventId: string | null): void }>(
 const { t, locale } = useI18n();
 
 /**
- * The badge reads the RESPONSE's mode. While a switch is in flight the numbers
- * on screen still belong to the previous mode, and the badge must say so.
+ * The status line reads the RESPONSE's mode. While a switch is in flight the
+ * numbers on screen still belong to the previous mode, and the line must say so.
  */
 const displayedMode = computed(() =>
   resolveMode(props.index?.mode, props.requestedEventId),
 );
 
 const pickerOpen = ref(false);
+const picker = ref<InstanceType<typeof ElSelect> | null>(null);
 const showPicker = computed(() => pickerOpen.value || props.requestedEventId !== null);
+
+/** The control follows what was asked for; the status line follows what is shown. */
+const segmentValue = computed<TriageMode>(() => (showPicker.value ? "event" : "baseline"));
+const segmentOptions = computed(() => [
+  { value: "baseline", label: t.value.community.mode.baseline },
+  { value: "event", label: t.value.community.mode.event },
+]);
+
+const displayedEventId = computed(() =>
+  displayedMode.value === "event" ? (props.index?.event?.event_id ?? null) : null,
+);
+const isSwitching = computed(() => props.requestedEventId !== displayedEventId.value);
+const awaitingEvent = computed(() => pickerOpen.value && props.requestedEventId === null);
 
 const event = computed(() => (displayedMode.value === "event" ? props.index?.event ?? null : null));
 const shakemapTime = computed(
@@ -43,46 +57,42 @@ function eventLabel(item: EventSummaryRead): string {
   return `${magnitude} · ${item.place} · ${day}${suffix}`;
 }
 
-function chooseBaseline(): void {
-  pickerOpen.value = false;
-  if (props.requestedEventId !== null) emit("select-event", null);
+function onModeChange(value: string | number | boolean): void {
+  if (value === "baseline") {
+    pickerOpen.value = false;
+    if (props.requestedEventId !== null) emit("select-event", null);
+    return;
+  }
+  pickerOpen.value = true;
+  void nextTick(() => picker.value?.focus());
 }
 </script>
 
 <template>
-  <section class="mode-bar">
-    <div class="mode-row">
-      <span class="eoc-label">{{ t.community.mode.label }}</span>
-      <span
-        class="mode-badge"
-        :class="displayedMode === 'event' ? 'is-event' : 'is-baseline'"
-        data-testid="mode-badge"
-      >
-        {{ displayedMode === "event" ? t.community.mode.event : t.community.mode.baseline }}
-      </span>
-      <span class="spacer"></span>
-      <ElButton
-        size="small"
-        :type="displayedMode === 'baseline' && !showPicker ? 'primary' : 'default'"
-        @click="chooseBaseline"
-      >
-        {{ t.community.mode.baseline }}
-      </ElButton>
-      <ElButton
-        size="small"
-        :type="showPicker ? 'primary' : 'default'"
-        @click="pickerOpen = true"
-      >
-        {{ t.community.mode.event }}
-      </ElButton>
-    </div>
+  <section class="mode-bar" :aria-label="t.community.mode.label">
+    <ElSegmented
+      size="small"
+      class="mode-switch"
+      :model-value="segmentValue"
+      :options="segmentOptions"
+      :aria-label="t.community.mode.label"
+      @change="onModeChange"
+    />
 
-    <p class="meaning">
-      {{ displayedMode === "event" ? t.community.mode.eventMeaning : t.community.mode.baselineMeaning }}
+    <p class="meaning" role="status" aria-live="polite" data-testid="mode-badge">
+      <strong class="mode-name" :class="displayedMode === 'event' ? 'is-event' : 'is-baseline'">
+        {{ displayedMode === "event" ? t.community.mode.event : t.community.mode.baseline }}
+      </strong>
+      <span aria-hidden="true"> · </span>
+      {{ displayedMode === "event" ? t.community.mode.eventShort : t.community.mode.baselineShort }}
+      <span v-if="isSwitching" class="pending"> {{ t.community.mode.updating }}</span>
+      <span v-else-if="awaitingEvent" class="pending"> {{ t.community.mode.pickEvent }}</span>
     </p>
+    <p class="sr-only">{{ displayedMode === "event" ? t.community.mode.eventMeaning : t.community.mode.baselineMeaning }}</p>
 
     <div v-if="showPicker" class="picker">
       <ElSelect
+        ref="picker"
         size="small"
         filterable
         clearable
@@ -100,7 +110,7 @@ function chooseBaseline(): void {
           :disabled="!item.has_shakemap"
         />
       </ElSelect>
-      <p v-if="eventsError" class="error">{{ t.community.event.loadFailed }}</p>
+      <p v-if="eventsError" class="error" role="alert">{{ t.community.event.loadFailed }}</p>
     </div>
 
     <dl v-if="event" class="facts" data-testid="event-facts">
@@ -139,40 +149,26 @@ function chooseBaseline(): void {
   display: flex;
   flex-direction: column;
   gap: var(--eoc-gap-y);
-  border: var(--eoc-border-width) solid var(--eoc-border);
-  border-radius: var(--eoc-radius-control);
-  background: var(--eoc-bg-card);
-  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
 }
-.mode-row {
-  display: flex;
-  align-items: center;
-  gap: var(--eoc-gap-x);
+.mode-switch {
+  align-self: flex-start;
+  --el-border-radius-base: var(--eoc-radius-control);
 }
-.spacer {
-  flex: 1;
+.mode-switch :deep(.el-segmented__item) {
+  min-height: var(--eoc-target-min);
+  min-width: var(--eoc-target-min);
+  font-size: var(--eoc-fs-body);
 }
-/* Mode is identity, not severity: the operational accent, never a status hue */
-.mode-badge {
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 var(--eoc-gap-x);
-  border-radius: var(--eoc-radius-control);
-  border: var(--eoc-border-width) solid var(--eoc-border-strong);
-  font-size: var(--eoc-fs-micro);
+/* Mode is identity, not severity: text weight and the accent, never a status hue */
+.mode-name {
   font-weight: var(--eoc-fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.mode-badge.is-event {
-  background: var(--eoc-accent);
-  border-color: var(--eoc-accent);
-  color: var(--eoc-on-accent);
-}
-.mode-badge.is-baseline {
-  background: var(--eoc-bg-sunken);
   color: var(--eoc-text-primary);
+}
+.mode-name.is-event {
+  color: var(--eoc-accent-text);
+}
+.pending {
+  color: var(--eoc-text-secondary);
 }
 .meaning,
 .error,
@@ -193,8 +189,10 @@ function chooseBaseline(): void {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--eoc-gap-y) var(--eoc-pad-panel);
-  padding-top: var(--eoc-gap-y);
-  border-top: var(--eoc-border-width) solid var(--eoc-border);
+  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  background: var(--eoc-bg-card);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  border-radius: var(--eoc-radius-control);
 }
 .fact dt {
   margin: 0;
@@ -208,7 +206,7 @@ function chooseBaseline(): void {
 }
 .fact dd small {
   font-size: var(--eoc-fs-micro);
-  color: var(--eoc-text-muted);
+  color: var(--eoc-text-secondary);
 }
 .wide {
   grid-column: 1 / -1;

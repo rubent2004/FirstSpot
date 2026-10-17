@@ -8,6 +8,19 @@ import type { AlertClassKey, DimensionKey } from "../modules/community-triage/tr
  */
 export interface CommunityMessages {
   tabs: { label: string; territories: string; places: string };
+  nav: {
+    label: string;
+    districts: string;
+    places: string;
+    breadcrumb: string;
+    back: string;
+    placesIn: string;
+    openZonePlaces: string;
+    announceDetail: string;
+    announceList: string;
+    announcePlaces: string;
+  };
+  map: { caption: string };
   title: string;
   subtitle: string;
   mode: {
@@ -17,6 +30,10 @@ export interface CommunityMessages {
     baselineMeaning: string;
     eventMeaning: string;
     switchToBaseline: string;
+    baselineShort: string;
+    eventShort: string;
+    updating: string;
+    pickEvent: string;
   };
   event: {
     pickerLabel: string;
@@ -36,6 +53,9 @@ export interface CommunityMessages {
     maxShaking: string;
   };
   classes: Record<AlertClassKey, { name: string; meaning: string }>;
+  /** Baseline's neutral structural scale: never an alert, never a status hue. */
+  levels: Record<AlertClassKey, { name: string; meaning: string; group: string }>;
+  levelsNote: string;
   dimensions: Record<DimensionKey, { name: string; short: string }>;
   honesty: {
     title: string;
@@ -45,6 +65,8 @@ export interface CommunityMessages {
     gaps: string;
     relative: string;
     attributionLabel: string;
+    short: string;
+    more: string;
   };
   list: {
     ariaLabel: string;
@@ -61,6 +83,24 @@ export interface CommunityMessages {
     showMore: string;
     scoreZero: string;
     classFilterAll: string;
+    classFilterLabel: string;
+    sortLabel: string;
+    sortScore: string;
+    sortExposed: string;
+    sortName: string;
+    scopeLabel: string;
+    scopeZone: string;
+    scopeCountry: string;
+    scopeNote: string;
+    showing: string;
+    nationalRank: string;
+    barsLegend: string;
+    barsLegendLabel: string;
+    clearFilters: string;
+    rankLabel: string;
+    exposedNone: string;
+    groupHeading: string;
+    zeroShort: string;
   };
   detail: {
     back: string;
@@ -92,6 +132,9 @@ export interface CommunityMessages {
     food: string;
     shelter: string;
     withheldWhole: string;
+    placesTitle: string;
+    placesBody: string;
+    placesOpen: string;
   };
   exports: {
     menu: string;
@@ -142,6 +185,22 @@ export interface CommunityMessages {
 
 export const COMMUNITY_ES: CommunityMessages = {
   tabs: { label: "Vista", territories: "Territorios", places: "Lugares" },
+  nav: {
+    label: "Prioridad por distrito",
+    districts: "Distritos",
+    places: "Lugares",
+    breadcrumb: "Dónde estás",
+    back: "Volver a distritos",
+    placesIn: "Lugares en {zone}",
+    openZonePlaces: "Ver lugares de {zone}",
+    announceDetail: "Detalle abierto: {name}",
+    announceList: "Lista de distritos",
+    announcePlaces: "Lugares de la zona {zone}",
+  },
+  map: {
+    caption:
+      "El mapa muestra lugares y su calor de vulnerabilidad, no distritos: los datos no incluyen los límites de cada distrito.",
+  },
   title: "Territorios prioritarios",
   subtitle: "Distritos ordenados por prioridad relativa",
   mode: {
@@ -153,6 +212,10 @@ export const COMMUNITY_ES: CommunityMessages = {
     eventMeaning:
       "Con sismo: suma la sacudida medida de este evento. Vale solo para esa versión del mapa de sacudida.",
     switchToBaseline: "Volver a línea base",
+    baselineShort: "Sin sismo: dónde el país es más frágil, no qué pasó hoy.",
+    eventShort: "Con sismo: suma la sacudida medida de este evento.",
+    updating: "Actualizando…",
+    pickEvent: "Elige un sismo para ver el modo Evento.",
   },
   event: {
     pickerLabel: "Evento",
@@ -179,6 +242,29 @@ export const COMMUNITY_ES: CommunityMessages = {
     amarilla: { name: "Amarilla", meaning: "Prioridad media" },
     verde: { name: "Verde", meaning: "Prioridad más baja. No significa que nadie necesite ayuda" },
   },
+  levels: {
+    roja: {
+      name: "Muy alto",
+      group: "Riesgo estructural muy alto",
+      meaning: "Mayor fragilidad estructural entre los distritos. No es una alerta.",
+    },
+    naranja: {
+      name: "Alto",
+      group: "Riesgo estructural alto",
+      meaning: "Fragilidad estructural alta. No es una alerta.",
+    },
+    amarilla: {
+      name: "Medio",
+      group: "Riesgo estructural medio",
+      meaning: "Fragilidad estructural media. No es una alerta.",
+    },
+    verde: {
+      name: "Bajo",
+      group: "Riesgo estructural bajo",
+      meaning: "Menor fragilidad estructural. No significa que nadie necesite ayuda.",
+    },
+  },
+  levelsNote: "Sin sismo no hay alerta: esta escala es de fragilidad, no de emergencia.",
   dimensions: {
     hazard_and_exposure: { name: "Amenaza y exposición", short: "Amenaza" },
     vulnerability: { name: "Vulnerabilidad", short: "Vulnerab." },
@@ -196,6 +282,8 @@ export const COMMUNITY_ES: CommunityMessages = {
     relative:
       "Un puntaje es una posición entre {total} distritos, no una medida de daño.",
     attributionLabel: "Datos",
+    short: "Ranking relativo de territorios, no de personas. No informa víctimas ni fallecidos.",
+    more: "Cómo leer esto y sus límites",
   },
   list: {
     ariaLabel: "Distritos ordenados por prioridad",
@@ -212,6 +300,24 @@ export const COMMUNITY_ES: CommunityMessages = {
     showMore: "Mostrar más",
     scoreZero: "0 · ver motivo",
     classFilterAll: "Todas",
+    classFilterLabel: "Filtrar por nivel",
+    sortLabel: "Ordenar por",
+    sortScore: "Prioridad",
+    sortExposed: "Expuestos",
+    sortName: "Nombre",
+    scopeLabel: "Alcance",
+    scopeZone: "Solo {department}",
+    scopeCountry: "Todo el país",
+    scopeNote: "Estás viendo los distritos de {department}, la zona de trabajo actual.",
+    showing: "Mostrando {shown} de {total} distritos",
+    nationalRank: "El puesto es nacional, entre {total} distritos.",
+    barsLegend: "Barras: amenaza y exposición, vulnerabilidad, falta de capacidad (0–10)",
+    barsLegendLabel: "Barras por dimensión",
+    clearFilters: "Quitar filtros",
+    rankLabel: "puesto {rank}",
+    exposedNone: "sin estimación",
+    groupHeading: "{level}",
+    zeroShort: "0 · ver motivo",
   },
   detail: {
     back: "Volver a la lista",
@@ -252,6 +358,10 @@ export const COMMUNITY_ES: CommunityMessages = {
     shelter: "Área de albergue",
     withheldWhole:
       "Este distrito no se publica: sus datos están reservados por secreto estadístico.",
+    placesTitle: "Lugares",
+    placesBody:
+      "Los datos aún no asignan lugares (escuelas, clínicas, albergues) a un distrito. Puedes ver los lugares de la zona de trabajo.",
+    placesOpen: "Ver lugares de {zone}",
   },
   exports: {
     menu: "Exportar",
@@ -303,6 +413,22 @@ export const COMMUNITY_ES: CommunityMessages = {
 
 export const COMMUNITY_EN: CommunityMessages = {
   tabs: { label: "View", territories: "Territories", places: "Places" },
+  nav: {
+    label: "Priority by district",
+    districts: "Districts",
+    places: "Places",
+    breadcrumb: "Where you are",
+    back: "Back to districts",
+    placesIn: "Places in {zone}",
+    openZonePlaces: "See places in {zone}",
+    announceDetail: "Detail opened: {name}",
+    announceList: "District list",
+    announcePlaces: "Places in the {zone} zone",
+  },
+  map: {
+    caption:
+      "The map shows places and their vulnerability heat, not districts: the data does not include district boundaries.",
+  },
   title: "Priority territories",
   subtitle: "Districts ordered by relative priority",
   mode: {
@@ -314,6 +440,10 @@ export const COMMUNITY_EN: CommunityMessages = {
     eventMeaning:
       "With an earthquake: adds the measured shaking of this event. Valid only for that version of the shaking map.",
     switchToBaseline: "Back to baseline",
+    baselineShort: "No earthquake: where the country is most fragile, not what happened today.",
+    eventShort: "With an earthquake: adds the measured shaking of this event.",
+    updating: "Updating…",
+    pickEvent: "Pick an earthquake to see Event mode.",
   },
   event: {
     pickerLabel: "Event",
@@ -340,6 +470,29 @@ export const COMMUNITY_EN: CommunityMessages = {
     amarilla: { name: "Yellow", meaning: "Medium priority" },
     verde: { name: "Green", meaning: "Lowest priority. It does not mean nobody needs help" },
   },
+  levels: {
+    roja: {
+      name: "Very high",
+      group: "Very high structural risk",
+      meaning: "Highest structural fragility among districts. Not an alert.",
+    },
+    naranja: {
+      name: "High",
+      group: "High structural risk",
+      meaning: "High structural fragility. Not an alert.",
+    },
+    amarilla: {
+      name: "Medium",
+      group: "Medium structural risk",
+      meaning: "Medium structural fragility. Not an alert.",
+    },
+    verde: {
+      name: "Low",
+      group: "Low structural risk",
+      meaning: "Lowest structural fragility. It does not mean nobody needs help.",
+    },
+  },
+  levelsNote: "With no earthquake there is no alert: this scale measures fragility, not emergency.",
   dimensions: {
     hazard_and_exposure: { name: "Hazard and exposure", short: "Hazard" },
     vulnerability: { name: "Vulnerability", short: "Vulnerab." },
@@ -356,6 +509,8 @@ export const COMMUNITY_EN: CommunityMessages = {
     relative:
       "A score is a position among {total} districts, not a measure of damage.",
     attributionLabel: "Data",
+    short: "A relative ranking of territories, not of people. It never reports victims or casualties.",
+    more: "How to read this and its limits",
   },
   list: {
     ariaLabel: "Districts ordered by priority",
@@ -372,6 +527,24 @@ export const COMMUNITY_EN: CommunityMessages = {
     showMore: "Show more",
     scoreZero: "0 · see why",
     classFilterAll: "All",
+    classFilterLabel: "Filter by level",
+    sortLabel: "Sort by",
+    sortScore: "Priority",
+    sortExposed: "Exposed",
+    sortName: "Name",
+    scopeLabel: "Scope",
+    scopeZone: "{department} only",
+    scopeCountry: "Whole country",
+    scopeNote: "Showing the districts of {department}, the current work zone.",
+    showing: "Showing {shown} of {total} districts",
+    nationalRank: "Rank is national, among {total} districts.",
+    barsLegend: "Bars: hazard and exposure, vulnerability, lack of coping capacity (0–10)",
+    barsLegendLabel: "Bars per dimension",
+    clearFilters: "Clear filters",
+    rankLabel: "rank {rank}",
+    exposedNone: "no estimate",
+    groupHeading: "{level}",
+    zeroShort: "0 · see why",
   },
   detail: {
     back: "Back to list",
@@ -411,6 +584,10 @@ export const COMMUNITY_EN: CommunityMessages = {
     shelter: "Shelter area",
     withheldWhole:
       "This district is not published: its data is withheld under statistical secrecy.",
+    placesTitle: "Places",
+    placesBody:
+      "The data does not yet assign places (schools, clinics, shelters) to a district. You can see the places of the work zone.",
+    placesOpen: "See places in {zone}",
   },
   exports: {
     menu: "Export",
