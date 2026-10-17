@@ -3,7 +3,7 @@ import { computed, nextTick, ref } from "vue";
 import { ElOption, ElSegmented, ElSelect } from "element-plus";
 import type { EventSummaryRead, PrioIndexRead } from "../../api/client";
 import { useI18n } from "../../i18n/useI18n";
-import { describePager, formatUtcTimestamp } from "./formatters";
+import { describeEventLabel, describePager, formatUtcTimestamp, localizeEventPlace } from "./formatters";
 import { resolveMode, type TriageMode } from "./triageModel";
 
 const props = defineProps<{
@@ -50,12 +50,42 @@ const shakemapTime = computed(
 const occurredAt = computed(() => formatUtcTimestamp(event.value?.occurred_at));
 const pagerText = computed(() => describePager(event.value?.pager, t.value.community, locale.value));
 
-function eventLabel(item: EventSummaryRead): string {
-  const day = item.occurred_at.slice(0, 10);
-  const magnitude = item.magnitude !== null ? `M${item.magnitude.toFixed(1)}` : "M ?";
-  const suffix = item.has_shakemap ? "" : ` (${t.value.community.event.noShakemap})`;
-  return `${magnitude} · ${item.place} · ${day}${suffix}`;
+interface PickerOption {
+  value: string;
+  label: string;
+  disabled: boolean;
 }
+
+function eventLabel(item: EventSummaryRead): string {
+  const suffix = item.has_shakemap ? "" : ` (${t.value.community.event.noShakemap})`;
+  return `${describeEventLabel(item, t.value.community, locale.value)}${suffix}`;
+}
+
+/**
+ * The recent-earthquake catalogue does not list a historical event chosen some
+ * other way (the 2001 demo event, a shared link). Without an option of its own
+ * the select would print the raw USGS id, so the chosen event always gets one:
+ * described from the loaded index, or a loading label until it arrives.
+ */
+const pickerOptions = computed<PickerOption[]>(() => {
+  const options = props.events.map((item) => ({
+    value: item.event_id,
+    label: eventLabel(item),
+    disabled: !item.has_shakemap,
+  }));
+  const chosen = props.requestedEventId;
+  if (chosen && !options.some((option) => option.value === chosen)) {
+    const loaded = props.index?.event?.event_id === chosen ? props.index.event : null;
+    options.unshift({
+      value: chosen,
+      label: loaded
+        ? describeEventLabel(loaded, t.value.community, locale.value)
+        : t.value.community.event.loadingEvent,
+      disabled: false,
+    });
+  }
+  return options;
+});
 
 function onModeChange(value: string | number | boolean): void {
   if (value === "baseline") {
@@ -103,11 +133,11 @@ function onModeChange(value: string | number | boolean): void {
         @change="(value: string | undefined) => emit('select-event', value ?? null)"
       >
         <ElOption
-          v-for="item in events"
-          :key="item.event_id"
-          :value="item.event_id"
-          :label="eventLabel(item)"
-          :disabled="!item.has_shakemap"
+          v-for="option in pickerOptions"
+          :key="option.value"
+          :value="option.value"
+          :label="option.label"
+          :disabled="option.disabled"
         />
       </ElSelect>
       <p v-if="eventsError" class="error" role="alert">{{ t.community.event.loadFailed }}</p>
@@ -118,7 +148,7 @@ function onModeChange(value: string | number | boolean): void {
         <dt class="eoc-label">{{ t.community.event.pickerLabel }}</dt>
         <dd>
           <span v-if="event.magnitude !== null" class="eoc-numeric">M{{ event.magnitude.toFixed(1) }}</span>
-          {{ event.place }}
+          {{ localizeEventPlace(event.place, locale) }}
         </dd>
       </div>
       <div class="fact">

@@ -8,6 +8,8 @@ import { setAppLocale } from "../i18n/useI18n";
 import CommunityTriagePanel from "../modules/community-triage/CommunityTriagePanel.vue";
 import { useCommunityTriageStore } from "../stores/useCommunityTriageStore";
 import { EVENT_ID, baselineIndex, eventIndex } from "./fixtures/prioFixtures";
+import { describeEventLabel, localizeEventPlace } from "../modules/community-triage/formatters";
+import { communityMessages } from "../i18n/communityMessages";
 
 async function mountPanel() {
   const pinia = createPinia();
@@ -108,5 +110,28 @@ describe("mode control and limits trigger", () => {
   it("the score column header says the priority is relative, even with the popover closed", async () => {
     const { wrapper } = await mountPanel();
     expect(wrapper.get(".columns").text()).toContain("Relative priority");
+  });
+
+  it("labels an event the catalogue does not list, never with its raw id", async () => {
+    // The catalogue (recent quakes) is empty; the 2001 demo event is chosen directly.
+    const { wrapper, store } = await mountPanel();
+    await store.selectEvent(EVENT_ID);
+    await flushPromises();
+    const picker = wrapper.get(".picker");
+    expect(picker.text()).toContain("Earthquake M6.6 · Offshore San Salvador · Feb 13, 2001");
+    expect(document.body.innerHTML).not.toContain(EVENT_ID);
+  });
+
+  it("writes the USGS place and date the Spanish way", () => {
+    expect(localizeEventPlace("5 km S of Cojutepeque, El Salvador", "es")).toBe("5 km S de Cojutepeque");
+    expect(localizeEventPlace("35 km SSW of Jucuarán, El Salvador", "es")).toBe("35 km SSO de Jucuarán");
+    expect(localizeEventPlace("5 km S of Cojutepeque, El Salvador", "en")).toBe("5 km S of Cojutepeque");
+    setAppLocale("es");
+    const label = describeEventLabel(
+      { magnitude: 6.6, place: "5 km S of Cojutepeque, El Salvador", occurred_at: "2001-02-13T14:22:05Z" },
+      communityMessages("es"),
+      "es",
+    );
+    expect(label).toBe("Sismo M6.6 · 5 km S de Cojutepeque · 13 feb 2001");
   });
 });

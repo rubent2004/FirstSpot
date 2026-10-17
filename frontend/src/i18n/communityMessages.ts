@@ -42,6 +42,10 @@ export interface CommunityMessages {
   event: {
     pickerLabel: string;
     pickerPlaceholder: string;
+    /** Leads the event label in the picker: "Sismo M6.6 · …". */
+    quake: string;
+    /** Shown in the picker while the chosen event is not described yet, never its raw id. */
+    loadingEvent: string;
     noShakemap: string;
     loadFailed: string;
     magnitude: string;
@@ -213,6 +217,8 @@ export const COMMUNITY_ES: CommunityMessages = {
   event: {
     pickerLabel: "Evento",
     pickerPlaceholder: "Elegir un sismo reciente",
+    quake: "Sismo",
+    loadingEvent: "Cargando el sismo…",
     noShakemap: "sin mapa de sacudida",
     loadFailed: "No se pudieron cargar los sismos recientes.",
     magnitude: "Magnitud",
@@ -433,6 +439,8 @@ export const COMMUNITY_EN: CommunityMessages = {
   event: {
     pickerLabel: "Event",
     pickerPlaceholder: "Pick a recent earthquake",
+    quake: "Earthquake",
+    loadingEvent: "Loading the earthquake…",
     noShakemap: "no shaking map",
     loadFailed: "Could not load recent earthquakes.",
     magnitude: "Magnitude",

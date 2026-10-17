@@ -30,6 +30,48 @@ export function formatUtcTimestamp(iso: string | null | undefined): string | nul
   return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }
 
+/** What an event label needs; both the catalogue entry and the index event carry it. */
+export interface EventLabelSource {
+  magnitude: number | null;
+  place: string;
+  occurred_at: string;
+}
+
+const USGS_OFFSET = /^(\d+(?:\.\d+)?) km ([NSEW]{1,3}) of (.+)$/;
+
+/**
+ * USGS writes places as "5 km S of Cojutepeque, El Salvador". The country is
+ * implied by the app, and in Spanish the bearing reads "5 km S de Cojutepeque",
+ * with W as O (oeste).
+ */
+export function localizeEventPlace(place: string, locale: AppLocale): string {
+  const trimmed = place.trim().replace(/,\s*El Salvador$/i, "");
+  if (locale !== "es") return trimmed;
+  const match = USGS_OFFSET.exec(trimmed);
+  if (!match) return trimmed;
+  const [, distance, bearing, town] = match;
+  return `${distance} km ${bearing.replace(/W/g, "O")} de ${town}`;
+}
+
+/** "Sismo M6.6 · 5 km S de Cojutepeque · 13 feb 2001": readable, never the USGS id. */
+export function describeEventLabel(
+  event: EventLabelSource,
+  t: CommunityMessages,
+  locale: AppLocale,
+): string {
+  const magnitude = event.magnitude !== null ? `M${event.magnitude.toFixed(1)}` : "M ?";
+  const date = new Date(event.occurred_at);
+  const day = Number.isNaN(date.getTime())
+    ? event.occurred_at.slice(0, 10)
+    : new Intl.DateTimeFormat(tag(locale), {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(date);
+  return `${t.event.quake} ${magnitude} · ${localizeEventPlace(event.place, locale)} · ${day}`;
+}
+
 /**
  * "naranja 100–999": the PAGER level always travels with its range, never as a
  * bare colour. Null when the event has no PAGER or the range is unreadable.
