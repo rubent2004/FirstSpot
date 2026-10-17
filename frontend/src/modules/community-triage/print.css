@@ -32,26 +32,12 @@
 }
 
 .print-sheet .sheet-page {
-  max-width: 210mm;
+  max-width: var(--sheet-width, 210mm);
   margin: var(--eoc-pad-panel) auto;
   padding: 12mm;
   box-sizing: border-box;
   background: var(--eoc-bg-panel);
   border: var(--eoc-border-width) solid var(--eoc-border);
-}
-
-.print-sheet--map .sheet-page {
-  max-width: 297mm;
-}
-
-@page report-page {
-  size: A4 portrait;
-  margin: 10mm;
-}
-
-@page map-page {
-  size: A4 landscape;
-  margin: 8mm;
 }
 
 @media print {
@@ -79,14 +65,6 @@
     margin: 0;
     padding: 0 0 12mm;
     border: 0;
-  }
-
-  .print-sheet--report {
-    page: report-page;
-  }
-
-  .print-sheet--map {
-    page: map-page;
   }
 
   .print-sheet thead {

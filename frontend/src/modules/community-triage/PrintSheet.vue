@@ -1,26 +1,41 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from "vue";
 import { ElButton } from "element-plus";
-import { fillMessage } from "../../i18n/communityMessages";
-import { useI18n } from "../../i18n/useI18n";
+import { communityMessages, fillMessage } from "../../i18n/communityMessages";
+import type { AppLocale } from "../../i18n/useI18n";
 import ClassBadge from "./ClassBadge.vue";
 import type { ReportModel, ReportRow } from "./exportModel";
+import { resolveColumns, type ExportColumn, type Orientation, type PaperSize } from "./exportPlan";
 import { formatInteger, formatScore } from "./formatters";
 import PrintMap from "./PrintMap.vue";
 import "./print.css";
 
 export type SheetVariant = "report" | "map";
 
-const props = defineProps<{ model: ReportModel; variant: SheetVariant }>();
+const props = withDefaults(
+  defineProps<{
+    model: ReportModel;
+    variant: SheetVariant;
+    /** Document language: independent of the language the console is shown in. */
+    lang?: AppLocale;
+    paper?: PaperSize;
+    orientation?: Orientation;
+    columns?: readonly ExportColumn[];
+    /** Becomes the document title, which browsers offer as the PDF file name. */
+    fileName?: string;
+  }>(),
+  { lang: "es", paper: "a4", orientation: "portrait", columns: undefined, fileName: undefined },
+);
 const emit = defineEmits<{ (e: "close"): void }>();
 
-const { t, locale } = useI18n();
-const s = computed(() => t.value.community.sheet);
+const m = computed(() => communityMessages(props.lang));
+const locale = computed(() => props.lang);
+const s = computed(() => m.value.sheet);
+const shown = computed(() => resolveColumns(props.columns ?? [], props.model.mode));
+const has = (column: ExportColumn): boolean =>
+  props.columns === undefined || shown.value.includes(column);
 
-/** A full ranking is 262 rows; the printed report carries the head of it. */
-const REPORT_ROWS = 50;
-
-const reportRows = computed(() => props.model.rows.slice(0, REPORT_ROWS));
+const reportRows = computed(() => props.model.rows);
 const priorityRows = computed(() =>
   props.model.rows.filter((row) => row.classKey === "roja" || row.classKey === "naranja"),
 );
@@ -40,18 +55,40 @@ function rowScore(row: ReportRow): string {
 }
 
 function rowExposed(row: ReportRow): string {
-  return row.exposed === null ? "—" : formatInteger(row.exposed, locale.value);
+  if (row.withheld) return "—";
+  return row.exposed === null ? m.value.list.exposedNone : formatInteger(row.exposed, locale.value);
 }
 
 function printSheet(): void {
   window.print();
 }
 
+/** Paper and orientation are chosen per print, so @page is written when the sheet opens. */
+const PAPER_MM: Record<PaperSize, { width: number; height: number }> = {
+  a4: { width: 210, height: 297 },
+  letter: { width: 216, height: 279 },
+};
+const pageWidthMm = computed(() => {
+  const { width, height } = PAPER_MM[props.paper];
+  return props.orientation === "landscape" ? height : width;
+});
+
+let pageStyle: HTMLStyleElement | null = null;
+let previousTitle = "";
+
 onMounted(() => {
   document.body.dataset.printSheet = props.variant;
+  pageStyle = document.createElement("style");
+  pageStyle.dataset.printPage = "";
+  pageStyle.textContent = `@page { size: ${props.paper === "a4" ? "A4" : "letter"} ${props.orientation}; margin: 8mm; }`;
+  document.head.appendChild(pageStyle);
+  previousTitle = document.title;
+  if (props.fileName) document.title = props.fileName.replace(/\.pdf$/, "");
 });
 onBeforeUnmount(() => {
   delete document.body.dataset.printSheet;
+  pageStyle?.remove();
+  document.title = previousTitle;
 });
 </script>
 
@@ -64,6 +101,8 @@ onBeforeUnmount(() => {
       aria-modal="true"
       data-testid="print-sheet"
       :aria-label="variant === 'map' ? s.mapTitle : s.reportTitle"
+      :lang="lang"
+      :style="{ '--sheet-width': `${pageWidthMm}mm` }"
     >
       <div class="sheet-toolbar no-print">
         <ElButton size="small" type="primary" @click="printSheet">
@@ -77,14 +116,14 @@ onBeforeUnmount(() => {
           <h1>{{ variant === "map" ? s.mapTitle : s.reportTitle }}</h1>
           <dl class="meta">
             <div>
-              <dt class="eoc-label">{{ t.community.mode.label }}</dt>
+              <dt class="eoc-label">{{ m.mode.label }}</dt>
               <dd>
                 <strong data-testid="sheet-mode">{{ model.modeLabel }}</strong>
                 — {{ model.modeMeaning }}
               </dd>
             </div>
             <div v-if="model.event">
-              <dt class="eoc-label">{{ t.community.event.pickerLabel }}</dt>
+              <dt class="eoc-label">{{ m.event.pickerLabel }}</dt>
               <dd>
                 <span v-if="model.event.magnitude !== null" class="eoc-numeric">
                   M{{ model.event.magnitude.toFixed(1) }}
@@ -94,17 +133,17 @@ onBeforeUnmount(() => {
               </dd>
             </div>
             <div v-if="model.event">
-              <dt class="eoc-label">{{ t.community.event.shakemapGrid }}</dt>
+              <dt class="eoc-label">{{ m.event.shakemapGrid }}</dt>
               <dd class="eoc-numeric">
-                {{ model.event.shakemapLabel ?? t.community.event.shakemapPending }}
-                <small>{{ t.community.event.shakemapRevised }}</small>
+                {{ model.event.shakemapLabel ?? m.event.shakemapPending }}
+                <small>{{ m.event.shakemapRevised }}</small>
               </dd>
             </div>
             <div v-if="model.event">
-              <dt class="eoc-label">{{ t.community.event.pager }}</dt>
+              <dt class="eoc-label">{{ m.event.pager }}</dt>
               <dd class="eoc-numeric">
-                {{ model.event.pagerLabel ?? t.community.event.pagerNone }}
-                <small v-if="model.event.pagerLabel">{{ t.community.event.pagerIsRange }}</small>
+                {{ model.event.pagerLabel ?? m.event.pagerNone }}
+                <small v-if="model.event.pagerLabel">{{ m.event.pagerIsRange }}</small>
               </dd>
             </div>
             <div>
@@ -131,31 +170,45 @@ onBeforeUnmount(() => {
         </section>
 
         <template v-if="variant === 'report'">
-          <p class="muted">
-            {{ fillMessage(s.topNote, { shown: reportRows.length, total: model.total }) }}
-          </p>
+          <p v-if="model.scopeNote" class="muted" data-testid="sheet-scope">{{ model.scopeNote }}</p>
           <table class="ranking">
             <thead>
               <tr>
-                <th class="eoc-label">{{ s.columnRank }}</th>
+                <th v-if="has('rank')" class="eoc-label">{{ s.columnRank }}</th>
                 <th class="eoc-label">{{ s.columnDistrict }}</th>
-                <th class="eoc-label">{{ s.columnClass }}</th>
-                <th class="eoc-label num">{{ s.columnScore }}</th>
-                <th v-if="isEvent" class="eoc-label num">{{ s.columnExposed }}</th>
-                <th v-if="isEvent" class="eoc-label">{{ t.community.detail.sphereTitle }}</th>
+                <th v-if="has('department')" class="eoc-label">{{ m.xlsx.department }}</th>
+                <th v-if="has('class')" class="eoc-label">{{ s.columnClass }}</th>
+                <th v-if="has('prio')" class="eoc-label num">{{ s.columnScore }}</th>
+                <template v-if="has('dimensions')">
+                  <th v-for="key in model.dimensionKeys" :key="key" class="eoc-label num">
+                    {{ m.dimensions[key].abbr }}
+                  </th>
+                </template>
+                <th v-if="has('population')" class="eoc-label num">{{ m.xlsx.population }}</th>
+                <th v-if="isEvent && has('exposed')" class="eoc-label num">{{ s.columnExposed }}</th>
+                <th v-if="isEvent && has('sphere')" class="eoc-label">{{ m.detail.sphereTitle }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="row in reportRows" :key="`${row.rank}-${row.name}`">
-                <td class="eoc-numeric">{{ row.rank ?? "—" }}</td>
+                <td v-if="has('rank')" class="eoc-numeric">{{ row.rank ?? "—" }}</td>
                 <td>{{ row.name }}</td>
-                <td>
+                <td v-if="has('department')">{{ row.department ?? "" }}</td>
+                <td v-if="has('class')">
                   <ClassBadge v-if="row.classKey" :alert-class="row.classKey" :mode="model.mode" />
-                  <em v-else>{{ t.community.list.withheld }}</em>
+                  <em v-else>{{ m.list.withheld }}</em>
                 </td>
-                <td class="eoc-numeric num">{{ rowScore(row) }}</td>
-                <td v-if="isEvent" class="eoc-numeric num">{{ rowExposed(row) }}</td>
-                <td v-if="isEvent" class="eoc-numeric small">{{ sphereText(row) }}</td>
+                <td v-if="has('prio')" class="eoc-numeric num">{{ rowScore(row) }}</td>
+                <template v-if="has('dimensions')">
+                  <td v-for="d in row.dimensions" :key="d.key" class="eoc-numeric num">
+                    {{ d.score === null ? "—" : formatScore(d.score, locale) }}
+                  </td>
+                </template>
+                <td v-if="has('population')" class="eoc-numeric num">
+                  {{ row.population === null ? "—" : formatInteger(row.population, locale) }}
+                </td>
+                <td v-if="isEvent && has('exposed')" class="eoc-numeric num">{{ rowExposed(row) }}</td>
+                <td v-if="isEvent && has('sphere')" class="eoc-numeric small">{{ sphereText(row) }}</td>
               </tr>
             </tbody>
           </table>
@@ -182,7 +235,7 @@ onBeforeUnmount(() => {
 
         <footer class="sheet-footer">
           {{ model.modeLabel }} · {{ s.generatedAt }} {{ model.generatedAtLabel }} ·
-          {{ t.community.honesty.attributionLabel }}: {{ model.attribution }}
+          {{ m.honesty.attributionLabel }}: {{ model.attribution }}
         </footer>
       </div>
     </div>

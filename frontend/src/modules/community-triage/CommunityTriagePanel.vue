@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, toRef, watch } from "vue";
 import { useCommunityTriageStore } from "../../stores/useCommunityTriageStore";
-import { fillMessage } from "../../i18n/communityMessages";
+import { communityMessages, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
+import { ElMessage } from "element-plus";
+import ExportDialog from "./ExportDialog.vue";
 import ExportMenu from "./ExportMenu.vue";
 import DistrictDetail from "./DistrictDetail.vue";
 import DistrictRankList from "./DistrictRankList.vue";
@@ -11,7 +13,16 @@ import TriageBreadcrumb from "./TriageBreadcrumb.vue";
 import TriageModeBar from "./TriageModeBar.vue";
 import { departmentPrefix } from "./departments";
 import { buildReportModel, type ReportModel } from "./exportModel";
-import { downloadRankingXlsx } from "./exportXlsx";
+import {
+  buildFileName,
+  hasSavedPrefs,
+  loadPrefs,
+  resolveScope,
+  savePrefs,
+  type ExportPrefs,
+  type ScopeContext,
+} from "./exportPlan";
+import { runExport, type ExportRequest } from "./runExport";
 import { resolveMode } from "./triageModel";
 import { useDistrictFilters } from "./useDistrictFilters";
 
@@ -110,34 +121,108 @@ function onKeydown(event: KeyboardEvent): void {
   else if (level.value === "places") void backToList();
 }
 
-// ---- Exports (read what is loaded; no request is made) ----
-const sheet = ref<{ variant: SheetVariant; model: ReportModel } | null>(null);
+// ---- Export: one dialog, remembered choices, one-click repeat ----
+interface OpenSheet {
+  variant: SheetVariant;
+  model: ReportModel;
+  prefs: ExportPrefs;
+  fileName: string;
+}
+const sheet = ref<OpenSheet | null>(null);
+const exportOpen = ref(false);
 const isExporting = ref(false);
 const exportError = ref<string | null>(null);
+const prefs = ref<ExportPrefs>(loadPrefs(undefined, locale.value));
+/** The document language starts as the console's, whatever was remembered. */
+const livePrefs = computed<ExportPrefs>(() => ({ ...prefs.value, lang: locale.value }));
+const hasSaved = ref(hasSavedPrefs());
+const exportNow = ref(new Date());
+const exportMenu = ref<InstanceType<typeof ExportMenu> | null>(null);
 
-function currentModel(): ReportModel | null {
-  return store.index
-    ? buildReportModel(store.index, t.value.community, locale.value)
-    : null;
+/** Back to the button that opened the dialog, so keyboard focus is never lost. */
+watch(exportOpen, (open, wasOpen) => {
+  if (wasOpen && !open) void nextTick(() => exportMenu.value?.focus());
+});
+
+const dialogT = computed(() => t.value.community.exportDialog);
+
+const scopeContext = computed<ScopeContext>(() => ({
+  filteredCodes: filters.filterActive.value
+    ? new Set(filters.shown.value.map((d) => d.district_code))
+    : null,
+  selectedCode: store.selectedCode ?? null,
+}));
+
+/** Rows are only used to count and select; the document is built again in its own language. */
+const reportRows = computed(() =>
+  store.index ? buildReportModel(store.index, t.value.community, locale.value).rows : [],
+);
+
+function repeatScope() {
+  return resolveScope(store.selectedCode ? "selected" : "filtered", scopeContext.value);
 }
 
-function openSheet(variant: SheetVariant): void {
-  const model = currentModel();
-  if (model) sheet.value = { variant, model };
+/** What the remembered settings would call the file, shown on the repeat button. */
+const repeatFile = computed(() => {
+  if (!hasSaved.value || !store.index) return null;
+  const scope = repeatScope();
+  return buildFileName({
+    mode: mode.value,
+    eventId: store.index.event?.event_id ?? null,
+    lang: locale.value,
+    format: prefs.value.format,
+    scope,
+    topN: prefs.value.topN,
+    districtName: store.selectedDistrict?.district_name ?? null,
+    now: exportNow.value,
+  });
+});
+
+function openExport(): void {
+  exportError.value = null;
+  exportNow.value = new Date();
+  exportOpen.value = true;
 }
 
-async function exportExcel(): Promise<void> {
-  const model = currentModel();
-  if (!model) return;
+async function performExport(request: ExportRequest): Promise<boolean> {
+  if (!store.index) return false;
   isExporting.value = true;
   exportError.value = null;
+  const copy = communityMessages(request.prefs.lang).exportDialog;
   try {
-    await downloadRankingXlsx(model, t.value.community, locale.value);
+    const outcome = await runExport({
+      index: store.index,
+      request,
+      scopeContext: scopeContext.value,
+      selectedName: store.selectedDistrict?.district_name ?? null,
+      now: new Date(),
+    });
+    savePrefs(request.prefs);
+    prefs.value = request.prefs;
+    hasSaved.value = true;
+    exportOpen.value = false;
+    if (outcome.kind === "file") {
+      ElMessage.success({ message: fillMessage(copy.successFile, { file: outcome.fileName }), showClose: true });
+    } else {
+      sheet.value = outcome;
+      ElMessage.success({ message: copy.successSheet, showClose: true });
+    }
+    return true;
   } catch {
-    exportError.value = t.value.community.exports.excelFailed;
+    exportError.value = copy.failure;
+    return false;
   } finally {
     isExporting.value = false;
   }
+}
+
+function submitExport(request: ExportRequest): void {
+  void performExport(request);
+}
+
+async function repeatLast(): Promise<void> {
+  const ok = await performExport({ prefs: livePrefs.value, scope: repeatScope() });
+  if (!ok) ElMessage.error({ message: dialogT.value.failure, showClose: true });
 }
 
 const crumbParent = computed(() => t.value.community.nav.districts);
@@ -171,12 +256,12 @@ const crumbParent = computed(() => t.value.community.nav.districts);
 
       <template v-if="level === 'list'">
         <ExportMenu
+          ref="exportMenu"
           :disabled="!store.index"
           :is-busy="isExporting"
-          :error="exportError"
-          @excel="exportExcel"
-          @report="openSheet('report')"
-          @map="openSheet('map')"
+          :repeat-file="repeatFile"
+          @open="openExport"
+          @repeat="repeatLast"
         />
         <DistrictRankList
           ref="listRef"
@@ -231,10 +316,32 @@ const crumbParent = computed(() => t.value.community.nav.districts);
       />
     </aside>
 
+    <!-- Mounted only while open: a closed dialog costs nothing and leaves no stale overlay -->
+    <ExportDialog
+      v-if="exportOpen"
+      v-model="exportOpen"
+      :prefs="livePrefs"
+      :mode="mode"
+      :rows="reportRows"
+      :scope-context="scopeContext"
+      :selected-name="store.selectedDistrict?.district_name ?? null"
+      :event-id="store.index?.event?.event_id ?? null"
+      :zone-name="zoneName ?? null"
+      :is-busy="isExporting"
+      :error="exportError"
+      :now="exportNow"
+      @submit="submitExport"
+    />
+
     <PrintSheet
       v-if="sheet"
       :model="sheet.model"
       :variant="sheet.variant"
+      :lang="sheet.prefs.lang"
+      :paper="sheet.prefs.paper"
+      :orientation="sheet.variant === 'map' ? sheet.prefs.orientation : 'portrait'"
+      :columns="sheet.prefs.columns"
+      :file-name="sheet.fileName"
       @close="sheet = null"
     />
   </div>

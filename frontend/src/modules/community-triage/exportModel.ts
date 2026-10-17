@@ -5,6 +5,7 @@ import {
   type CommunityMessages,
 } from "../../i18n/communityMessages";
 import type { AppLocale } from "../../i18n/useI18n";
+import { departmentName } from "./departments";
 import { describePager, formatUtcTimestamp } from "./formatters";
 import {
   ALERT_CLASS_ORDER,
@@ -17,6 +18,9 @@ import {
 } from "./triageModel";
 
 export interface ReportRow {
+  /** Internal key for scoping a selection; never printed or exported. */
+  code: string;
+  department: string | null;
   rank: number | null;
   name: string;
   classKey: AlertClassKey | null;
@@ -30,6 +34,8 @@ export interface ReportRow {
 }
 
 export interface ReportEvent {
+  /** Used only to name the file; never printed. */
+  id: string;
   place: string;
   magnitude: number | null;
   latitude: number;
@@ -68,6 +74,8 @@ export interface ReportModel {
   attribution: string;
   total: number;
   rows: ReportRow[];
+  /** Which part of the ranking the rows are, when it is not all of it. */
+  scopeNote: string | null;
 }
 
 function limitationLines(t: CommunityMessages, total: number): string[] {
@@ -86,6 +94,8 @@ function buildRow(
 ): ReportRow {
   if (district.withheld) {
     return {
+      code: district.district_code,
+      department: departmentName(district.district_code),
       rank: null,
       name: district.district_name,
       classKey: null,
@@ -102,6 +112,8 @@ function buildRow(
     district.dimensions.map((d) => [asDimensionKey(d.dimension), d.score] as const),
   );
   return {
+    code: district.district_code,
+    department: departmentName(district.district_code),
     rank: district.rank,
     name: district.district_name,
     classKey: asAlertClass(district.alert_class),
@@ -141,6 +153,7 @@ export function buildReportModel(
     event:
       isEvent && event
         ? {
+            id: event.event_id,
             place: event.place,
             magnitude: event.magnitude,
             latitude: event.latitude,
@@ -162,5 +175,15 @@ export function buildReportModel(
     attribution: DATA_ATTRIBUTION,
     total: index.districts.length,
     rows,
+    scopeNote: null,
   };
+}
+
+/** The same report over a chosen part of the ranking, saying so on its face. */
+export function withScope(
+  model: ReportModel,
+  rows: ReportRow[],
+  scopeNote: string | null,
+): ReportModel {
+  return { ...model, rows, scopeNote };
 }

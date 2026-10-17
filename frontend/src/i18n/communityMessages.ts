@@ -1,4 +1,5 @@
 import type { AlertClassKey, DimensionKey } from "../modules/community-triage/triageModel";
+import { EXPORT_EN, EXPORT_ES, type ExportDialogMessages } from "./communityExportMessages";
 
 /**
  * Copy for the community triage view and its exports.
@@ -133,22 +134,13 @@ export interface CommunityMessages {
     placesBody: string;
     placesOpen: string;
   };
-  exports: {
-    menu: string;
-    excel: string;
-    report: string;
-    map: string;
-    offlineNote: string;
-    excelFailed: string;
-    unavailable: string;
-  };
+  exportDialog: ExportDialogMessages;
   sheet: {
     reportTitle: string;
     mapTitle: string;
     print: string;
     close: string;
     generatedAt: string;
-    topNote: string;
     columnRank: string;
     columnDistrict: string;
     columnClass: string;
@@ -167,6 +159,7 @@ export interface CommunityMessages {
     sheetRanking: string;
     sheetContext: string;
     population: string;
+    department: string;
     maxShaking: string;
     withheldRow: string;
     modeRow: string;
@@ -361,22 +354,13 @@ export const COMMUNITY_ES: CommunityMessages = {
       "Los datos aún no asignan lugares (escuelas, clínicas, albergues) a un distrito. Puedes ver los lugares de la zona de trabajo.",
     placesOpen: "Ver lugares de {zone}",
   },
-  exports: {
-    menu: "Exportar",
-    excel: "Excel (.xlsx)",
-    report: "Informe para imprimir o PDF",
-    map: "Mapa para imprimir",
-    offlineNote: "Se generan en este equipo, sin conexión.",
-    excelFailed: "No se pudo generar el archivo Excel.",
-    unavailable: "Aún no hay un ranking cargado para exportar.",
-  },
+  exportDialog: EXPORT_ES,
   sheet: {
     reportTitle: "Informe de priorización de territorios",
     mapTitle: "Mapa de distritos prioritarios",
     print: "Imprimir / guardar PDF",
     close: "Cerrar",
     generatedAt: "Generado",
-    topNote: "Primeros {shown} de {total} distritos. La lista completa está en el Excel.",
     columnRank: "Puesto",
     columnDistrict: "Distrito",
     columnClass: "Clase",
@@ -396,6 +380,7 @@ export const COMMUNITY_ES: CommunityMessages = {
     sheetRanking: "Ranking",
     sheetContext: "Contexto y límites",
     population: "Población",
+    department: "Departamento",
     maxShaking: "Sacudida máx.",
     withheldRow: "Reservado",
     modeRow: "Modo",
@@ -584,22 +569,13 @@ export const COMMUNITY_EN: CommunityMessages = {
       "The data does not yet assign places (schools, clinics, shelters) to a district. You can see the places of the work zone.",
     placesOpen: "See places in {zone}",
   },
-  exports: {
-    menu: "Export",
-    excel: "Excel (.xlsx)",
-    report: "Printable report / PDF",
-    map: "Printable map",
-    offlineNote: "Generated on this device, no connection needed.",
-    excelFailed: "Could not generate the Excel file.",
-    unavailable: "No ranking is loaded yet, so there is nothing to export.",
-  },
+  exportDialog: EXPORT_EN,
   sheet: {
     reportTitle: "Territory prioritization report",
     mapTitle: "Priority districts map",
     print: "Print / save as PDF",
     close: "Close",
     generatedAt: "Generated",
-    topNote: "First {shown} of {total} districts. The full list is in the Excel export.",
     columnRank: "Rank",
     columnDistrict: "District",
     columnClass: "Class",
@@ -619,6 +595,7 @@ export const COMMUNITY_EN: CommunityMessages = {
     sheetRanking: "Ranking",
     sheetContext: "Context and limits",
     population: "Population",
+    department: "Department",
     maxShaking: "Peak shaking",
     withheldRow: "Withheld",
     modeRow: "Mode",
@@ -644,3 +621,8 @@ export function fillMessage(
 
 /** Statement of provenance every export and view carries. */
 export const DATA_ATTRIBUTION = "BCR/ONEC, CPV 2024";
+
+/** Copy for a document language, which an export may choose independently of the UI. */
+export function communityMessages(lang: "es" | "en"): CommunityMessages {
+  return lang === "es" ? COMMUNITY_ES : COMMUNITY_EN;
+}

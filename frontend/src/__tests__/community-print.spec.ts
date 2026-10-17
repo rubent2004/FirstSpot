@@ -36,10 +36,18 @@ async function mountPanel(eventMode: boolean) {
   return wrapper;
 }
 
-function buttonByText(wrapper: ReturnType<typeof mount>, text: string) {
-  const found = wrapper.findAll("button").find((b) => b.text().includes(text));
-  if (!found) throw new Error(`no button "${text}"`);
-  return found;
+/** The export flow: open the dialog from the list header, pick a format, submit the form. */
+async function exportAs(wrapper: ReturnType<typeof mount>, formatLabel: string): Promise<void> {
+  await wrapper.findAll("button").find((b) => b.text() === "Export")!.trigger("click");
+  await flushPromises();
+  const radio = Array.from(
+    document.body.querySelectorAll<HTMLInputElement>('input[name="export-format"]'),
+  ).find((r) => r.closest("label")?.textContent?.includes(formatLabel));
+  if (!radio) throw new Error(`no export format "${formatLabel}"`);
+  radio.click();
+  await flushPromises();
+  document.body.querySelector('[role="dialog"] form')!.dispatchEvent(new Event("submit", { cancelable: true }));
+  await flushPromises();
 }
 
 describe("exports from the triage panel", () => {
@@ -62,8 +70,7 @@ describe("exports from the triage panel", () => {
 
   it("opens a printable report that carries mode, event, ShakeMap time, limits and attribution", async () => {
     const wrapper = await mountPanel(true);
-    await buttonByText(wrapper, "Printable report").trigger("click");
-    await flushPromises();
+    await exportAs(wrapper, "National district ranking");
 
     const sheet = document.body.querySelector('[data-testid="print-sheet"]');
     expect(sheet).not.toBeNull();
@@ -81,8 +88,7 @@ describe("exports from the triage panel", () => {
 
   it("prints nothing the API withheld and no internal identifiers", async () => {
     const wrapper = await mountPanel(true);
-    await buttonByText(wrapper, "Printable report").trigger("click");
-    await flushPromises();
+    await exportAs(wrapper, "National district ranking");
     const html = document.body.querySelector('[data-testid="print-sheet"]')!.innerHTML;
     expect(html).not.toContain(String(REDACTED_LEAK));
     expect(html).not.toContain("777,777");
@@ -93,8 +99,7 @@ describe("exports from the triage panel", () => {
 
   it("states baseline mode on a baseline report", async () => {
     const wrapper = await mountPanel(false);
-    await buttonByText(wrapper, "Printable report").trigger("click");
-    await flushPromises();
+    await exportAs(wrapper, "National district ranking");
     expect(document.body.querySelector('[data-testid="sheet-mode"]')!.textContent).toBe(
       "Baseline",
     );
@@ -102,8 +107,7 @@ describe("exports from the triage panel", () => {
 
   it("opens the map sheet with legend, mode and a notice that no polygons exist", async () => {
     const wrapper = await mountPanel(true);
-    await buttonByText(wrapper, "Printable map").trigger("click");
-    await flushPromises();
+    await exportAs(wrapper, "Map of the current view");
     expect(document.body.dataset.printSheet).toBe("map");
     const sheet = document.body.querySelector('[data-testid="print-sheet"]')!;
     expect(sheet.querySelector('[data-testid="print-map"]')).not.toBeNull();
@@ -115,8 +119,7 @@ describe("exports from the triage panel", () => {
 
   it("closing the sheet removes it and the print flag", async () => {
     const wrapper = await mountPanel(true);
-    await buttonByText(wrapper, "Printable report").trigger("click");
-    await flushPromises();
+    await exportAs(wrapper, "National district ranking");
     const close = [...document.body.querySelectorAll("button")].find(
       (b) => b.textContent?.trim() === "Close",
     )!;
@@ -129,8 +132,7 @@ describe("exports from the triage panel", () => {
   it("downloads the workbook from loaded data without calling the API again", async () => {
     const wrapper = await mountPanel(true);
     const calls = vi.mocked(apiClient.getPrioIndex).mock.calls.length;
-    await buttonByText(wrapper, "Excel").trigger("click");
-    await flushPromises();
+    await exportAs(wrapper, "Excel");
     expect(downloadRankingXlsx).toHaveBeenCalledTimes(1);
     expect(vi.mocked(apiClient.getPrioIndex).mock.calls.length).toBe(calls);
   });
