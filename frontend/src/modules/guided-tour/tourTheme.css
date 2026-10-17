@@ -69,6 +69,16 @@
   background-color: var(--eoc-bg-hover);
 }
 
+/* The dialog takes the initial focus (see tourController); it needs no ring. */
+.driver-popover.firstspot-tour:focus {
+  outline: none;
+}
+
+.firstspot-tour .driver-popover-close-btn:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
 .firstspot-tour .driver-popover-footer-btn:focus-visible,
 .firstspot-tour .driver-popover-close-btn:focus-visible {
   outline: 2px solid var(--eoc-border-focus);

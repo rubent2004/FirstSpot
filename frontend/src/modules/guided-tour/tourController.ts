@@ -1,7 +1,7 @@
 import type { Config, Driver, DriveStep, PopoverDOM } from "driver.js";
 import type { TourMessages } from "../../i18n/tourMessages";
 import type { TourPort, TourSnapshot } from "./tourAppPort";
-import { findAnchor, planStep, type PlannedStep, type TourStepDef } from "./tourSteps";
+import { anchorSkip, findAnchor, planStep, type PlannedStep, type TourStepDef } from "./tourSteps";
 
 /** The part of a Driver.js instance the tour uses; a fake stands in for it in tests. */
 export type DriverLike = Pick<Driver, "drive" | "moveTo" | "destroy" | "isActive" | "refresh">;
@@ -54,7 +54,7 @@ export function createTourController(options: TourControllerOptions): TourContro
   async function resolve(def: TourStepDef): Promise<PlannedStep> {
     const deadline = Date.now() + anchorTimeoutMs;
     let planned = planStep(def, port.meets, (anchor) => findAnchor(anchor) !== null);
-    while (planned.skip === "anchor" || planned.skip === "sphere") {
+    while (planned.skip !== null && planned.skip === anchorSkip(def)) {
       if (Date.now() >= deadline) break;
       await wait(50);
       planned = planStep(def, port.meets, (anchor) => findAnchor(anchor) !== null);
@@ -88,7 +88,21 @@ export function createTourController(options: TourControllerOptions): TourContro
     }
   }
 
+  /**
+   * Driver.js focuses the first button right after rendering, which is the
+   * close button: a projected tour would open every step with a focus ring on
+   * ×. Focus the dialog itself instead; Tab still reaches every button, and
+   * their :focus-visible ring still shows for real keyboard focus.
+   */
+  function focusDialog(wrapper: HTMLElement): void {
+    wrapper.tabIndex = -1;
+    queueMicrotask(() => {
+      if (wrapper.isConnected) wrapper.focus({ preventScroll: true });
+    });
+  }
+
   function renderPopover(popover: PopoverDOM): void {
+    focusDialog(popover.wrapper);
     if (!plan) return;
     popover.wrapper.classList.toggle("is-skipped", plan.skip !== null);
     const copy = messages();
