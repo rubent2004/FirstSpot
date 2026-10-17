@@ -8,6 +8,7 @@ import {
   ElDropdown, ElDropdownItem, ElDropdownMenu, ElInput, ElInputNumber, ElOption,
   ElRadioButton, ElRadioGroup, ElSelect, ElSlider, ElSwitch,
 } from "element-plus";
+import { PHONE_QUERY } from "../composables/useIsPhone";
 import type { InstitutionAccountRead, PredefinedZoneRead } from "../api/client";
 import type { PlaceFilters } from "../stores/usePrioritizationStore";
 import { useI18n } from "../i18n/useI18n";
@@ -60,13 +61,16 @@ const activeTab = ref(0);
 const RIBBON_KEY = "firstspot.ribbon.v1";
 function loadRibbonExpanded(): boolean {
   try {
-    const parsed = JSON.parse(window.localStorage?.getItem(RIBBON_KEY) ?? "null") as
-      | { version?: number; collapsed?: unknown }
-      | null;
-    return !(parsed?.version === 1 && parsed.collapsed === true);
+    const raw = window.localStorage?.getItem(RIBBON_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { version?: number; collapsed?: unknown };
+      if (parsed?.version === 1 && typeof parsed.collapsed === "boolean") return !parsed.collapsed;
+    }
   } catch {
-    return true;
+    // fall through to the default
   }
+  // Nothing remembered: a phone starts collapsed so the map and the list get the screen.
+  return !window.matchMedia?.(PHONE_QUERY).matches;
 }
 const ribbonExpanded = ref(loadRibbonExpanded());
 watch(ribbonExpanded, (expanded) => {
@@ -773,6 +777,13 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   align-items: stretch;
+  /* On a narrow screen the tabs scroll sideways instead of the last ones vanishing */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.geo-tab-list::-webkit-scrollbar {
+  display: none;
 }
 
 .geo-project-tab {
@@ -812,6 +823,7 @@ onBeforeUnmount(() => {
 }
 
 .geo-tab {
+  flex: none;
   display: flex;
   align-items: center;
   padding: 0 12px;

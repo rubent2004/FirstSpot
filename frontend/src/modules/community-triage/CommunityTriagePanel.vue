@@ -4,8 +4,10 @@ import type { DistrictPrioRead } from "../../api/client";
 import { useCommunityTriageStore } from "../../stores/useCommunityTriageStore";
 import { communityMessages, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
-import { ElMessage } from "element-plus";
+import { ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMessage } from "element-plus";
+import { useIsPhone } from "../../composables/useIsPhone";
 import ExportDialog from "./ExportDialog.vue";
+import HonestyContent from "./HonestyContent.vue";
 import ExportMenu from "./ExportMenu.vue";
 import DistrictDetail from "./DistrictDetail.vue";
 import DistrictRankList from "./DistrictRankList.vue";
@@ -47,6 +49,7 @@ const props = defineProps<{
   getMapSnapshot?: () => MapSnapshot | null;
 }>();
 const emit = defineEmits<{
+  (e: "open-feeds"): void;
   (e: "level-change", level: TriageLevel): void;
   (e: "detail-change", open: boolean): void;
 }>();
@@ -66,6 +69,18 @@ const filters = useDistrictFilters(
   mode,
   locale,
 );
+
+// ---- Phone: the panel is a bottom sheet that peeks the list over the map ----
+const isPhone = useIsPhone();
+const sheetExpanded = ref(false);
+const limitsOpen = ref(false);
+
+function onMenu(command: string): void {
+  if (command === "export") openExport();
+  else if (command === "repeat") void repeatLast();
+  else if (command === "limits") limitsOpen.value = true;
+  else if (command === "feeds") emit("open-feeds");
+}
 
 // ---- Hierarchy: districts (overview) -> district (detail) -> zone places ----
 const placesOpen = ref(false);
@@ -277,9 +292,44 @@ const crumbParent = computed(() => t.value.community.nav.districts);
 
 <template>
   <div class="triage-shell" :data-level="level" @keydown="onKeydown">
-    <section class="triage-panel">
+    <section
+      class="triage-panel"
+      :class="{ 'is-phone': isPhone, 'is-expanded': isPhone && sheetExpanded }"
+    >
+      <button
+        v-if="isPhone"
+        type="button"
+        class="sheet-handle"
+        :aria-expanded="sheetExpanded"
+        :aria-label="sheetExpanded ? t.community.nav.collapseList : t.community.nav.expandList"
+        @click="sheetExpanded = !sheetExpanded"
+      >
+        <span class="grip" aria-hidden="true"></span>
+      </button>
       <header class="head">
         <h2 class="title">{{ t.community.nav.label }}</h2>
+        <ElDropdown v-if="isPhone" trigger="click" @command="onMenu">
+          <button type="button" class="more-btn" aria-haspopup="menu" :aria-label="t.community.nav.more">
+            <span aria-hidden="true">⋯</span>
+          </button>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem command="export" :disabled="!store.index">{{ dialogT.open }}</ElDropdownItem>
+              <ElDropdownItem v-if="repeatFile" command="repeat">{{ dialogT.repeat }}</ElDropdownItem>
+              <ElDropdownItem command="limits">{{ t.community.honesty.more }}</ElDropdownItem>
+              <ElDropdownItem command="feeds">{{ t.community.nav.feeds }}</ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
+        <ExportMenu
+          v-else
+          ref="exportMenu"
+          :disabled="!store.index"
+          :is-busy="isExporting"
+          :repeat-file="repeatFile"
+          @open="openExport"
+          @repeat="repeatLast"
+        />
       </header>
 
       <TriageBreadcrumb
@@ -301,14 +351,6 @@ const crumbParent = computed(() => t.value.community.nav.districts);
       <p class="sr-only" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
 
       <template v-if="level === 'list'">
-        <ExportMenu
-          ref="exportMenu"
-          :disabled="!store.index"
-          :is-busy="isExporting"
-          :repeat-file="repeatFile"
-          @open="openExport"
-          @repeat="repeatLast"
-        />
         <DistrictRankList
           ref="listRef"
           v-model:search="filters.search.value"
@@ -325,6 +367,7 @@ const crumbParent = computed(() => t.value.community.nav.districts);
           :scope-available="filters.scopeAvailable.value"
           :department="zoneDepartment ?? null"
           :scope="filters.effectiveScope.value"
+          :compact="isPhone"
           @select="openDistrict"
           @retry="store.loadIndex"
           @update:class-filter="filters.setClass"
@@ -361,6 +404,17 @@ const crumbParent = computed(() => t.value.community.nav.districts);
         @close="closeDetail"
       />
     </aside>
+
+    <ElDialog
+      v-if="limitsOpen"
+      v-model="limitsOpen"
+      :title="t.community.honesty.more"
+      width="min(420px, 94vw)"
+      align-center
+      append-to-body
+    >
+      <HonestyContent :district-count="store.districts.length" />
+    </ElDialog>
 
     <!-- Mounted only while open: a closed dialog costs nothing and leaves no stale overlay -->
     <ExportDialog
@@ -423,8 +477,10 @@ const crumbParent = computed(() => t.value.community.nav.districts);
 }
 .head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--eoc-gap-x);
+  flex-wrap: wrap;
 }
 .title {
   margin: 0;
@@ -489,9 +545,57 @@ const crumbParent = computed(() => t.value.community.nav.districts);
     width: 100vw;
     border-left: 0;
   }
-  .triage-panel {
-    height: auto;
-    min-height: 100%;
-  }
+}
+
+/* Phone: the panel floats over the map as a bottom sheet that peeks about three rows */
+.sheet-handle {
+  flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  min-height: var(--eoc-target-primary);
+  margin: 0 calc(var(--eoc-pad-panel) * -1);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.sheet-handle .grip {
+  width: 40px;
+  height: 4px;
+  border-radius: var(--eoc-radius-pill);
+  background: var(--eoc-border-strong);
+}
+.more-btn {
+  min-width: var(--eoc-target-primary);
+  min-height: var(--eoc-target-primary);
+  background: transparent;
+  color: var(--eoc-text-primary);
+  border: var(--eoc-border-width) solid var(--eoc-border-strong);
+  border-radius: var(--eoc-radius-control);
+  font: inherit;
+  font-size: var(--eoc-fs-heading);
+  cursor: pointer;
+}
+.triage-panel.is-phone {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--eoc-statusbar-h);
+  z-index: 900;
+  height: 300px;
+  max-height: calc(100dvh - var(--eoc-statusbar-h) - var(--eoc-header-h));
+  border-left: 0;
+  border-top: var(--eoc-border-width) solid var(--eoc-border-strong);
+  box-shadow: var(--eoc-shadow-popup);
+  overflow: hidden;
+  padding-top: 0;
+}
+.triage-panel.is-phone.is-expanded {
+  height: 88dvh;
+}
+/* Peeking: only the mode and the first rows; search, filters and scope open with the sheet */
+.triage-panel.is-phone:not(.is-expanded) :deep(.controls),
+.triage-panel.is-phone:not(.is-expanded) .places-link {
+  display: none;
 }
 </style>

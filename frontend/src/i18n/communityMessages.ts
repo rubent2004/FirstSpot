@@ -14,6 +14,10 @@ export interface CommunityMessages {
     places: string;
     breadcrumb: string;
     closeDetail: string;
+    more: string;
+    expandList: string;
+    collapseList: string;
+    feeds: string;
     placesIn: string;
     openZonePlaces: string;
     announceDetail: string;
@@ -176,6 +180,10 @@ export const COMMUNITY_ES: CommunityMessages = {
     places: "Lugares",
     breadcrumb: "Dónde estás",
     closeDetail: "Cerrar",
+    more: "Más acciones",
+    expandList: "Ampliar la lista",
+    collapseList: "Reducir la lista",
+    feeds: "Fuentes de datos",
     placesIn: "Lugares en {zone}",
     openZonePlaces: "Ver lugares de {zone}",
     announceDetail: "Detalle abierto: {name}",
@@ -392,6 +400,10 @@ export const COMMUNITY_EN: CommunityMessages = {
     places: "Places",
     breadcrumb: "Where you are",
     closeDetail: "Close",
+    more: "More actions",
+    expandList: "Expand the list",
+    collapseList: "Reduce the list",
+    feeds: "Data sources",
     placesIn: "Places in {zone}",
     openZonePlaces: "See places in {zone}",
     announceDetail: "Detail opened: {name}",

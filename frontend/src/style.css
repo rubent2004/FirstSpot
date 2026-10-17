@@ -545,9 +545,14 @@ table td.eoc-numeric {
   --el-segmented-item-selected-disabled-bg-color: var(--eoc-accent);
   border: var(--eoc-border-width) solid var(--eoc-border-strong);
 }
+/* Each segment is as wide as its words: a translated label must never be clipped */
+.el-segmented__item {
+  flex: 0 0 auto;
+}
 .el-segmented__item-label {
   overflow: visible;
   text-overflow: clip;
+  white-space: nowrap;
 }
 
 /* --------------------------------------------------------------------------

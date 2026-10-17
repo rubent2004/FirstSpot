@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { ElAlert, ElConfigProvider } from "element-plus";
+import { ElAlert, ElConfigProvider, ElDialog } from "element-plus";
 import FeedsStatusChip from "./modules/sync-controls/FeedsStatusChip.vue";
 import HazardTelemetryStrip from "./modules/sync-controls/HazardTelemetryStrip.vue";
 import { feedStatusKey, needsAttention } from "./modules/sync-controls/feedStatus";
@@ -49,6 +49,7 @@ const feedsNeedAttention = computed(() =>
 /** District ranking is the overview; the district detail opens beside it on demand. */
 const triageLevel = ref<TriageLevel>("list");
 const detailOpen = ref(false);
+const feedsDialogOpen = ref(false);
 /** A custom radius is not a predefined zone, so it never scopes the district list. */
 const zoneName = computed(() =>
   store.customRadiusMode.enabled ? null : (store.currentZone?.name ?? null),
@@ -287,6 +288,7 @@ function handleFitMap(): void {
           :get-map-snapshot="captureMapSnapshot"
           @level-change="triageLevel = $event"
           @detail-change="detailOpen = $event"
+          @open-feeds="feedsDialogOpen = true"
         >
           <template #places>
             <PriorityQueuePanel
@@ -330,6 +332,25 @@ function handleFitMap(): void {
         @request-access="showInstitutionAccess = true"
       />
       <InstitutionAccessDialog v-model:visible="showInstitutionAccess" />
+      <ElDialog
+        v-if="feedsDialogOpen"
+        v-model="feedsDialogOpen"
+        :title="t.community.nav.feeds"
+        width="min(460px, 94vw)"
+        align-center
+        append-to-body
+      >
+        <HazardTelemetryStrip
+          stacked
+          :active-hazards="store.activeHazards"
+          :scenario="store.hazardScenario"
+          :last-checked-at="store.hazardLastCheckedAt"
+          :is-refreshing="store.isRefreshingHazards"
+          :refresh-error="store.hazardRefreshError"
+          @change-scenario="handleScenarioChange"
+          @fly-to-coordinates="handleFlyToCoordinates"
+        />
+      </ElDialog>
     </div>
   </ElConfigProvider>
 </template>
@@ -416,8 +437,14 @@ function handleFitMap(): void {
 }
 
 @media (max-width: 700px) {
+  /* The list is a bottom sheet over the map, so the map takes the whole workspace */
   .dashboard-workspace,
-  .dashboard-workspace.has-detail { grid-template-areas: "map" "queue"; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(260px, 60dvh) minmax(240px, 1fr); overflow-y: auto; }
-  .geo-statusbar { overflow-x: auto; }
+  .dashboard-workspace.has-detail { grid-template-areas: "map"; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+  /* Keep only the feeds chip: the popover must not be clipped by a scrolling footer */
+  .geo-statusbar { overflow: visible; }
+  .geo-statusbar .status-separator,
+  .geo-statusbar .status-stat,
+  .geo-statusbar .status-coordinates,
+  .geo-statusbar > span:not(.status-spacer):not(.info) { display: none; }
 }
 </style>

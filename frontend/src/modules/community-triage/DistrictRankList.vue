@@ -32,6 +32,8 @@ const props = defineProps<{
   scopeAvailable: boolean;
   department: string | null;
   scope: ScopeKey;
+  /** Phone layout: the limits live in the actions menu instead of beside the score. */
+  compact?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -227,7 +229,7 @@ defineExpose({
         <span>{{ c.list.columnDistrict }}</span>
         <span class="score-head">
           {{ c.list.columnScore }}
-          <HonestyNotice :district-count="nationalTotal" />
+          <HonestyNotice v-if="!compact" :district-count="nationalTotal" />
         </span>
       </div>
 
@@ -321,6 +323,9 @@ defineExpose({
 }
 .levels {
   align-self: stretch;
+  /* Narrow screens scroll the legend sideways instead of clipping a level */
+  max-width: 100%;
+  overflow-x: auto;
   --el-border-radius-base: var(--eoc-radius-control);
 }
 .level {
@@ -370,6 +375,8 @@ defineExpose({
   cursor: pointer;
 }
 .rows {
+  /* A focused row must never hide under the sticky group heading (WCAG 2.4.11) */
+  scroll-padding-top: var(--eoc-target-min);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
