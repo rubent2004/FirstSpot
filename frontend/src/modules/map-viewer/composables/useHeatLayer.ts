@@ -71,11 +71,14 @@ export function useHeatLayer(options: UseHeatLayerOptions) {
       if (heatLayer) {
         map.removeLayer(heatLayer);
       }
+      // blur was 22 against radius 34 — two thirds of every point was
+      // diffusion, which read as an out-of-focus smear rather than a density
+      // surface. Tightening it keeps concentrations legible as shapes.
       heatLayer = heatFactory(tuples, {
-        radius: 34,
-        blur: 22,
+        radius: 28,
+        blur: 14,
         maxZoom: 16,
-        minOpacity: 0.38,
+        minOpacity: 0.22,
         gradient: HEAT_GRADIENT_STOPS,
       });
       heatLayer.addTo(map);

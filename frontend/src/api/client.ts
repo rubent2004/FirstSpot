@@ -164,12 +164,27 @@ export const GROUP_LABELS: Record<VulnerabilityGroup, string> = {
   concurrency: "High Concurrency",
 };
 
+/**
+ * Categorical palette for vulnerability groups.
+ *
+ * These identify *what kind of place* this is. They must never reuse the
+ * severity ramp (red / amber / green) or the operational accent (blue), or a
+ * red pin becomes ambiguous between "this is a health facility" and "this is
+ * critical" — two different facts an operator must not have to disambiguate.
+ *
+ * Four desaturated hues from opposite sides of the wheel: teal, terracotta,
+ * violet and slate. Literals rather than tokens because Leaflet paints these
+ * onto a canvas, which cannot resolve CSS custom properties.
+ */
 export const GROUP_COLORS: Record<VulnerabilityGroup, string> = {
-  health: "#ef4444",
-  shelter: "#f97316",
-  education: "#eab308",
-  concurrency: "#3b82f6",
+  health: "#3f8f85",
+  shelter: "#b06a4a",
+  education: "#7d6fa8",
+  concurrency: "#5f7a94",
 };
+
+/** Neutral fallback for an unrecognised group — never a severity colour. */
+export const GROUP_COLOR_FALLBACK = "#6e7884";
 
 export const STATUS_LABELS: Record<AttentionStatus, string> = {
   pending: "Pending",

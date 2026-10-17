@@ -1,6 +1,7 @@
 import L from "leaflet";
 import {
   GROUP_COLORS,
+  GROUP_COLOR_FALLBACK,
   type PlaceCategory,
   type PlaceRead,
 } from "../../../api/client";
@@ -79,7 +80,7 @@ export function useMapMarkers(options: UseMapMarkersOptions) {
   function renderSinglePlaceMarker(place: PlaceRead): void {
     if (!markersGroup) return;
     const isSelected = options.selectedPlace()?.id === place.id;
-    const fillColor = GROUP_COLORS[place.vulnerability_group] ?? "#ef4444";
+    const fillColor = GROUP_COLORS[place.vulnerability_group] ?? GROUP_COLOR_FALLBACK;
     const statusRing = STATUS_RING[place.attention_status];
     const isCriticalPending =
       place.urgency_level >= 4 && place.attention_status !== "attended";

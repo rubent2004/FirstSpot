@@ -35,10 +35,21 @@ export const ACCENT_HEX = "#5b8df6";
  * rule in VulnerabilityHeatmapCanvas.vue mirrors these stops literally: the
  * legend is only honest while both ramps hold the same values.
  */
+/**
+ * Heat ramp, mirrored from the semantic tokens rather than the full spectrum.
+ *
+ * A five-colour rainbow (blue -> cyan -> yellow -> orange -> red) was the only
+ * saturated element left on a deliberately muted basemap, so it dominated the
+ * view while communicating nothing: cyan has no meaning in this system.
+ *
+ * The ramp now runs amber -> red, matching --eoc-warning and --eoc-critical,
+ * and low-density areas fade toward transparency so only real concentration
+ * draws the eye. Values are literals because leaflet.heat bakes them into a
+ * canvas gradient, which cannot resolve CSS custom properties.
+ */
 export const HEAT_GRADIENT_STOPS: Record<number, string> = {
-  0.2: "#3b82f6",
-  0.45: "#06b6d4",
-  0.65: "#eab308",
-  0.85: "#f97316",
-  1.0: "#ef4444",
+  0.35: "rgba(242, 184, 72, 0.45)",
+  0.6: "#f2b848",
+  0.8: "#e8833c",
+  1.0: "#f06a6a",
 };
