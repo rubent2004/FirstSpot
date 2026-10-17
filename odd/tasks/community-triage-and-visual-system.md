@@ -636,9 +636,12 @@ inversion cannot be absorbed silently.
   risk" (Antiguo Cuscatlan LCC=0 so PRIO=0 in any event); ShakeMap contours
   understate peak MMI by up to 0.5; earthquake only (flood/GDACS is a declared
   gap); never casualty counts.
-- [ ] **C5** Frontend community triage view: ranked district list, DGPC color
-  classes, drill-down to places, uncertainty labeling.
-- [ ] **C6** Exports: Excel (district ranking + Sphere needs), PDF report and a
+- [x] **C5** Frontend community triage view. **Commits `e875280`, `a2b238c`.**
+  104 tests pass. No district choropleth: the API exposes no district geometry
+  or centroid, so districts are a ranked list plus class filters. Not yet
+  looked at in a browser.
+- [x] **C6** Exports (commits `a30b26c`, `22b749a`; `write-excel-file` in a
+  lazy 71 KB chunk, PDF via print stylesheet). Excel (district ranking + Sphere needs), PDF report and a
   printable map of priority districts. Client-side, no server round trip.
 
 ### Phase D — Voluntary location
