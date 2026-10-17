@@ -930,6 +930,129 @@
           }
         }
       }
+    },
+    "/api/v1/prioritization/vulnerability/districts": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Rank every district by the PRIO-SV Vulnerability dimension",
+        "description": "Rank the 262 districts by the Vulnerability dimension of PRIO-SV.\n\nThe score is the equally weighted geometric mean of two sub-dimensions,\neach normalised by the CDC/ATSDR SVI 2022 percentile method with equal\nweights at variable level and no PCA. It is a **relative rank among\nSalvadoran districts** and nothing else.\n\nThe response carries the declared data gaps, because half of this dimension\nis a measurement and half is a proxy: the vulnerable-groups sub-dimension\nrests on five measured district rates, while the socioeconomic\nsub-dimension rests on a single territorial proxy, since the ingested\ncorpus publishes no CDC socioeconomic variable at district level and the\nconstruction-material tables were not ingested at all.",
+        "operationId": "listDistrictVulnerability",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VulnerabilityRankingRead"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/vulnerability/population-units": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Apply the district Vulnerability score to the DEGURBA polygons",
+        "description": "Attribute each district's Vulnerability score to its DEGURBA sub-districts.\n\nThe score is **measured at district level** and attributed to the finer\npolygon, which assumes vulnerability is uniform within the district. That is\nthe same assumption place exposure already makes when it applies district\nvulnerable-group rates to a DEGURBA population, and it is returned with the\nresult because the figure cannot be read without it.\n\nNothing here is measured at sub-district level: a DEGURBA polygon has no age\npyramid, no disability count and no household composition of its own.",
+        "operationId": "listPopulationUnitVulnerability",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 6,
+                  "maxLength": 6
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Restrict the result to one six-character district code.",
+              "title": "District Code"
+            },
+            "description": "Restrict the result to one six-character district code."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PopulationUnitVulnerabilityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prioritization/vulnerability/districts/{district_code}": {
+      "get": {
+        "tags": [
+          "prioritization"
+        ],
+        "summary": "Retrieve every variable behind one district's Vulnerability score",
+        "description": "Take one district's Vulnerability score apart into the variables behind it.\n\nReturns every declared variable's raw estimate (``E``), rate (``EP``) and\npercentile rank (``EPL``), each sub-dimension's percentile sum (``SPL``) and\nrank (``RPL``), both composition rules, and every withheld cell with the\nbound on what its absence can cost. A score nobody can take apart cannot be\ndefended in front of an emergency committee or a jury, which is the whole\nreason this endpoint exists.",
+        "operationId": "getDistrictVulnerabilityAudit",
+        "parameters": [
+          {
+            "name": "district_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 6,
+              "description": "Six-character DIGESTYC/BCR-CNR district code.",
+              "title": "District Code"
+            },
+            "description": "Six-character DIGESTYC/BCR-CNR district code."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistrictVulnerabilityAuditRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1037,6 +1160,339 @@
         ],
         "title": "DashboardKPIsRead",
         "description": "Aggregated operational KPIs for the dashboard header and analytics."
+      },
+      "DeclaredGapRead": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "description": "The variable or table that is unavailable."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why it is unavailable, with its evidence."
+          },
+          "consequence": {
+            "type": "string",
+            "title": "Consequence",
+            "description": "What its absence does to the published score."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "reason",
+          "consequence"
+        ],
+        "title": "DeclaredGapRead",
+        "description": "A variable the index cannot carry, with the reason and what it costs."
+      },
+      "DistrictVulnerabilityAuditRead": {
+        "properties": {
+          "district_code": {
+            "type": "string",
+            "title": "District Code",
+            "description": "Six-character DIGESTYC/BCR-CNR code."
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name",
+            "description": "Published district name."
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population",
+            "description": "Published resident population, or null when withheld."
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "1 is the most vulnerable district. Tied scores share a rank; a district with no score carries none."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The V dimension score, 0-10, or null when withheld."
+          },
+          "cdc_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdc Score",
+            "description": "CDC's own cross-theme composition (RPL_THEMES rescaled to 0-10), published beside the INFORM geometric mean as an audit cross-check."
+          },
+          "theme_percentile_sum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Sum",
+            "description": "CDC step SPL_THEMES: sum of the two theme ranks."
+          },
+          "theme_percentile_rank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Rank",
+            "description": "CDC step RPL_THEMES: percentile rank of that sum."
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityThemeRead"
+            },
+            "type": "array",
+            "title": "Themes",
+            "description": "The two sub-dimensions, each with its own rank and score."
+          },
+          "inputs_incomplete": {
+            "type": "boolean",
+            "title": "Inputs Incomplete",
+            "description": "True when any published estimate is a lower bound."
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld",
+            "description": "True when no score is published for this district."
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason",
+            "description": "Why no score is published."
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityVariableRead"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "Every declared variable's E, EP and EPL for this district."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/VulnerabilityMethodologyRead",
+            "description": "The method this score was produced by."
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/DeclaredGapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps",
+            "description": "Variables the index cannot carry, with their consequences."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Census attribution."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "What this score is not."
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When the score was computed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "cdc_score",
+          "theme_percentile_sum",
+          "theme_percentile_rank",
+          "themes",
+          "inputs_incomplete",
+          "withheld",
+          "variables",
+          "methodology",
+          "declared_gaps",
+          "source",
+          "disclaimer",
+          "computed_at"
+        ],
+        "title": "DistrictVulnerabilityAuditRead",
+        "description": "One district's V score with every variable behind it."
+      },
+      "DistrictVulnerabilityRead": {
+        "properties": {
+          "district_code": {
+            "type": "string",
+            "title": "District Code",
+            "description": "Six-character DIGESTYC/BCR-CNR code."
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name",
+            "description": "Published district name."
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population",
+            "description": "Published resident population, or null when withheld."
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "1 is the most vulnerable district. Tied scores share a rank; a district with no score carries none."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The V dimension score, 0-10, or null when withheld."
+          },
+          "cdc_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdc Score",
+            "description": "CDC's own cross-theme composition (RPL_THEMES rescaled to 0-10), published beside the INFORM geometric mean as an audit cross-check."
+          },
+          "theme_percentile_sum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Sum",
+            "description": "CDC step SPL_THEMES: sum of the two theme ranks."
+          },
+          "theme_percentile_rank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme Percentile Rank",
+            "description": "CDC step RPL_THEMES: percentile rank of that sum."
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityThemeRead"
+            },
+            "type": "array",
+            "title": "Themes",
+            "description": "The two sub-dimensions, each with its own rank and score."
+          },
+          "inputs_incomplete": {
+            "type": "boolean",
+            "title": "Inputs Incomplete",
+            "description": "True when any published estimate is a lower bound."
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld",
+            "description": "True when no score is published for this district."
+          },
+          "withheld_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withheld Reason",
+            "description": "Why no score is published."
+          }
+        },
+        "type": "object",
+        "required": [
+          "district_code",
+          "district_name",
+          "population",
+          "rank",
+          "score",
+          "cdc_score",
+          "theme_percentile_sum",
+          "theme_percentile_rank",
+          "themes",
+          "inputs_incomplete",
+          "withheld"
+        ],
+        "title": "DistrictVulnerabilityRead",
+        "description": "One district's V score, as it appears in the ranked list."
       },
       "HTTPValidationError": {
         "properties": {
@@ -2104,6 +2560,161 @@
         "title": "PlaceTriageUpdate",
         "description": "Patch payload for institutional triage updates."
       },
+      "PopulationUnitVulnerabilityRead": {
+        "properties": {
+          "unit_id": {
+            "type": "integer",
+            "title": "Unit Id",
+            "description": "Primary key of the DEGURBA population unit."
+          },
+          "district_code": {
+            "type": "string",
+            "title": "District Code",
+            "description": "District the unit belongs to."
+          },
+          "district_name": {
+            "type": "string",
+            "title": "District Name",
+            "description": "Published district name."
+          },
+          "dug_level": {
+            "type": "integer",
+            "title": "Dug Level",
+            "description": "DEGURBA level; 2 is the analysis unit."
+          },
+          "dug_class": {
+            "type": "string",
+            "title": "Dug Class",
+            "description": "Published degree-of-urbanisation class."
+          },
+          "dug_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dug Code",
+            "description": "Numeric DEGURBA class code."
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population",
+            "description": "Resident population of this unit."
+          },
+          "households": {
+            "type": "integer",
+            "title": "Households",
+            "description": "Households in this unit."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The district's V score, attributed to this unit under the uniformity assumption. Not measured at this level."
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank",
+            "description": "The district's rank, 1 being worst."
+          },
+          "withheld": {
+            "type": "boolean",
+            "title": "Withheld",
+            "description": "True when the district carries no score."
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_id",
+          "district_code",
+          "district_name",
+          "dug_level",
+          "dug_class",
+          "population",
+          "households",
+          "score",
+          "rank",
+          "withheld"
+        ],
+        "title": "PopulationUnitVulnerabilityRead",
+        "description": "One DEGURBA polygon carrying its district's V score."
+      },
+      "PopulationUnitVulnerabilityResponse": {
+        "properties": {
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/PopulationUnitVulnerabilityRead"
+            },
+            "type": "array",
+            "title": "Units",
+            "description": "DEGURBA Nivel 2 polygons with their district's score."
+          },
+          "unit_count": {
+            "type": "integer",
+            "title": "Unit Count",
+            "description": "Number of polygons returned."
+          },
+          "unit_of_analysis": {
+            "type": "string",
+            "title": "Unit Of Analysis",
+            "description": "The unit the score is actually measured at."
+          },
+          "uniform_district_score_assumption": {
+            "type": "string",
+            "title": "Uniform District Score Assumption",
+            "description": "The assumption that makes attributing a district score to a finer polygon legitimate, stated because the figure cannot be read without it."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/VulnerabilityMethodologyRead",
+            "description": "The method these scores were produced by."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Census attribution."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "What these scores are not."
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When the scores were computed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "units",
+          "unit_count",
+          "unit_of_analysis",
+          "uniform_district_score_assumption",
+          "methodology",
+          "source",
+          "disclaimer",
+          "computed_at"
+        ],
+        "title": "PopulationUnitVulnerabilityResponse",
+        "description": "The V dimension applied to the DEGURBA polygons, with its assumption."
+      },
       "PredefinedZoneRead": {
         "properties": {
           "key": {
@@ -2371,6 +2982,388 @@
         ],
         "title": "VulnerabilityGroup",
         "description": "High-level vulnerability axis for institutional triage."
+      },
+      "VulnerabilityMethodologyRead": {
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "title": "Dimension",
+            "description": "PRIO dimension key this score belongs to."
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "description": "The normalisation and composition method."
+          },
+          "percentile_formula": {
+            "type": "string",
+            "title": "Percentile Formula",
+            "description": "The published percentile formula."
+          },
+          "tie_rule": {
+            "type": "string",
+            "title": "Tie Rule",
+            "description": "How tied values share a percentile."
+          },
+          "aggregation_rule": {
+            "type": "string",
+            "title": "Aggregation Rule",
+            "description": "How the two sub-dimensions are composed into the dimension."
+          },
+          "unit_of_analysis": {
+            "type": "string",
+            "title": "Unit Of Analysis",
+            "description": "The territorial unit scored."
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation",
+            "description": "The only reading this score supports."
+          },
+          "uses_principal_components": {
+            "type": "boolean",
+            "title": "Uses Principal Components",
+            "description": "Always false. PCA/SoVI rankings do not converge when the set of units changes (Spielman et al. 2020), so a district's score would move because an unrelated district was added.",
+            "default": false
+          },
+          "scored_unit_count": {
+            "type": "integer",
+            "title": "Scored Unit Count",
+            "description": "Number of units the percentiles are relative to. A percentile is meaningless without its N, and two runs are only comparable at the same N."
+          },
+          "withheld_unit_count": {
+            "type": "integer",
+            "title": "Withheld Unit Count",
+            "description": "Units given no score because an input was withheld."
+          },
+          "suppression_threshold": {
+            "type": "integer",
+            "title": "Suppression Threshold",
+            "description": "Minimum statistical units in any published cell."
+          },
+          "suppression_reference": {
+            "type": "string",
+            "title": "Suppression Reference",
+            "description": "Legal basis for the suppression threshold."
+          },
+          "reference_period": {
+            "type": "string",
+            "title": "Reference Period",
+            "description": "What the census measures, and what it does not."
+          }
+        },
+        "type": "object",
+        "required": [
+          "dimension",
+          "method",
+          "percentile_formula",
+          "tie_rule",
+          "aggregation_rule",
+          "unit_of_analysis",
+          "interpretation",
+          "scored_unit_count",
+          "withheld_unit_count",
+          "suppression_threshold",
+          "suppression_reference",
+          "reference_period"
+        ],
+        "title": "VulnerabilityMethodologyRead",
+        "description": "Everything a published score cannot be interpreted without."
+      },
+      "VulnerabilityRankingRead": {
+        "properties": {
+          "districts": {
+            "items": {
+              "$ref": "#/components/schemas/DistrictVulnerabilityRead"
+            },
+            "type": "array",
+            "title": "Districts",
+            "description": "Districts ordered most vulnerable first."
+          },
+          "scored_unit_count": {
+            "type": "integer",
+            "title": "Scored Unit Count",
+            "description": "Districts that received a score."
+          },
+          "withheld_unit_count": {
+            "type": "integer",
+            "title": "Withheld Unit Count",
+            "description": "Districts given no score because an input was withheld."
+          },
+          "methodology": {
+            "$ref": "#/components/schemas/VulnerabilityMethodologyRead",
+            "description": "The method these scores were produced by."
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/VulnerabilityVariableRead"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "The declared variable catalogue with its definitions. Per-district estimates are null here; request a single district for those."
+          },
+          "declared_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/DeclaredGapRead"
+            },
+            "type": "array",
+            "title": "Declared Gaps",
+            "description": "Variables the index cannot carry, with their consequences."
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Census attribution."
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "What these scores are not."
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When the scores were computed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "districts",
+          "scored_unit_count",
+          "withheld_unit_count",
+          "methodology",
+          "variables",
+          "declared_gaps",
+          "source",
+          "disclaimer",
+          "computed_at"
+        ],
+        "title": "VulnerabilityRankingRead",
+        "description": "Every district ranked from most to least vulnerable, with its methodology."
+      },
+      "VulnerabilityThemeRead": {
+        "properties": {
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "description": "Sub-dimension key."
+          },
+          "variable_count": {
+            "type": "integer",
+            "title": "Variable Count",
+            "description": "Index variables summed into this theme, all equally weighted."
+          },
+          "percentile_sum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile Sum",
+            "description": "CDC step SPL: unweighted sum of the theme's percentiles."
+          },
+          "percentile_rank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile Rank",
+            "description": "CDC step RPL: percentile rank of that sum, 0-1."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score",
+            "description": "The RPL rescaled onto 0-10."
+          }
+        },
+        "type": "object",
+        "required": [
+          "theme",
+          "variable_count",
+          "percentile_sum",
+          "percentile_rank",
+          "score"
+        ],
+        "title": "VulnerabilityThemeRead",
+        "description": "One sub-dimension's CDC ``SPL`` and ``RPL`` with its 0-10 score."
+      },
+      "VulnerabilityVariableRead": {
+        "properties": {
+          "variable": {
+            "type": "string",
+            "title": "Variable",
+            "description": "Stable variable key."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human-readable variable name."
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "description": "Sub-dimension the variable belongs to."
+          },
+          "in_index": {
+            "type": "boolean",
+            "title": "In Index",
+            "description": "False for a variable published for audit that contributes to no theme sum."
+          },
+          "exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusion Reason",
+            "description": "Why a published variable stays out of the index."
+          },
+          "numerator": {
+            "type": "string",
+            "title": "Numerator",
+            "description": "What is counted, in the census's terms."
+          },
+          "denominator": {
+            "type": "string",
+            "title": "Denominator",
+            "description": "The universe the count is divided by."
+          },
+          "measure": {
+            "type": "string",
+            "title": "Measure",
+            "description": "What the rate is, so a ratio is not read as a percentage."
+          },
+          "svi_equivalent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Svi Equivalent",
+            "description": "The CDC/ATSDR SVI 2022 variable this stands in for."
+          },
+          "higher_is_worse": {
+            "type": "boolean",
+            "title": "Higher Is Worse",
+            "description": "Direction of the ranking, declared rather than assumed."
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate",
+            "description": "CDC step E: the raw estimate, or null when withheld."
+          },
+          "universe": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Universe",
+            "description": "The denominator as published, or null when withheld."
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate",
+            "description": "CDC step EP: estimate over universe, or null when withheld."
+          },
+          "percentile": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile",
+            "description": "CDC step EPL: percentile rank 0-1, or null when not ranked."
+          },
+          "suppressed": {
+            "type": "boolean",
+            "title": "Suppressed",
+            "description": "True when this cell is withheld under statistical secrecy."
+          },
+          "suppression_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppression Reason",
+            "description": "Why the cell is withheld."
+          },
+          "inputs_incomplete": {
+            "type": "boolean",
+            "title": "Inputs Incomplete",
+            "description": "True when the estimate was summed over at least one withheld cell, making it a lower bound."
+          },
+          "maximum_undercount": {
+            "type": "integer",
+            "title": "Maximum Undercount",
+            "description": "Largest number of units the estimate can be short by, bounded by the suppression threshold itself."
+          }
+        },
+        "type": "object",
+        "required": [
+          "variable",
+          "label",
+          "theme",
+          "in_index",
+          "numerator",
+          "denominator",
+          "measure",
+          "higher_is_worse",
+          "estimate",
+          "universe",
+          "rate",
+          "percentile",
+          "suppressed",
+          "inputs_incomplete",
+          "maximum_undercount"
+        ],
+        "title": "VulnerabilityVariableRead",
+        "description": "One variable's full audit trail behind a district's score."
       }
     },
     "securitySchemes": {
