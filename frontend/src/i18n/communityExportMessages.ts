@@ -13,6 +13,7 @@ export interface ExportDialogMessages {
   noSelection: string;
   mapScopeLine: string;
   mapScopeLineNoZone: string;
+  mapUnavailable: string;
   fileLabel: string;
   more: string;
   columnsLegend: string;
@@ -65,6 +66,7 @@ export const EXPORT_ES: ExportDialogMessages = {
   noSelection: "Abre un distrito para exportarlo solo",
   mapScopeLine: "Se imprime la vista actual del mapa de {zone}: su extensión, fondo y capas visibles.",
   mapScopeLineNoZone: "Se imprime la vista actual del mapa: su extensión, fondo y capas visibles.",
+  mapUnavailable: "El mapa aún no está listo",
   fileLabel: "Archivo",
   more: "Más opciones",
   columnsLegend: "Columnas",
@@ -129,6 +131,7 @@ export const EXPORT_EN: ExportDialogMessages = {
   noSelection: "Open a district to export it alone",
   mapScopeLine: "Prints the current map view of {zone}: its extent, basemap and visible layers.",
   mapScopeLineNoZone: "Prints the current map view: its extent, basemap and visible layers.",
+  mapUnavailable: "The map is not ready yet",
   fileLabel: "File",
   more: "More options",
   columnsLegend: "Columns",

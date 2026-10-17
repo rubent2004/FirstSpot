@@ -13,11 +13,14 @@ import {
   type ScopeContext,
 } from "./exportPlan";
 import { downloadRankingXlsx } from "./exportXlsx";
+import type { MapPrintPrefs, SectionId } from "./mapPrint/mapPrintModel";
 import type { SheetVariant } from "./PrintSheet.vue";
 
 export interface ExportRequest {
   prefs: ExportPrefs;
   scope: ExportScope;
+  /** What the map printout contains; present only for the map format. */
+  map?: { prefs: MapPrintPrefs; sections: SectionId[]; notes: string };
 }
 
 export type ExportOutcome =
@@ -28,6 +31,7 @@ export type ExportOutcome =
       model: ReportModel;
       prefs: ExportPrefs;
       fileName: string;
+      map?: ExportRequest["map"];
     };
 
 export interface ExportInput {
@@ -99,5 +103,6 @@ export async function runExport(input: ExportInput): Promise<ExportOutcome> {
     model,
     prefs,
     fileName,
+    map: input.request.map,
   };
 }

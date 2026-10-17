@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, toRef, watch } from "vue";
+import type { DistrictPrioRead } from "../../api/client";
 import { useCommunityTriageStore } from "../../stores/useCommunityTriageStore";
 import { communityMessages, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
@@ -22,6 +23,15 @@ import {
   type ExportPrefs,
   type ScopeContext,
 } from "./exportPlan";
+import { MAP_PRINT_EN, MAP_PRINT_ES } from "../../i18n/communityMapPrintMessages";
+import {
+  computeAvailability,
+  loadMapPrefs,
+  normalizeSelection,
+  saveMapPrefs,
+  type MapPrintPrefs,
+} from "./mapPrint/mapPrintModel";
+import type { MapSnapshot } from "./mapPrint/mapSnapshot";
 import { runExport, type ExportRequest } from "./runExport";
 import { resolveMode } from "./triageModel";
 import { useDistrictFilters } from "./useDistrictFilters";
@@ -33,6 +43,8 @@ const props = defineProps<{
   zoneName?: string | null;
   /** That zone's department, used to scope the list when it can be resolved. */
   zoneDepartment?: string | null;
+  /** Captures the live map (view, layers, data) at the moment of export. */
+  getMapSnapshot?: () => MapSnapshot | null;
 }>();
 const emit = defineEmits<{
   (e: "level-change", level: TriageLevel): void;
@@ -127,6 +139,9 @@ interface OpenSheet {
   model: ReportModel;
   prefs: ExportPrefs;
   fileName: string;
+  map?: ExportRequest["map"];
+  snapshot: MapSnapshot | null;
+  selectedDistrict: DistrictPrioRead | null;
 }
 const sheet = ref<OpenSheet | null>(null);
 const exportOpen = ref(false);
@@ -137,6 +152,9 @@ const prefs = ref<ExportPrefs>(loadPrefs(undefined, locale.value));
 const livePrefs = computed<ExportPrefs>(() => ({ ...prefs.value, lang: locale.value }));
 const hasSaved = ref(hasSavedPrefs());
 const exportNow = ref(new Date());
+const mapPrefs = ref<MapPrintPrefs>(loadMapPrefs());
+/** Captured when the dialog opens: the map does not move while the operator chooses. */
+const exportSnapshot = ref<MapSnapshot | null>(null);
 const exportMenu = ref<InstanceType<typeof ExportMenu> | null>(null);
 
 /** Back to the button that opened the dialog, so keyboard focus is never lost. */
@@ -144,6 +162,7 @@ watch(exportOpen, (open, wasOpen) => {
   if (wasOpen && !open) void nextTick(() => exportMenu.value?.focus());
 });
 
+const communityMapPrintMessages = (lang: "es" | "en") => (lang === "es" ? MAP_PRINT_ES : MAP_PRINT_EN);
 const dialogT = computed(() => t.value.community.exportDialog);
 
 const scopeContext = computed<ScopeContext>(() => ({
@@ -181,6 +200,7 @@ const repeatFile = computed(() => {
 function openExport(): void {
   exportError.value = null;
   exportNow.value = new Date();
+  exportSnapshot.value = props.getMapSnapshot?.() ?? null;
   exportOpen.value = true;
 }
 
@@ -190,6 +210,7 @@ async function performExport(request: ExportRequest): Promise<boolean> {
   exportError.value = null;
   const copy = communityMessages(request.prefs.lang).exportDialog;
   try {
+    if (request.prefs.format === "map" && !exportSnapshot.value) throw new Error("map not ready");
     const outcome = await runExport({
       index: store.index,
       request,
@@ -199,12 +220,20 @@ async function performExport(request: ExportRequest): Promise<boolean> {
     });
     savePrefs(request.prefs);
     prefs.value = request.prefs;
+    if (request.map) {
+      saveMapPrefs(request.map.prefs);
+      mapPrefs.value = request.map.prefs;
+    }
     hasSaved.value = true;
     exportOpen.value = false;
     if (outcome.kind === "file") {
       ElMessage.success({ message: fillMessage(copy.successFile, { file: outcome.fileName }), showClose: true });
     } else {
-      sheet.value = outcome;
+      sheet.value = {
+        ...outcome,
+        snapshot: exportSnapshot.value,
+        selectedDistrict: store.selectedDistrict,
+      };
       ElMessage.success({ message: copy.successSheet, showClose: true });
     }
     return true;
@@ -221,7 +250,24 @@ function submitExport(request: ExportRequest): void {
 }
 
 async function repeatLast(): Promise<void> {
-  const ok = await performExport({ prefs: livePrefs.value, scope: repeatScope() });
+  const request: ExportRequest = { prefs: livePrefs.value, scope: repeatScope() };
+  if (livePrefs.value.format === "map") {
+    // The map may have moved since the last print: capture it again, and keep only
+    // the remembered sections that still have data.
+    exportSnapshot.value = props.getMapSnapshot?.() ?? null;
+    if (exportSnapshot.value) {
+      const availability = computeAvailability(
+        { snapshot: exportSnapshot.value, selectedDistrict: store.selectedDistrict },
+        communityMapPrintMessages(livePrefs.value.lang),
+      );
+      request.map = {
+        prefs: mapPrefs.value,
+        sections: normalizeSelection(mapPrefs.value.sections, availability),
+        notes: "",
+      };
+    }
+  }
+  const ok = await performExport(request);
   if (!ok) ElMessage.error({ message: dialogT.value.failure, showClose: true });
 }
 
@@ -330,6 +376,10 @@ const crumbParent = computed(() => t.value.community.nav.districts);
       :is-busy="isExporting"
       :error="exportError"
       :now="exportNow"
+      :snapshot="exportSnapshot"
+      :map-prefs="mapPrefs"
+      :selected-district="store.selectedDistrict"
+      :index="store.index"
       @submit="submitExport"
     />
 
@@ -342,6 +392,11 @@ const crumbParent = computed(() => t.value.community.nav.districts);
       :orientation="sheet.variant === 'map' ? sheet.prefs.orientation : 'portrait'"
       :columns="sheet.prefs.columns"
       :file-name="sheet.fileName"
+      :snapshot="sheet.snapshot"
+      :map-prefs="sheet.map?.prefs ?? null"
+      :map-sections="sheet.map?.sections ?? []"
+      :notes="sheet.map?.notes ?? ''"
+      :selected-district="sheet.selectedDistrict"
       @close="sheet = null"
     />
   </div>

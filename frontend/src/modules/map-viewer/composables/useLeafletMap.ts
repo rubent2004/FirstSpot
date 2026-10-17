@@ -242,6 +242,7 @@ export function useLeafletMap(options: UseLeafletMapOptions) {
   return {
     mapContainer,
     getMap,
+    activeBasemapPreset,
     flyTo,
     flyToBounds,
     zoom,

@@ -7,6 +7,7 @@ import { setAppLocale } from "../i18n/useI18n";
 import ExportDialog from "../modules/community-triage/ExportDialog.vue";
 import { buildReportModel } from "../modules/community-triage/exportModel";
 import { DEFAULT_PREFS, type ExportPrefs } from "../modules/community-triage/exportPlan";
+import { DEFAULT_MAP_PREFS } from "../modules/community-triage/mapPrint/mapPrintModel";
 import {
   EVENT_ID,
   eventIndex,
@@ -41,6 +42,10 @@ async function open(opts: Opts = {}) {
       selectedName: opts.selectedName ?? null,
       eventId: EVENT_ID,
       zoneName: "Escuintla",
+      snapshot: null,
+      mapPrefs: { ...DEFAULT_MAP_PREFS },
+      selectedDistrict: null,
+      index: null,
       isBusy: opts.isBusy ?? false,
       error: opts.error ?? null,
       now: NOW,

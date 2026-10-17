@@ -84,3 +84,81 @@
     right: 0;
   }
 }
+
+/* ---- Shared section styles for the map printout and its preview ---- */
+.print-sheet .print-section,
+.map-preview .print-section {
+  margin: 0 0 var(--eoc-gap-y);
+  padding: var(--eoc-gap-y) var(--eoc-pad-panel);
+  border: var(--eoc-border-width) solid var(--eoc-border);
+  font-size: var(--eoc-fs-body);
+}
+.print-section h2 {
+  margin: 0 0 var(--eoc-gap-y);
+}
+.print-section .sub {
+  margin: var(--eoc-gap-y) 0 2px;
+  font-size: var(--eoc-fs-micro);
+  color: var(--eoc-text-secondary);
+  font-weight: var(--eoc-fw-semibold);
+}
+.print-section .title {
+  margin: 0;
+  font-weight: var(--eoc-fw-semibold);
+}
+.print-section .muted {
+  margin: 0;
+  color: var(--eoc-text-secondary);
+  font-size: var(--eoc-fs-micro);
+}
+.print-section p {
+  margin: 0;
+}
+.print-section .grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+.print-section .grid th,
+.print-section .grid td {
+  text-align: left;
+  padding: 2px var(--eoc-gap-x);
+  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
+  font-size: var(--eoc-fs-micro);
+}
+.print-section .counts,
+.print-section .plain,
+.print-section .log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.print-section .counts li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--eoc-pad-panel);
+  padding: 1px 0;
+}
+.print-section .plain li,
+.print-section .log li {
+  padding: 1px 0;
+}
+.print-section .log .note {
+  display: block;
+  color: var(--eoc-text-secondary);
+}
+.print-section .facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px var(--eoc-pad-panel);
+}
+.print-section .facts dt {
+  color: var(--eoc-text-secondary);
+}
+.print-section .facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.print-section.limits {
+  border-color: var(--eoc-border-strong);
+}

@@ -13,6 +13,7 @@ import InstitutionAccessDialog from "./modules/institutions/InstitutionAccessDia
 import { usePrioritizationStore } from "./stores/usePrioritizationStore";
 import { useI18n } from "./i18n/useI18n";
 import { useTheme } from "./composables/useTheme";
+import type { MapSnapshot } from "./modules/community-triage/mapPrint/mapSnapshot";
 import type {
   HazardScenarioPreset,
   PlaceRead,
@@ -143,6 +144,29 @@ function handleFlyToCoordinates(
   geocodeTarget.value = { lat, lon, label };
 }
 
+const heatmapCanvas = ref<InstanceType<typeof VulnerabilityHeatmapCanvas> | null>(null);
+
+/** The live map as the operator sees it, for the printed map of the current view. */
+function captureMapSnapshot(): MapSnapshot | null {
+  const view = heatmapCanvas.value?.getViewState();
+  if (!view) return null;
+  return {
+    view,
+    layers: {
+      heat: showHeatmapLayer.value,
+      markers: showMarkersLayer.value,
+      hazards: showHazardsLayer.value,
+    },
+    zone: { name: zoneName.value, department: zoneDepartment.value },
+    places: store.places,
+    heatPoints: store.heatmapPoints,
+    hazards: store.activeHazards?.events ?? [],
+    weather: store.activeHazards?.weather ?? null,
+    selectedPlace: store.selectedPlace,
+    activities: store.selectedPlace ? store.placeActivities : [],
+  };
+}
+
 function handleCenterMap(): void {
   window.dispatchEvent(new CustomEvent("geo-priority:center-zone"));
 }
@@ -220,6 +244,7 @@ function handleFitMap(): void {
         <div class="workspace-map-col">
           <p v-if="triageLevel === 'list'" class="map-caption">{{ t.community.map.caption }}</p>
           <VulnerabilityHeatmapCanvas
+            ref="heatmapCanvas"
             :places="store.places"
             :heatmap-points="store.heatmapPoints"
             :selected-place="store.selectedPlace"
@@ -242,6 +267,7 @@ function handleFitMap(): void {
         <CommunityTriagePanel
           :zone-name="zoneName"
           :zone-department="zoneDepartment"
+          :get-map-snapshot="captureMapSnapshot"
           @level-change="triageLevel = $event"
           @detail-change="detailOpen = $event"
         >

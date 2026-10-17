@@ -7,7 +7,10 @@ import ClassBadge from "./ClassBadge.vue";
 import type { ReportModel, ReportRow } from "./exportModel";
 import { resolveColumns, type ExportColumn, type Orientation, type PaperSize } from "./exportPlan";
 import { formatInteger, formatScore } from "./formatters";
-import PrintMap from "./PrintMap.vue";
+import MapPrintBody from "./mapPrint/MapPrintBody.vue";
+import type { MapPrintPrefs, SectionId } from "./mapPrint/mapPrintModel";
+import type { MapSnapshot } from "./mapPrint/mapSnapshot";
+import type { DistrictPrioRead } from "../../api/client";
 import "./print.css";
 
 export type SheetVariant = "report" | "map";
@@ -23,8 +26,25 @@ const props = withDefaults(
     columns?: readonly ExportColumn[];
     /** Becomes the document title, which browsers offer as the PDF file name. */
     fileName?: string;
+    /** The live map and what was chosen to print with it (map variant only). */
+    snapshot?: MapSnapshot | null;
+    mapPrefs?: MapPrintPrefs | null;
+    mapSections?: SectionId[];
+    notes?: string;
+    selectedDistrict?: DistrictPrioRead | null;
   }>(),
-  { lang: "es", paper: "a4", orientation: "portrait", columns: undefined, fileName: undefined },
+  {
+    lang: "es",
+    paper: "a4",
+    orientation: "portrait",
+    columns: undefined,
+    fileName: undefined,
+    snapshot: null,
+    mapPrefs: null,
+    mapSections: () => [],
+    notes: "",
+    selectedDistrict: null,
+  },
 );
 const emit = defineEmits<{ (e: "close"): void }>();
 
@@ -36,9 +56,6 @@ const has = (column: ExportColumn): boolean =>
   props.columns === undefined || shown.value.includes(column);
 
 const reportRows = computed(() => props.model.rows);
-const priorityRows = computed(() =>
-  props.model.rows.filter((row) => row.classKey === "roja" || row.classKey === "naranja"),
-);
 const isEvent = computed(() => props.model.mode === "event");
 
 function sphereText(row: ReportRow): string {
@@ -112,8 +129,19 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="sheet-page">
+        <MapPrintBody
+          v-if="variant === 'map' && snapshot && mapPrefs"
+          :snapshot="snapshot"
+          :model="model"
+          :prefs="mapPrefs"
+          :sections="mapSections"
+          :notes="notes"
+          :selected-district="selectedDistrict"
+          :lang="lang"
+        />
+        <template v-else>
         <header class="sheet-head keep-together">
-          <h1>{{ variant === "map" ? s.mapTitle : s.reportTitle }}</h1>
+          <h1>{{ s.reportTitle }}</h1>
           <dl class="meta">
             <div>
               <dt class="eoc-label">{{ m.mode.label }}</dt>
@@ -169,7 +197,7 @@ onBeforeUnmount(() => {
           </ul>
         </section>
 
-        <template v-if="variant === 'report'">
+        <div class="report-body">
           <p v-if="model.scopeNote" class="muted" data-testid="sheet-scope">{{ model.scopeNote }}</p>
           <table class="ranking">
             <thead>
@@ -212,31 +240,13 @@ onBeforeUnmount(() => {
               </tr>
             </tbody>
           </table>
-        </template>
-
-        <template v-else>
-          <div class="map-layout">
-            <PrintMap :event="model.event" />
-            <aside class="map-side">
-              <p class="muted">{{ s.noGeometry }}</p>
-              <p v-if="!model.event" class="muted">{{ s.baselineMapNote }}</p>
-              <h2 class="eoc-label">{{ s.priorityList }}</h2>
-              <ol class="priority">
-                <li v-for="row in priorityRows" :key="`${row.rank}-${row.name}`">
-                  <span class="eoc-numeric rank">{{ row.rank }}</span>
-                  <span class="name">{{ row.name }}</span>
-                  <ClassBadge v-if="row.classKey" :alert-class="row.classKey" :mode="model.mode" />
-                  <span class="eoc-numeric">{{ rowScore(row) }}</span>
-                </li>
-              </ol>
-            </aside>
-          </div>
-        </template>
+        </div>
 
         <footer class="sheet-footer">
           {{ model.modeLabel }} · {{ s.generatedAt }} {{ model.generatedAtLabel }} ·
           {{ m.honesty.attributionLabel }}: {{ model.attribution }}
         </footer>
+        </template>
       </div>
     </div>
   </Teleport>
@@ -318,35 +328,6 @@ h2 {
 }
 .ranking .small {
   font-size: var(--eoc-fs-micro);
-}
-.map-layout {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--eoc-pad-panel);
-  height: 150mm;
-  margin-top: var(--eoc-pad-panel);
-}
-.map-side {
-  overflow: hidden;
-}
-.priority {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.priority li {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto 32px;
-  gap: var(--eoc-gap-x);
-  align-items: center;
-  padding: 2px 0;
-  border-bottom: var(--eoc-border-width) solid var(--eoc-border);
-  font-size: var(--eoc-fs-micro);
-}
-.priority .name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .sheet-footer {
   margin-top: var(--eoc-pad-panel);

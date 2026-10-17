@@ -2,9 +2,10 @@
 import { computed, ref, useId, watch } from "vue";
 import { ElButton, ElDialog } from "element-plus";
 import { Document, Grid, MapLocation, Printer } from "@element-plus/icons-vue";
-import { fillMessage } from "../../i18n/communityMessages";
+import type { DistrictPrioRead, PrioIndexRead } from "../../api/client";
+import { communityMessages, fillMessage } from "../../i18n/communityMessages";
 import { useI18n } from "../../i18n/useI18n";
-import type { ReportRow } from "./exportModel";
+import { buildReportModel, type ReportRow } from "./exportModel";
 import {
   buildFileName,
   columnsFor,
@@ -17,6 +18,15 @@ import {
   type ExportScope,
   type ScopeContext,
 } from "./exportPlan";
+import ExportMapOptions from "./mapPrint/ExportMapOptions.vue";
+import {
+  computeAvailability,
+  normalizeSelection,
+  type MapPrintPrefs,
+} from "./mapPrint/mapPrintModel";
+import type { MapSnapshot } from "./mapPrint/mapSnapshot";
+import { usePrintCopy } from "./mapPrint/usePrintCopy";
+import type { ExportRequest } from "./runExport";
 import type { TriageMode } from "./triageModel";
 
 const props = defineProps<{
@@ -31,11 +41,16 @@ const props = defineProps<{
   isBusy: boolean;
   error: string | null;
   now: Date;
+  /** The live map at the moment the dialog opened, for the map printout. */
+  snapshot: MapSnapshot | null;
+  mapPrefs: MapPrintPrefs;
+  selectedDistrict: DistrictPrioRead | null;
+  index: PrioIndexRead | null;
 }>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
-  (e: "submit", request: { prefs: ExportPrefs; scope: ExportScope }): void;
+  (e: "submit", request: ExportRequest): void;
 }>();
 
 const { t } = useI18n();
@@ -44,6 +59,8 @@ const uid = useId();
 
 const draft = ref<ExportPrefs>({ ...props.prefs, columns: [...props.prefs.columns] });
 const scope = ref<ExportScope>("all");
+const mapDraft = ref<MapPrintPrefs>({ ...props.mapPrefs });
+const notes = ref("");
 
 const FORMAT_ORDER: ExportFormat[] = ["xlsx", "csv", "report", "map"];
 const FORMAT_ICON = { xlsx: Grid, csv: Document, report: Printer, map: MapLocation } as const;
@@ -60,11 +77,27 @@ watch(
     if (!open) return;
     draft.value = { ...props.prefs, columns: [...props.prefs.columns] };
     scope.value = defaultScope();
+    mapDraft.value = { ...props.mapPrefs };
+    notes.value = "";
   },
   { immediate: true },
 );
 
 const isMap = computed(() => draft.value.format === "map");
+
+const mapAvailability = computed(() =>
+  props.snapshot
+    ? computeAvailability(
+        { snapshot: props.snapshot, selectedDistrict: props.selectedDistrict },
+        usePrintCopyFor(draft.value.lang),
+      )
+    : null,
+);
+const previewModel = computed(() =>
+  props.index
+    ? buildReportModel(props.index, communityMessages(draft.value.lang), draft.value.lang, props.now)
+    : null,
+);
 const isPrint = computed(() => draft.value.format === "map" || draft.value.format === "report");
 const isFile = computed(() => draft.value.format === "xlsx" || draft.value.format === "csv");
 
@@ -132,16 +165,29 @@ function onTopN(event: Event): void {
   draft.value.topN = Number.isFinite(n) && n > 0 ? n : 1;
 }
 
+/** Reasons are worded in the document's language, like the rest of the printout. */
+function usePrintCopyFor(lang: ExportPrefs["lang"]) {
+  return usePrintCopy(ref(lang)).m.value;
+}
+
 const submitLabel = computed(() =>
   props.isBusy ? d.value.busy : props.error ? d.value.retry : d.value.submit,
 );
 
 function submit(): void {
   if (hasNoRows.value || props.isBusy) return;
-  emit("submit", {
+  const request: ExportRequest = {
     prefs: { ...draft.value, columns: resolveColumns(draft.value.columns, props.mode) },
     scope: effectiveScope.value,
-  });
+  };
+  if (isMap.value && mapAvailability.value) {
+    request.map = {
+      prefs: mapDraft.value,
+      sections: normalizeSelection(mapDraft.value.sections, mapAvailability.value),
+      notes: notes.value,
+    };
+  }
+  emit("submit", request);
 }
 
 const reasonId = (key: string) => `${uid}-${key}`;
@@ -151,7 +197,7 @@ const reasonId = (key: string) => `${uid}-${key}`;
   <ElDialog
     :model-value="modelValue"
     :title="d.title"
-    width="min(520px, 96vw)"
+    :width="isMap ? 'min(980px, 96vw)' : 'min(520px, 96vw)'"
     align-center
     append-to-body
     class="export-dialog"
@@ -165,16 +211,27 @@ const reasonId = (key: string) => `${uid}-${key}`;
             v-for="format in FORMAT_ORDER"
             :key="format"
             class="card"
-            :class="{ checked: draft.format === format }"
+            :class="{ checked: draft.format === format, disabled: format === 'map' && !snapshot }"
           >
-            <input v-model="draft.format" class="sr-only" type="radio" name="export-format" :value="format" />
+            <input
+              v-model="draft.format"
+              class="sr-only"
+              type="radio"
+              name="export-format"
+              :value="format"
+              :disabled="format === 'map' && !snapshot"
+              :aria-describedby="format === 'map' && !snapshot ? reasonId('map') : undefined"
+            />
             <component :is="FORMAT_ICON[format]" class="icon" aria-hidden="true" />
             <span class="card-text">
               <span class="card-head">
                 <strong>{{ d.formats[format].name }}</strong>
                 <span class="type eoc-numeric">{{ d.formats[format].type }}</span>
               </span>
-              <span class="purpose">{{ d.formats[format].purpose }}</span>
+              <span
+                :id="format === 'map' && !snapshot ? reasonId('map') : undefined"
+                class="purpose"
+              >{{ format === "map" && !snapshot ? d.mapUnavailable : d.formats[format].purpose }}</span>
             </span>
           </label>
         </div>
@@ -207,9 +264,21 @@ const reasonId = (key: string) => `${uid}-${key}`;
           </label>
         </div>
       </fieldset>
-      <p v-else class="map-line">
-        {{ zoneName ? fillMessage(d.mapScopeLine, { zone: zoneName }) : d.mapScopeLineNoZone }}
-      </p>
+      <template v-else>
+        <p class="map-line">
+          {{ zoneName ? fillMessage(d.mapScopeLine, { zone: zoneName }) : d.mapScopeLineNoZone }}
+        </p>
+        <ExportMapOptions
+          v-if="snapshot && previewModel && mapAvailability"
+          v-model:prefs="mapDraft"
+          v-model:notes="notes"
+          :snapshot="snapshot"
+          :model="previewModel"
+          :availability="mapAvailability"
+          :selected-district="selectedDistrict"
+          :lang="draft.lang"
+        />
+      </template>
 
       <details class="more">
         <summary>{{ d.more }}</summary>
@@ -342,6 +411,10 @@ legend {
   border: var(--eoc-border-width) solid var(--eoc-border-strong);
   border-radius: var(--eoc-radius-control);
   cursor: pointer;
+}
+.card.disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 .card:hover {
   background: var(--eoc-bg-hover);

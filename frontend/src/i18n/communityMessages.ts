@@ -149,10 +149,6 @@ export interface CommunityMessages {
     columnSphere: string;
     legend: string;
     north: string;
-    noGeometry: string;
-    epicentre: string;
-    priorityList: string;
-    baselineMapNote: string;
     sphereCompact: string;
   };
   xlsx: {
@@ -369,11 +365,6 @@ export const COMMUNITY_ES: CommunityMessages = {
     columnSphere: "Mínimo Sphere",
     legend: "Leyenda",
     north: "N",
-    noGeometry:
-      "La API no entrega polígonos de distritos, por eso el mapa no pinta territorios: muestra el epicentro (modo evento) y la lista de distritos prioritarios.",
-    epicentre: "Epicentro",
-    priorityList: "Distritos de clase roja y naranja",
-    baselineMapNote: "Línea base: no hay epicentro que ubicar.",
     sphereCompact: "{water} L de agua/día · {food} kcal/día · {shelter} m² de albergue",
   },
   xlsx: {
@@ -584,11 +575,6 @@ export const COMMUNITY_EN: CommunityMessages = {
     columnSphere: "Sphere minimum",
     legend: "Legend",
     north: "N",
-    noGeometry:
-      "The API does not provide district polygons, so the map does not paint territories: it shows the epicentre (event mode) and the list of priority districts.",
-    epicentre: "Epicentre",
-    priorityList: "Red and orange districts",
-    baselineMapNote: "Baseline: there is no epicentre to locate.",
     sphereCompact: "{water} L water/day · {food} kcal/day · {shelter} m² shelter",
   },
   xlsx: {

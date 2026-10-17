@@ -105,18 +105,6 @@ describe("exports from the triage panel", () => {
     );
   });
 
-  it("opens the map sheet with legend, mode and a notice that no polygons exist", async () => {
-    const wrapper = await mountPanel(true);
-    await exportAs(wrapper, "Map of the current view");
-    expect(document.body.dataset.printSheet).toBe("map");
-    const sheet = document.body.querySelector('[data-testid="print-sheet"]')!;
-    expect(sheet.querySelector('[data-testid="print-map"]')).not.toBeNull();
-    const text = sheet.textContent ?? "";
-    for (const name of ["Red", "Orange", "Yellow", "Green"]) expect(text).toContain(name);
-    expect(text).toContain("does not provide district polygons");
-    expect(text).toContain("Epicentre");
-  });
-
   it("closing the sheet removes it and the print flag", async () => {
     const wrapper = await mountPanel(true);
     await exportAs(wrapper, "National district ranking");
